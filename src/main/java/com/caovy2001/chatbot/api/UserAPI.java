@@ -35,7 +35,7 @@ public class UserAPI {
             ResponseUserLogin responseUserLogin = userService.login(command);
             return ResponseEntity.ok(responseUserLogin);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(ExceptionConstant.error_occur, ResponseUserLogin.class, e.toString()));
+            return ResponseEntity.ok(baseService.returnException(ExceptionConstant.error_occur, ResponseUserLogin.class));
         }
     }
 
@@ -45,7 +45,7 @@ public class UserAPI {
             ResponseUserSignUp responseUserSignUp = userService.signUp(commandUserSignUp);
             return ResponseEntity.ok(responseUserSignUp);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(ExceptionConstant.error_occur, ResponseUserSignUp.class, e.toString()));
+            return ResponseEntity.ok(baseService.returnException(ExceptionConstant.error_occur, ResponseUserSignUp.class));
         }
     }
 }

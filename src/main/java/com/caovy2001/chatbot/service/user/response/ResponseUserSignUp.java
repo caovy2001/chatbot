@@ -1,5 +1,6 @@
 package com.caovy2001.chatbot.service.user.response;
 
+import com.caovy2001.chatbot.service.ResponseBase;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,6 +12,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ResponseUserSignUp extends ResponseBase{
+public class ResponseUserSignUp extends ResponseBase {
     private String username;
 }

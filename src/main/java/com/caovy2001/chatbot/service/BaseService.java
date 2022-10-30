@@ -1,9 +1,5 @@
 package com.caovy2001.chatbot.service;
 
-import com.caovy2001.chatbot.entity.BaseEntity;
-import com.caovy2001.chatbot.entity.UserEntity;
-import com.caovy2001.chatbot.service.IBaseService;
-import com.caovy2001.chatbot.service.user.response.ResponseBase;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -12,7 +8,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class BaseService implements IBaseService {
     @Override
-    public <T extends ResponseBase> T returnException(String exceptionCode, Class<T> clazz, String exceptionMessage) {
+    public <T extends ResponseBase> T returnException(String exceptionCode, Class<T> clazz) {
         try {
             T entity = clazz.getDeclaredConstructor().newInstance();
             entity.setHttpStatus(HttpStatus.EXPECTATION_FAILED);

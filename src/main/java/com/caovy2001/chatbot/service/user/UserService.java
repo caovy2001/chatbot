@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 
 @Service
-public class UserService  extends BaseService implements IUserService{
+public class UserService extends BaseService implements IUserService{
     @Autowired
     private UserRepository userRepository;
 
@@ -27,7 +27,7 @@ public class UserService  extends BaseService implements IUserService{
     public ResponseUserLogin login(CommandUserLogin command) {
         UserEntity userEntity = userRepository.findByUsernameAndPassword(command.getUsername(), command.getPassword()).orElse(null);
         if (userEntity == null) {
-            return returnException(ExceptionConstant.login_fail, ResponseUserLogin.class, null);
+            return returnException(ExceptionConstant.login_fail, ResponseUserLogin.class);
         }
 
         return ResponseUserLogin.builder()
@@ -45,12 +45,12 @@ public class UserService  extends BaseService implements IUserService{
     public ResponseUserSignUp signUp(CommandUserSignUp commandUserSignUp) throws Exception {
         if (commandUserSignUp == null ||
         StringUtils.isAnyBlank(commandUserSignUp.getUsername(), commandUserSignUp.getPassword(), commandUserSignUp.getFullname())) {
-            return this.returnException(ExceptionConstant.missing_param, ResponseUserSignUp.class, null);
+            return this.returnException(ExceptionConstant.missing_param, ResponseUserSignUp.class);
         }
 
         // Check xem username này đã tồn tại hay chưa
         if (userRepository.countByUsername(commandUserSignUp.getUsername()) > 0) {
-            return returnException(ExceptionConstant.username_exists, ResponseUserSignUp.class, null);
+            return returnException(ExceptionConstant.username_exists, ResponseUserSignUp.class);
         }
 
         // Thực hiện đăng ký

@@ -1,4 +1,4 @@
-package com.caovy2001.chatbot.service.user.response;
+package com.caovy2001.chatbot.service;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
