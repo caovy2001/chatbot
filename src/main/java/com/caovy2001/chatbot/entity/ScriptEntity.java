@@ -6,35 +6,22 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
-
-import java.util.List;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Document("intent")
-public class IntentEntity extends BaseEntity{
+@Document("script")
+public class ScriptEntity extends BaseEntity {
     @Id
     private String id;
-
-    @Field("code")
-    private String code;
 
     @Field("user_id")
     private String userId;
 
     @Field("name")
     private String name;
-
-    @Transient
-    private List<PatternEntity> patterns;
-
-    @Transient
-    private List<ConditionMappingEntity> conditionMapping;
-
 }

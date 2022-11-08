@@ -69,4 +69,20 @@ public class IntentService extends BaseService implements IIntentService {
                 .intents(intents)
                 .build();
     }
+
+    @Override
+    public ResponseIntents getById(String id, String userId) {
+        if (StringUtils.isBlank(id))
+            return returnException(ExceptionConstant.missing_param, ResponseIntents.class);
+
+        IntentEntity  intent = intentRepository.findById(id).orElse(null);
+        List<PatternEntity> patterns = patternRepository.findByIntentIdInAndUserId(
+                intent.getId(),
+                userId);
+        intent.setPatterns(patterns);
+
+        return ResponseIntents.builder()
+                .intent(intent)
+                .build();
+    }
 }

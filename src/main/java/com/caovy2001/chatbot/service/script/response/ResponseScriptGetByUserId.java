@@ -1,6 +1,6 @@
-package com.caovy2001.chatbot.service.intent.response;
+package com.caovy2001.chatbot.service.script.response;
 
-import com.caovy2001.chatbot.entity.IntentEntity;
+import com.caovy2001.chatbot.entity.ScriptEntity;
 import com.caovy2001.chatbot.service.ResponseBase;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,10 +10,9 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 @Data
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ResponseIntents extends ResponseBase {
-    List<IntentEntity> intents;
-    IntentEntity intent;
+@Builder
+public class ResponseScriptGetByUserId extends ResponseBase {
+    private List<ScriptEntity> scripts;
 }

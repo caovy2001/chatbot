@@ -47,4 +47,18 @@ public class IntentAPI {
             return ResponseEntity.ok(baseService.returnException(e.toString(), ResponseIntents.class));
         }
     }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @GetMapping()
+    public ResponseEntity<?> getById(@RequestParam("id") String id) {
+        try {
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
+                throw new Exception("auth_invalid");
+            ResponseIntents responseIntents = intentService.getById(id, userEntity.getId());
+            return ResponseEntity.ok(responseIntents);
+        } catch (Exception e) {
+            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponseIntents.class));
+        }
+    }
 }
