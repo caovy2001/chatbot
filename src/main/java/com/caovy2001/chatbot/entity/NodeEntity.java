@@ -5,8 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -15,19 +15,19 @@ import java.util.List;
 @Data
 @Builder
 @AllArgsConstructor
+@NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Document("condition_mapping")
-public class ConditionMappingEntity extends BaseEntity {
+@Document("node")
+public class NodeEntity {
     @Id
     private String id;
 
-    @Field("intent_id")
-    private String intent_id;
+    @Field("message")
+    private String message;
 
-    @Field("next_node_ids")
-    private List<String> next_node_ids;
+    @Field("script_id")
+    private String scriptId;
 
-    public  ConditionMappingEntity(){
-        id = new ObjectId().toString();
-    }
+    @Field("condition_mapping")
+    private List<ConditionMappingEntity> conditionMapping;
 }
