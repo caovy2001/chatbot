@@ -4,7 +4,9 @@ import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.PatternEntity;
 import com.caovy2001.chatbot.repository.PatternRepository;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.pattern.command.CommandPattern;
 import com.caovy2001.chatbot.service.pattern.command.CommandPatternAdd;
+import com.caovy2001.chatbot.service.pattern.response.ResponsePattern;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePatternAdd;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,7 @@ public class PatternService extends BaseService implements IPatternService {
             return returnException(ExceptionConstant.missing_param, ResponsePatternAdd.class);
         }
 
+
         PatternEntity pattern = PatternEntity.builder()
                 .content(command.getContent())
                 .intentId(command.getIntent_id())
@@ -30,5 +33,22 @@ public class PatternService extends BaseService implements IPatternService {
         return ResponsePatternAdd.builder()
                 .id(addedPattern.getId())
                 .build();
+    }
+
+    @Override
+    public ResponsePatternAdd delete(String id) {
+        if (id == null){
+            return  returnException(ExceptionConstant.missing_param, ResponsePatternAdd.class);
+        }
+        patternRepository.deleteById(id);
+        return ResponsePatternAdd.builder().build();
+    }
+
+    @Override
+    public ResponsePattern getByIntentId(CommandPattern command) {
+        if (command.getIntent_id() == null){
+            return  returnException(ExceptionConstant.missing_param, ResponsePattern.class);
+        }
+        return ResponsePattern.builder().patterns(patternRepository.findByIntentIdInAndUserId(command.getIntent_id(),command.getUser_id())).build();
     }
 }

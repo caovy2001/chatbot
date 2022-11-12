@@ -11,6 +11,6 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ResponseScriptAdd extends ResponseBase {
+public class ResponseScript extends ResponseBase {
     private ScriptEntity script;
 }

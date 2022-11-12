@@ -8,6 +8,7 @@ import com.caovy2001.chatbot.service.script.IScriptService;
 import com.caovy2001.chatbot.service.script.command.CommandScriptAdd;
 import com.caovy2001.chatbot.service.script.command.CommandScriptDelete;
 import com.caovy2001.chatbot.service.script.command.CommandScriptUpdate;
+import com.caovy2001.chatbot.service.script.response.ResponseScript;
 import com.caovy2001.chatbot.service.script.response.ResponseScriptAdd;
 import com.caovy2001.chatbot.service.script.response.ResponseScriptGetByUserId;
 import org.apache.commons.lang3.StringUtils;
@@ -86,7 +87,7 @@ public class ScriptAPI {
             if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
                 throw new Exception("auth_invalid");
             }
-            ScriptEntity script = scriptService.updateName(command);
+            ResponseScript script = scriptService.updateName(command);
             return  ResponseEntity.ok(script);
         }
         catch (Exception e){
@@ -102,8 +103,8 @@ public class ScriptAPI {
             if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
                 throw new Exception("auth_invalid");
             }
-            scriptService.deleteScript(command.getId());
-            return   ResponseEntity.ok("Delete successfully");
+            ResponseScript script = scriptService.deleteScript(command.getId());
+            return   ResponseEntity.ok(script);
         }
         catch (Exception e){
             return ResponseEntity.ok(baseService.returnException(e.getMessage(), ResponseBase.class));

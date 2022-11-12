@@ -3,7 +3,8 @@ package com.caovy2001.chatbot.api;
 import com.caovy2001.chatbot.entity.UserEntity;
 import com.caovy2001.chatbot.service.IBaseService;
 import com.caovy2001.chatbot.service.intent.IIntentService;
-import com.caovy2001.chatbot.service.intent.command.CommandIntentAdd;
+import com.caovy2001.chatbot.service.intent.command.CommandIntent;
+import com.caovy2001.chatbot.service.intent.command.CommandIntentDelete;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntentAdd;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 import org.apache.commons.lang3.StringUtils;
@@ -24,7 +25,7 @@ public class IntentAPI {
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @PostMapping("/add")
-    public ResponseEntity<ResponseIntentAdd> add(@RequestBody CommandIntentAdd command) {
+    public ResponseEntity<ResponseIntentAdd> add(@RequestBody CommandIntent command) {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
@@ -61,4 +62,34 @@ public class IntentAPI {
             return ResponseEntity.ok(baseService.returnException(e.toString(), ResponseIntents.class));
         }
     }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @PostMapping("/update_intent")
+    public  ResponseEntity<?> updateName(@RequestBody CommandIntent command){
+        try {
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
+                throw new Exception("auth_invalid");
+            ResponseIntents responseIntents = intentService.updateName(command, userEntity.getId());
+            return ResponseEntity.ok(responseIntents);
+        } catch (Exception e) {
+            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponseIntents.class));
+        }
+    }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @DeleteMapping()
+    public ResponseEntity<?> delete(@RequestBody CommandIntentDelete command) {
+        try {
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
+                throw new Exception("auth_invalid");
+
+            ResponseIntents responseIntents = intentService.deleteIntent(command.getId(), userEntity.getId());
+            return ResponseEntity.ok(responseIntents);
+        } catch (Exception e) {
+            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponseIntents.class));
+        }
+    }
+
 }

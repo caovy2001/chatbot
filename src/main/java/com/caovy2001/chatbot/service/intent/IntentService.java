@@ -6,14 +6,13 @@ import com.caovy2001.chatbot.entity.PatternEntity;
 import com.caovy2001.chatbot.repository.IntentRepository;
 import com.caovy2001.chatbot.repository.PatternRepository;
 import com.caovy2001.chatbot.service.BaseService;
-import com.caovy2001.chatbot.service.intent.command.CommandIntentAdd;
+import com.caovy2001.chatbot.service.intent.command.CommandIntent;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntentAdd;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,7 +26,7 @@ public class IntentService extends BaseService implements IIntentService {
     private PatternRepository patternRepository;
 
     @Override
-    public ResponseIntentAdd add(CommandIntentAdd command) {
+    public ResponseIntentAdd add(CommandIntent command) {
         if (StringUtils.isAnyBlank(command.getCode(), command.getName(), command.getUser_id())) {
             return returnException(ExceptionConstant.missing_param, ResponseIntentAdd.class);
         }
@@ -84,5 +83,26 @@ public class IntentService extends BaseService implements IIntentService {
         return ResponseIntents.builder()
                 .intent(intent)
                 .build();
+    }
+
+    @Override
+    public ResponseIntents updateName(CommandIntent command, String userId) {
+        if (command.getId() == null){
+            return  returnException(ExceptionConstant.missing_param, ResponseIntents.class);
+        }
+        ResponseIntents intent = getById(command.getId(),userId);
+        intent.getIntent().setName(command.getName());
+        intentRepository.save(intent.getIntent());
+        return ResponseIntents.builder().intent(intent.getIntent()).build();
+    }
+
+    @Override
+    public ResponseIntents deleteIntent(String id, String userId) {
+        if (id == null || userId == null){
+            return  returnException(ExceptionConstant.missing_param, ResponseIntents.class);
+        }
+        intentRepository.deleteById(id);
+        patternRepository.deleteByIntentIdAndUserId(id, userId);
+        return ResponseIntents.builder().build();
     }
 }

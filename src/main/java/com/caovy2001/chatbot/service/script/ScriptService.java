@@ -8,6 +8,7 @@ import com.caovy2001.chatbot.service.ResponseBase;
 import com.caovy2001.chatbot.service.script.command.CommandScriptAdd;
 import com.caovy2001.chatbot.service.script.command.CommandScriptDelete;
 import com.caovy2001.chatbot.service.script.command.CommandScriptUpdate;
+import com.caovy2001.chatbot.service.script.response.ResponseScript;
 import com.caovy2001.chatbot.service.script.response.ResponseScriptAdd;
 import com.caovy2001.chatbot.service.script.response.ResponseScriptGetByUserId;
 import org.apache.commons.lang3.StringUtils;
@@ -33,7 +34,7 @@ public class ScriptService extends BaseService implements IScriptService {
                 .build();
         ScriptEntity addedScript = scriptRepository.insert(script);
         return ResponseScriptAdd.builder()
-                .id(addedScript.getId())
+                .script(addedScript)
                 .build();
     }
 
@@ -52,14 +53,18 @@ public class ScriptService extends BaseService implements IScriptService {
         return scriptRepository.findById(id).orElse(null);
     }
     @Override
-    public ScriptEntity updateName(CommandScriptUpdate command) {
+    public ResponseScript updateName(CommandScriptUpdate command) {
         ScriptEntity script = scriptRepository.findById(command.getId()).orElse(null);
+        if (script == null){
+            return returnException(ExceptionConstant.item_not_found, ResponseScript.class);
+        }
         script.setName(command.getName());
-        return scriptRepository.save(script);
+        return ResponseScript.builder().script(scriptRepository.save(script)).build();
     }
 
     @Override
-    public void  deleteScript(String id) {
+    public ResponseScript  deleteScript(String id) {
         scriptRepository.deleteById(id);
+        return  ResponseScript.builder().build();
     }
 }

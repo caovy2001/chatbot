@@ -9,7 +9,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class CommandIntentAdd {
+public class CommandIntent {
+    private String id;
     private String code;
     private String user_id;
     private String name;
