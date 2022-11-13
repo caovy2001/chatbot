@@ -71,18 +71,35 @@ public class IntentService extends BaseService implements IIntentService {
 
     @Override
     public ResponseIntents getById(String id, String userId) {
-        if (StringUtils.isBlank(id))
-            return returnException(ExceptionConstant.missing_param, ResponseIntents.class);
+        //find by user id
+        if (id == null){
+            List<IntentEntity> intents = intentRepository.findByUserId(userId);
+            List<PatternEntity> patterns = patternRepository.findByIntentIdInAndUserId(
+                    intents.stream().map(IntentEntity::getId).collect(Collectors.toList()),
+                    userId);
 
-        IntentEntity  intent = intentRepository.findById(id).orElse(null);
-        List<PatternEntity> patterns = patternRepository.findByIntentIdInAndUserId(
-                intent.getId(),
-                userId);
-        intent.setPatterns(patterns);
+            for (IntentEntity intent: intents) {
+                List<PatternEntity> patternsByIntent = patterns.stream()
+                        .filter(patternEntity -> patternEntity.getIntentId().equals(intent.getId())).collect(Collectors.toList());
+                intent.setPatterns(patternsByIntent);
+            }
 
-        return ResponseIntents.builder()
-                .intent(intent)
-                .build();
+            return ResponseIntents.builder()
+                    .intents(intents)
+                    .build();
+        }
+        //find by intent id
+        else {
+            IntentEntity intent = intentRepository.findById(id).orElse(null);
+            List<PatternEntity> patterns = patternRepository.findByIntentIdInAndUserId(
+                    intent.getId(),
+                    userId);
+            intent.setPatterns(patterns);
+
+            return ResponseIntents.builder()
+                    .intent(intent)
+                    .build();
+        }
     }
 
     @Override

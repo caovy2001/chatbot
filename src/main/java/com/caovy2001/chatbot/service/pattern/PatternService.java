@@ -45,10 +45,10 @@ public class PatternService extends BaseService implements IPatternService {
     }
 
     @Override
-    public ResponsePattern getByIntentId(CommandPattern command) {
-        if (command.getIntent_id() == null){
+    public ResponsePattern getByIntentId(String intentId,String userId) {
+        if (intentId == null){
             return  returnException(ExceptionConstant.missing_param, ResponsePattern.class);
         }
-        return ResponsePattern.builder().patterns(patternRepository.findByIntentIdInAndUserId(command.getIntent_id(),command.getUser_id())).build();
+        return ResponsePattern.builder().patterns(patternRepository.findByIntentIdInAndUserId(intentId,userId)).build();
     }
 }

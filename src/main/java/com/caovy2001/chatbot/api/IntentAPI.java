@@ -39,10 +39,15 @@ public class IntentAPI {
         }
     }
 
-    @PostMapping("/user_id/{userId}")
-    public ResponseEntity<ResponseIntents> getByUserId(@PathVariable String userId) {
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @PostMapping("/user_id")
+    public ResponseEntity<ResponseIntents> getByUserId(@RequestBody CommandIntent command) {
         try {
-            ResponseIntents responseIntents = intentService.getByUserId(userId);
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
+                throw new Exception("auth_invalid");
+
+            ResponseIntents responseIntents = intentService.getByUserId(userEntity.getId());
             return ResponseEntity.ok(responseIntents);
         } catch (Exception e) {
             return ResponseEntity.ok(baseService.returnException(e.toString(), ResponseIntents.class));
@@ -51,11 +56,12 @@ public class IntentAPI {
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @GetMapping()
-    public ResponseEntity<?> getById(@RequestParam("id") String id) {
+    public ResponseEntity<?> getById(@RequestParam(value = "id", required = false) String id) {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
                 throw new Exception("auth_invalid");
+
             ResponseIntents responseIntents = intentService.getById(id, userEntity.getId());
             return ResponseEntity.ok(responseIntents);
         } catch (Exception e) {

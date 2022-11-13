@@ -79,10 +79,13 @@ public class NodeService extends BaseService implements INodeService{
 
     @Override
     public ResponseNode addConditionMapping(CommandNodeAddConditionMapping command) {
-        if (command.getCondition_mapping() == null){
+        if (command.getCondition_mapping() == null || command.getNode_id() == null){
             return  returnException(ExceptionConstant.missing_param, ResponseNode.class);
         }
         NodeEntity node = nodeRepository.findById(command.getNode_id()).orElse(null);
+        if (node == null){
+            return  returnException(ExceptionConstant.item_not_found, ResponseNode.class);
+        }
         node.getConditionMapping().add(command.getCondition_mapping());
         return ResponseNode.builder().nodes(nodeRepository.save(node)).build();
     }

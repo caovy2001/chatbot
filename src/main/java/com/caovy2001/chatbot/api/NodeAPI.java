@@ -29,7 +29,7 @@ public class NodeAPI {
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @GetMapping
-    public  ResponseEntity<?> getScript(@RequestParam(value = "id", required = false) String id, @RequestParam(value = "script_id",required = false) String scriptId){
+    public  ResponseEntity<?> getNode(@RequestParam(value = "id", required = false) String id, @RequestParam(value = "script_id",required = false) String scriptId){
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){

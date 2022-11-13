@@ -44,14 +44,13 @@ public class PatternAPI {
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @GetMapping
-    public ResponseEntity<ResponsePattern> getByIntentId(@RequestBody CommandPattern command) {
+    public ResponseEntity<ResponsePattern> getByIntentId(@RequestParam("intent_id") String intentId) {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
                 throw new Exception("auth_invalid");
 
-            command.setUser_id(userEntity.getId());
-            ResponsePattern patterns = patternService.getByIntentId(command);
+            ResponsePattern patterns = patternService.getByIntentId(intentId, userEntity.getId());
             return ResponseEntity.ok(patterns);
         } catch (Exception e) {
             return ResponseEntity.ok(baseService.returnException(e.toString(), ResponsePattern.class));

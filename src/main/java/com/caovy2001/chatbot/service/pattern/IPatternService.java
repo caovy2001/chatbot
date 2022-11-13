@@ -9,5 +9,5 @@ import com.caovy2001.chatbot.service.pattern.response.ResponsePatternAdd;
 public interface IPatternService extends IBaseService {
     ResponsePatternAdd add(CommandPatternAdd command);
     ResponsePatternAdd delete(String command);
-    ResponsePattern getByIntentId(CommandPattern command);
+    ResponsePattern getByIntentId(String intentId,String userId);
 }
