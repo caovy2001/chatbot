@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 
@@ -37,6 +38,8 @@ public class TrainingService extends BaseService implements ITrainingService {
 
     @Autowired
     private ITrainingHistoryService trainingHistoryService;
+
+    private final ResourceBundle resourceBundle = ResourceBundle.getBundle("custom");
 
     @Override
     public ResponseTrainingTrain train(CommandTrainingTrain command) {
@@ -72,7 +75,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                 HttpEntity<String> request =
                         new HttpEntity<>(commandBody, headers);
                 ResponseTrainingTrain responseTrainingTrain =
-                        restTemplate.postForObject("http://localhost:5000/train", request, ResponseTrainingTrain.class);
+                        restTemplate.postForObject(resourceBundle.getString("training.server") + "/train", request, ResponseTrainingTrain.class);
 
                 if (responseTrainingTrain == null || StringUtils.isBlank(responseTrainingTrain.getTrainingHistoryId())) {
                     throw new Exception("train_fail");
