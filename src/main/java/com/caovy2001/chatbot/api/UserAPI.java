@@ -39,7 +39,7 @@ public class UserAPI {
         }
     }
 
-        @PostMapping("/sign_up")
+    @PostMapping("/sign_up")
     public ResponseEntity<ResponseUserSignUp> signUp(@RequestBody CommandUserSignUp commandUserSignUp) throws Exception {
         try {
             ResponseUserSignUp responseUserSignUp = userService.signUp(commandUserSignUp);

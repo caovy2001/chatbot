@@ -1,6 +1,6 @@
 package com.caovy2001.chatbot.service.intent.command;
 
-import com.caovy2001.chatbot.entity.PatternEntity;
+import com.caovy2001.chatbot.entity.IntentEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,12 +9,10 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
-public class CommandIntent {
-    private String id;
-    private String code;
-    private String user_id;
-    private String name;
+public class CommandIntentAddMany {
+    private String userId;
+    private List<IntentEntity> intents;
 }

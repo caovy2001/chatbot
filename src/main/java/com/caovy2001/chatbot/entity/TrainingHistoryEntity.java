@@ -6,37 +6,34 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
-
-import java.util.List;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Document("intent")
-public class IntentEntity extends BaseEntity{
+@Document("training_history")
+public class TrainingHistoryEntity {
     @Id
     private String id;
 
-    @Field("code")
-    @Indexed
-    private String code;
-
     @Field("user_id")
+    @Indexed
     private String userId;
 
-    @Field("name")
-    private String name;
+    @Field("username")
+    private String username;
 
-    @Transient
-    private List<PatternEntity> patterns;
+    @Field("status")
+    @Builder.Default
+    private EStatus status = EStatus.TRAINING;
 
-    @Transient
-    private List<ConditionMappingEntity> conditionMapping;
-
+    public enum EStatus {
+        TRAINING,
+        SUCCESS,
+        FAILURE
+    }
 }

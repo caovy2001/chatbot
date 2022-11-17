@@ -4,6 +4,7 @@ import com.caovy2001.chatbot.entity.UserEntity;
 import com.caovy2001.chatbot.service.IBaseService;
 import com.caovy2001.chatbot.service.intent.IIntentService;
 import com.caovy2001.chatbot.service.intent.command.CommandIntent;
+import com.caovy2001.chatbot.service.intent.command.CommandIntentAddMany;
 import com.caovy2001.chatbot.service.intent.command.CommandIntentDelete;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntentAdd;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
@@ -33,6 +34,22 @@ public class IntentAPI {
 
             command.setUser_id(userEntity.getId());
             ResponseIntentAdd responseIntentAdd = intentService.add(command);
+            return ResponseEntity.ok(responseIntentAdd);
+        } catch (Exception e) {
+            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponseIntentAdd.class));
+        }
+    }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @PostMapping("/add_many")
+    public ResponseEntity<ResponseIntentAdd> addMany(@RequestBody CommandIntentAddMany command) {
+        try {
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
+                throw new Exception("auth_invalid");
+
+            command.setUserId(userEntity.getId());
+            ResponseIntentAdd responseIntentAdd = intentService.addMany(command);
             return ResponseEntity.ok(responseIntentAdd);
         } catch (Exception e) {
             return ResponseEntity.ok(baseService.returnException(e.toString(), ResponseIntentAdd.class));

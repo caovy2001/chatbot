@@ -7,12 +7,17 @@ import com.caovy2001.chatbot.repository.IntentRepository;
 import com.caovy2001.chatbot.repository.PatternRepository;
 import com.caovy2001.chatbot.service.BaseService;
 import com.caovy2001.chatbot.service.intent.command.CommandIntent;
+import com.caovy2001.chatbot.service.intent.command.CommandIntentAddMany;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntentAdd;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
+import com.caovy2001.chatbot.service.pattern.IPatternService;
+import com.caovy2001.chatbot.service.pattern.command.CommandPatternAdd;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,6 +29,9 @@ public class IntentService extends BaseService implements IIntentService {
 
     @Autowired
     private PatternRepository patternRepository;
+
+    @Autowired
+    private IPatternService patternService;
 
     @Override
     public ResponseIntentAdd add(CommandIntent command) {
@@ -46,6 +54,41 @@ public class IntentService extends BaseService implements IIntentService {
         return ResponseIntentAdd.builder()
                 .id(addedIntent.getId())
                 .build();
+    }
+
+    @Override
+    public ResponseIntentAdd addMany(CommandIntentAddMany command) {
+        if (CollectionUtils.isEmpty(command.getIntents()) || StringUtils.isBlank(command.getUserId())) {
+            return this.returnException(ExceptionConstant.missing_param, ResponseIntentAdd.class);
+        }
+        ResponseIntentAdd responseIntentAdd = ResponseIntentAdd.builder()
+                .ids(new ArrayList<>())
+                .build();
+        for(IntentEntity intent: command.getIntents()) {
+            IntentEntity existIntent = intentRepository.findByCodeAndUserId(intent.getCode(), command.getUserId()).orElse(null);
+            if (existIntent != null) {
+                intent.setId(existIntent.getId());
+            } else {
+                intent.setId(null);
+            }
+
+            intent.setUserId(command.getUserId());
+            IntentEntity savedIntent = intentRepository.save(intent);
+            responseIntentAdd.getIds().add(savedIntent.getId());
+
+            if (!CollectionUtils.isEmpty(intent.getPatterns())) {
+                for (PatternEntity pattern: intent.getPatterns()) {
+                    CommandPatternAdd commandPatternAdd = CommandPatternAdd.builder()
+                            .user_id(command.getUserId())
+                            .content(pattern.getContent())
+                            .intent_id(savedIntent.getId())
+                            .build();
+                    patternService.add(commandPatternAdd);
+                }
+            }
+        }
+
+        return responseIntentAdd;
     }
 
     @Override
