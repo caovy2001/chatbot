@@ -14,6 +14,6 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ResponseIntents extends ResponseBase {
-    List<IntentEntity> intents;
-    IntentEntity intent;
+    private List<IntentEntity> intents;
+    private IntentEntity intent;
 }
