@@ -13,13 +13,10 @@ import com.caovy2001.chatbot.service.script.response.ResponseScriptAdd;
 import com.caovy2001.chatbot.service.script.response.ResponseScriptGetByUserId;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/script")
@@ -32,7 +29,7 @@ public class ScriptAPI {
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @PostMapping("/add")
-    public ResponseEntity<ResponseScriptAdd> add(@RequestBody CommandScriptAdd command){
+    public ResponseEntity<ResponseScriptAdd> add(@RequestBody CommandScriptAdd command) {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
@@ -56,26 +53,26 @@ public class ScriptAPI {
                 throw new Exception("auth_invalid");
             }
             ScriptEntity script = scriptService.getScriptById(id);
-            return  ResponseEntity.ok(script);
+            return ResponseEntity.ok(script);
         }
         catch (Exception e){
-            return ResponseEntity.ok(baseService.returnException(e.getMessage(),ResponseScriptGetByUserId.class));
+            return ResponseEntity.ok(baseService.returnException(e.getMessage(), ResponseScriptGetByUserId.class));
         }
     }
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-    @GetMapping("user_id")
-    public ResponseEntity<?> getScriptByUserId(){
+    @GetMapping("/user_id")
+    public ResponseEntity<ResponseScriptGetByUserId> getScriptByUserId(){
         try{
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
                 throw new Exception("auth_invalid");
             }
             ResponseScriptGetByUserId scripts = scriptService.getScriptByUserId(userEntity.getId());
-            return  ResponseEntity.ok(scripts);
+            return ResponseEntity.ok(scripts);
         }
         catch (Exception e){
-            return ResponseEntity.ok(baseService.returnException(e.getMessage(),ResponseBase.class));
+            return ResponseEntity.ok(baseService.returnException(e.getMessage(), ResponseScriptGetByUserId.class));
         }
     }
 
@@ -88,7 +85,7 @@ public class ScriptAPI {
                 throw new Exception("auth_invalid");
             }
             ResponseScript script = scriptService.updateName(command);
-            return  ResponseEntity.ok(script);
+            return ResponseEntity.ok(script);
         }
         catch (Exception e){
             return ResponseEntity.ok(baseService.returnException(e.getMessage(), ResponseBase.class));

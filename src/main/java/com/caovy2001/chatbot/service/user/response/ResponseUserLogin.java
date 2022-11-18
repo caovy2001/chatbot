@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ResponseUserLogin extends ResponseBase {
+    private String userId;
     private String username;
     private String token;
 }
