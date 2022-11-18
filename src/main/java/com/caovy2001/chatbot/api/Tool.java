@@ -100,7 +100,7 @@ public class Tool {
             IntentEntity intent = IntentEntity.builder()
                     .patterns(new ArrayList<>())
                     .build();
-            File myObj = new File("patterns/critical_evaluation.txt");
+            File myObj = new File("patterns/say_age.txt");
             Scanner myReader = new Scanner(myObj);
             int line = 1;
             while (myReader.hasNextLine()) {
