@@ -75,7 +75,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                 HttpEntity<String> request =
                         new HttpEntity<>(commandBody, headers);
                 ResponseTrainingTrain responseTrainingTrain =
-                        restTemplate.postForObject(resourceBundle.getString("training.server") + "/train", request, ResponseTrainingTrain.class);
+                        restTemplate.postForObject(resourceBundle.getString("training.server.local") + "/train", request, ResponseTrainingTrain.class);
 
                 if (responseTrainingTrain == null || StringUtils.isBlank(responseTrainingTrain.getTrainingHistoryId())) {
                     throw new Exception("train_fail");

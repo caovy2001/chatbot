@@ -57,7 +57,7 @@ public class IntentAPI {
     }
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-    @PostMapping("/user_id")
+    @PostMapping("/get_all/by_user_id")
     public ResponseEntity<ResponseIntents> getByUserId(@RequestBody CommandIntent command) {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();

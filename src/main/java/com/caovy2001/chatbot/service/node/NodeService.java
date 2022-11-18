@@ -1,7 +1,6 @@
 package com.caovy2001.chatbot.service.node;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
-import com.caovy2001.chatbot.entity.ConditionMappingEntity;
 import com.caovy2001.chatbot.entity.NodeEntity;
 import com.caovy2001.chatbot.repository.NodeRepository;
 import com.caovy2001.chatbot.service.BaseService;
@@ -13,7 +12,6 @@ import com.caovy2001.chatbot.service.node.response.ResponseNode;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +20,7 @@ import java.util.stream.Collectors;
 @Service
 public class NodeService extends BaseService implements INodeService{
     @Autowired
-    NodeRepository nodeRepository;
+    private NodeRepository nodeRepository;
 
     @Override
     public ResponseNode add(CommandNodeAdd command) {
@@ -31,7 +29,7 @@ public class NodeService extends BaseService implements INodeService{
         }
 
         NodeEntity nodeEntity = NodeEntity.builder().message(command.getMessage())
-                .conditionMapping(command.getCondition_mapping())
+                .conditionMappings(command.getCondition_mapping())
                 .scriptId(command.getScript_id()).build();
 
         return ResponseNode.builder().nodes(nodeRepository.insert(nodeEntity)).build();
@@ -78,6 +76,21 @@ public class NodeService extends BaseService implements INodeService{
     }
 
     @Override
+    public void deleteMany(List<String> ids) {
+        nodeRepository.deleteAllById(ids);
+    }
+
+    @Override
+    public List<NodeEntity> getAllByScriptId(String scriptId) {
+        return nodeRepository.findByScriptId(scriptId);
+    }
+
+    @Override
+    public List<NodeEntity> addMany(List<NodeEntity> nodes) {
+        return nodeRepository.insert(nodes);
+    }
+
+    @Override
     public ResponseNode addConditionMapping(CommandNodeAddConditionMapping command) {
         if (command.getCondition_mapping() == null || command.getNode_id() == null){
             return  returnException(ExceptionConstant.missing_param, ResponseNode.class);
@@ -86,7 +99,7 @@ public class NodeService extends BaseService implements INodeService{
         if (node == null){
             return  returnException(ExceptionConstant.item_not_found, ResponseNode.class);
         }
-        node.getConditionMapping().add(command.getCondition_mapping());
+        node.getConditionMappings().add(command.getCondition_mapping());
         return ResponseNode.builder().nodes(nodeRepository.save(node)).build();
     }
 
@@ -96,7 +109,7 @@ public class NodeService extends BaseService implements INodeService{
             return  returnException(ExceptionConstant.missing_param, ResponseNode.class);
         }
         NodeEntity node = nodeRepository.findById(command.getNode_id()).orElse(null);
-        node.getConditionMapping()
+        node.getConditionMappings()
                 .stream().
                 filter(p-> p.getId().equals(command.getCondition_mapping_id())).collect(Collectors.toList())
                 .get(0)
@@ -111,7 +124,7 @@ public class NodeService extends BaseService implements INodeService{
             return  returnException(ExceptionConstant.missing_param, ResponseNode.class);
         }
         NodeEntity node = nodeRepository.findById(command.getNode_id()).orElse(null);
-        node.getConditionMapping()
+        node.getConditionMappings()
                 .stream().
                 filter(p-> p.getId().equals(command.getCondition_mapping_id())).collect(Collectors.toList())
                 .get(0)
@@ -125,7 +138,7 @@ public class NodeService extends BaseService implements INodeService{
             return  returnException(ExceptionConstant.missing_param, ResponseNode.class);
         }
         NodeEntity node = nodeRepository.findById(command.getNode_id()).orElse(null);
-        node.getConditionMapping()
+        node.getConditionMappings()
                 .stream().
                 filter(p-> p.getId().equals(command.getCondition_mapping_id())).collect(Collectors.toList())
                 .get(0)

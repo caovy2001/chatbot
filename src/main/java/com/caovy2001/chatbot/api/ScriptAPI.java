@@ -1,5 +1,6 @@
 package com.caovy2001.chatbot.api;
 
+import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.ScriptEntity;
 import com.caovy2001.chatbot.entity.UserEntity;
 import com.caovy2001.chatbot.service.BaseService;
@@ -45,13 +46,17 @@ public class ScriptAPI {
     }
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-    @GetMapping
-    public ResponseEntity<?> getScriptById(@RequestParam("id") String id){
+    @GetMapping("/get/{id}")
+    public ResponseEntity<?> getScriptById(@PathVariable("id") String id){
         try{
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
                 throw new Exception("auth_invalid");
             }
+            if (StringUtils.isBlank(id)) {
+                throw new Exception(ExceptionConstant.missing_param);
+            }
+
             ScriptEntity script = scriptService.getScriptById(id);
             return ResponseEntity.ok(script);
         }
@@ -61,7 +66,7 @@ public class ScriptAPI {
     }
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-    @GetMapping("/user_id")
+    @GetMapping("/get_all/by_user_id")
     public ResponseEntity<ResponseScriptGetByUserId> getScriptByUserId(){
         try{
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -77,14 +82,16 @@ public class ScriptAPI {
     }
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-    @PostMapping
-    public ResponseEntity<?> updateScriptName(@RequestBody CommandScriptUpdate command){
+    @PostMapping("/update")
+    public ResponseEntity<?> update(@RequestBody CommandScriptUpdate command){
         try{
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
                 throw new Exception("auth_invalid");
             }
-            ResponseScript script = scriptService.updateName(command);
+
+            command.setUser_id(userEntity.getId());
+            ResponseScript script = scriptService.update(command);
             return ResponseEntity.ok(script);
         }
         catch (Exception e){

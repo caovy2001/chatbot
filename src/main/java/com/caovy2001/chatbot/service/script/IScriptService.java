@@ -19,4 +19,5 @@ public interface IScriptService extends IBaseService {
     ResponseScript updateName(CommandScriptUpdate command);
     ResponseScript deleteScript(String id);
 
+    ResponseScript update(CommandScriptUpdate command);
 }

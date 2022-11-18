@@ -18,9 +18,12 @@ import java.util.List;
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Document("node")
-public class NodeEntity {
+public class NodeEntity extends BaseEntity {
     @Id
     private String id;
+
+    @Field("node_id")
+    private String nodeId;
 
     @Field("message")
     private String message;
@@ -28,6 +31,6 @@ public class NodeEntity {
     @Field("script_id")
     private String scriptId;
 
-    @Field("condition_mapping")
-    private List<ConditionMappingEntity> conditionMapping;
+    @Field("condition_mappings")
+    private List<ConditionMappingEntity> conditionMappings;
 }
