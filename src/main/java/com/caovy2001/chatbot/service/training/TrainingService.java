@@ -172,9 +172,28 @@ public class TrainingService extends BaseService implements ITrainingService {
         String intentId = responseTrainingPredictFromAI.getIntentId();
         ConditionMappingEntity conditionMappingEntity = currNode.getConditionMappings().stream()
                 .filter(cm -> intentId.equals(cm.getIntent_id())).findFirst().orElse(null);
-        if () {
-
+        if (conditionMappingEntity == null) {
+            return ResponseTrainingPredict.builder()
+                    .currentNodeId(currNode.getNodeId())
+                    .message(null)
+                    .build();
         }
+
+        if (CollectionUtils.isEmpty(conditionMappingEntity.getNext_node_ids())) {
+            return this.returnException(ExceptionConstant.error_occur, ResponseTrainingPredict.class);
+        }
+
+        String nextNodeId = conditionMappingEntity.getNext_node_ids().get(0);
+        NodeEntity nextNode = nodes.stream()
+                .filter(nodeEntity -> nodeEntity.getNodeId().equals(nextNodeId)).findFirst().orElse(null);
+        if (nextNode == null) {
+            return this.returnException(ExceptionConstant.error_occur, ResponseTrainingPredict.class);
+        }
+
+        return ResponseTrainingPredict.builder()
+                .currentNodeId(nextNodeId)
+                .message(nextNode.getMessage())
+                .build();
 
 
     }

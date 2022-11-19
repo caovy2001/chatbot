@@ -44,7 +44,7 @@ public class TrainingAPI {
         }
     }
 
-    @PostMapping("/train")
+    @PostMapping("/predict")
     public ResponseEntity<ResponseTrainingPredict> predict(@RequestBody CommandTrainingPredict command) {
         try {
             if (StringUtils.isBlank(command.getSecretKey())) {

@@ -76,4 +76,9 @@ public class UserService extends BaseService implements IUserService{
                 .build();
     }
 
+    @Override
+    public UserEntity getBySecretKey(String secretKey) {
+        return userRepository.findBySecretKey(secretKey).orElse(null);
+    }
+
 }

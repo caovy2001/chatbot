@@ -15,4 +15,6 @@ public interface UserRepository extends MongoRepository<UserEntity, String> {
 
     Optional<UserEntity> findByToken(String token);
 
+    Optional<UserEntity> findBySecretKey(String secretKey);
+
 }

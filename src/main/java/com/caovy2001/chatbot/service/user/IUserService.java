@@ -15,4 +15,6 @@ public interface IUserService extends IBaseService {
     UserEntity getById(String id);
 
     ResponseUserSignUp signUp(CommandUserSignUp commandUserSignUp) throws Exception;
+
+    UserEntity getBySecretKey(String secretKey);
 }
