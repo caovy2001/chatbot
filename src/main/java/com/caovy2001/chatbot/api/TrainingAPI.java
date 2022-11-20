@@ -9,6 +9,7 @@ import com.caovy2001.chatbot.service.training.command.CommandTrainingPredict;
 import com.caovy2001.chatbot.service.training.command.CommandTrainingTrain;
 import com.caovy2001.chatbot.service.training.response.ResponseTrainingPredict;
 import com.caovy2001.chatbot.service.training.response.ResponseTrainingTrain;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/training")
+@Slf4j
 public class TrainingAPI {
     @Autowired
     private ITrainingService trainingService;
@@ -60,5 +62,16 @@ public class TrainingAPI {
         } catch (Exception e){
             return ResponseEntity.ok(baseService.returnException(e.getMessage(), ResponseTrainingPredict.class));
         }
+    }
+
+    @PostMapping("/train_done")
+    public ResponseEntity<Boolean> trainDone(@RequestBody CommandTrainingTrain command) {
+        log.info("[trainDone] Receive message: {}", command);
+        if (StringUtils.isBlank(command.getTrainingHistoryId())) {
+            log.info("[trainDone]: training_history_id_null");
+            return ResponseEntity.ok(false);
+        }
+
+        return ResponseEntity.ok(trainingService.trainDone(command));
     }
 }

@@ -1,4 +1,5 @@
-NÓI NGHỀ NGHIỆP
+Nói nghề nghiệp
+---
 xe ôm.
 võ sĩ giác đấu.
 viên chức.
@@ -67,7 +68,6 @@ caddie.
 bồi bàn.
 bệnh nghề nghiệp.
 bảo mẫu.
-
 tôi làm bên lĩnh vực  xe ôm.
 tôi làm bên lĩnh vực  võ sĩ giác đấu.
 tôi làm bên lĩnh vực  viên chức.
@@ -230,7 +230,6 @@ anh làm thằng mõ.
 anh làm socialite.
 anh làm siêu sao.
 anh làm quân sư.
-
 tôi làm quản lý xây dựng.
 tôi làm nhân viên pha cà phê.
 tôi làm nhà tiếp thị.
@@ -275,8 +274,8 @@ tôi làm bảo mẫu.
 tôi làm công chứng viên.
 =============================================================================
 
-
-ĐÁNH GIÁ CHÊ
+Đánh giá chê
+---
 bên em tư vấn cũng không rõ gì cả.
 hết nói nổi rồi anh bảo sửa nhanh cho anh mà hoài sao chưa sửa.
 bên em làm vậy làm mất khách hàng bên anh rồi.
@@ -317,8 +316,8 @@ sao cái app chị tắt màn hình là không nhận được cuộc gọi mớ
 anh thấy em làm sao mà răng anh nó bị sâu lại rồi đấy.
 =============================================================================
 
-
-ĐÁNH GIÁ TỐT
+Đánh giá tốt
+---
 chị thấy càng ngày khách biết đến công ty chị nhiều hơn đấy.
 ờ em thấy hết bị rè rè rồi gọi nghe rõ ghê luôn.
 anh thấy web giờ nhanh giờ hơn hẳn luôn á.
@@ -350,12 +349,14 @@ hai răng anh hết đau hẳn rồi cảm ơn em.
 app giờ ngon rồi em hết lác hẳn.
 =============================================================================
 
-ĐỒNG Ý XÁC NHẬN THÔNG TIN
+Đồng ý xác nhận thông tin
+---
 ok em chị đang rảnh em nói đi
 ừ ok em
 =============================================================================
 
-HỎI GIÁ
+Hỏi giá
+---
 thế cả hết là bao tiền.
 chi phí ra sao.
 giá thành hiện nay rơi vào khoàng nào.
@@ -383,7 +384,8 @@ giá nó bao nhiêu đây để anh còn tính xem.
 này giá sao em.
 =============================================================================
 
-XÁC NHẬN SAI
+Xác nhận sai
+---
 có chỗ như hơi sai.
 anh thấy nó sai sai sao ấy.
 không đúng.
@@ -408,7 +410,8 @@ sai bét luôn.
 sai rồi em.
 =============================================================================
 
-XÁC NHẬN ĐÚNG
+Xác nhận đúng
+---
 anh thấy đúng hết rồi đó em.
 anh thấy đúng rồi đó.
 vậy là đúng rồi đó.
@@ -436,7 +439,8 @@ chính xác là như vậy.
 đúng rồi em.
 =============================================================================
 
-NÓI NƠI LÀM VIỆC
+Nói nơi làm việc
+---
 em làm tại VIHAT anh à.
 mình làm ở Vinaphone nhé bạn.
 tôi làm ở Mytel bạn à.
@@ -445,7 +449,8 @@ tôi đang làm việc tại Viettel.
 tôi đang làm việc tại VIHAT.
 =============================================================================
 
-BÁO BỆNH
+Báo bệnh
+---
 anh khám xem có vô sinh hay không.
 anh hay đau viêm vai gáy.
 mấy nay trở trời anh hay bị nhức xương khớp lắm.
@@ -512,7 +517,8 @@ anh bị đau bụng.
 anh bị đau lưng.
 =============================================================================
 
-NÓI LOẠI BÁC SỸ
+Nói loại bác sỹ
+---
 cho anh giáo sư nhé.
 trưởng khoa đi nhé.
 giáo sư đi nhé.
@@ -531,7 +537,8 @@ bác sỹ trưởng khoa.
 bác sỹ chuyên khoa.
 =============================================================================
 
-TỪ CHỐI
+Từ chối
+---
 anh đang bận em gọi lúc khác nhé.
 chắc chắn không muốn rồi.
 chắc là không đâu.
@@ -564,7 +571,8 @@ không em.
 không.
 =============================================================================
 
-ĐỒNG Ý
+Đồng ý
+---
 ừ em tư vấn giúp anh nhé.
 ừ em tư vấn giúp anh nhé.
 nói đi em.
@@ -609,7 +617,8 @@ có chứ em.
 yes.
 =============================================================================
 
-ĐẶT CÂU HỎI
+Đặt câu hỏi
+---
 anh làm VNG em ơi .
 em tên gì.
 có gì không.
@@ -695,7 +704,8 @@ là sao em.
 sao sao.
 =============================================================================
 
-TỪ CHỐI DỊCH VỤ
+Từ chối dịch vụ
+---
 anh làm ở Stringee e ơi .
 con anh đi khám giun sán á mà.
 cảm ơn em anh không có nhu cầu.
@@ -822,7 +832,8 @@ mắc lắm em ơi anh không tham gia đâu.
 bên em bán giá này thì ai mà mua nổi.
 =============================================================================
 
-NÓI SỐ ĐIỆN THOẠI
+Nói số điện thoại
+---
 18003636.
 1900369636.
 0965085696.
@@ -854,7 +865,8 @@ cần thì em gọi số này nè 0375465265.
 anh còn một số nữa là 0965236367.
 =============================================================================
 
-NÓI TÊN
+Nói tên
+---
 anh nhân đây chứ ai.
 anh là tính đây.
 Tôi tên là Nhân.
@@ -1278,7 +1290,8 @@ cho em hỏi phải số điên thoại của anh duy không ạ.
 họ và tên chị là thái thùy linh.
 =============================================================================
 
-NÓI EMAIL
+Nói email
+---
 em gửi báo giá qua mail này cho chị nhé bchau@gmailcom.
 tài khoản đăng nhập trên hệ thống bên em là uy2445@gmailcom.
 mail thông tin cho chị qua mail này nha trangnguyen123@gmailcom.
@@ -1297,7 +1310,8 @@ mail khannn@gmailcom của em đang bị lỗi anh kiểm tra giúp em với
 cái mail huynhhieumin726@studenthcmuseduvn của em là được nhà trường cấp cho.
 =============================================================================
 
-ĐƯA RA LỜI HẸN
+Đưa ra lời hẹn
+---
 ồn quá chả nghe được gì tối rồi anh gọi lại cho.
 em đang học không nghe máy được em gọi lại sau.
 tối về anh gọi lại cho.
@@ -1581,7 +1595,8 @@ sau khi hoàn tất dự án bên em sẽ nghiệm thu trong 7 ngày nếu khôn
 ok vậy có gì chị tranh thủ chạy qua bên em nhận voucher nha.
 =============================================================================
 
-NÓI TUỔI
+Nói tuổi
+---
 ờ năm nay anh 35 nhé.
 ờ năm nay anh 35 em ơi.
 ờ năm nay anh 50 em ơi.
@@ -1639,7 +1654,8 @@ dạ 22 tuổi ạ.
 bé trai 16 tuổi bé gái thì 10 tuổi.
 =============================================================================
 
-NÓI ĐỊA CHỈ
+Nói địa chỉ
+---
 2 tuần sau gặp nhau ở đường phạm văn đồng thủ đức.
 trên hoá đơn em ghi đúng địa chỉ này giùm anh 123 nguyễn hồng đào phường 14 quận tân bình thành phố hồ chí minh việt nam.
 đầu tháng tới anh có chuyến thiện nguyện dưới bờ xe thạnh phú châu thành tiền giang.

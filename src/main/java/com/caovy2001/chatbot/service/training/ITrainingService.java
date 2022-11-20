@@ -10,4 +10,6 @@ public interface ITrainingService extends IBaseService {
     ResponseTrainingTrain train(CommandTrainingTrain command);
 
     ResponseTrainingPredict predict(CommandTrainingPredict command);
+
+    Boolean trainDone(CommandTrainingTrain command);
 }

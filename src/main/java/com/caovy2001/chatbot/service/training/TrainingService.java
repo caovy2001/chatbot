@@ -82,37 +82,37 @@ public class TrainingService extends BaseService implements ITrainingService {
         }
 
         // Gửi request sang python để thực hiên train
-        CompletableFuture.runAsync(() -> {
-            try {
-                command.setIntents(responseIntents.getIntents());
-                command.setTrainingHistoryId(responseTrainingHistoryAdd.getId());
-                RestTemplate restTemplate = new RestTemplate();
-                HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.APPLICATION_JSON);
+        try {
+            command.setIntents(responseIntents.getIntents());
+            command.setTrainingHistoryId(responseTrainingHistoryAdd.getId());
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
 
-                String commandBody = objectMapper.writeValueAsString(command);
-                HttpEntity<String> request =
-                        new HttpEntity<>(commandBody, headers);
-                ResponseTrainingTrain responseTrainingTrain =
-                        restTemplate.postForObject(resourceBundle.getString("training.server") + "/train", request, ResponseTrainingTrain.class);
+            String commandBody = objectMapper.writeValueAsString(command);
+//            log.info("[train]: Send training request: {}", commandBody);
 
-                if (responseTrainingTrain == null || StringUtils.isBlank(responseTrainingTrain.getTrainingHistoryId())) {
-                    throw new Exception("train_fail");
-                }
-                ResponseTrainingHistory responseTrainingHistory = trainingHistoryService.updateStatus(CommandTrainingHistory.builder()
-                        .id(responseTrainingTrain.getTrainingHistoryId())
-                        .userId(command.getUserId())
-                        .status(TrainingHistoryEntity.EStatus.SUCCESS)
-                        .build());
+            HttpEntity<String> request =
+                    new HttpEntity<>(commandBody, headers);
+            ResponseTrainingTrain responseTrainingTrain =
+                    restTemplate.postForObject(resourceBundle.getString("training.server") + "/train", request, ResponseTrainingTrain.class);
 
-                if (responseTrainingHistory == null) {
-                    throw new Exception("update_status_training_history_fail");
-                }
-            } catch (Throwable throwable) {
-                log.error("[{}|train]: {}", command.getUserId(), throwable.getMessage());
-            }
-        }, Executors.newSingleThreadExecutor());
+            log.info("[train]: Training response : {}", responseTrainingTrain);
+//            if (responseTrainingTrain == null || StringUtils.isBlank(responseTrainingTrain.getTrainingHistoryId())) {
+//                throw new Exception("train_fail");
+//            }
+//                ResponseTrainingHistory responseTrainingHistory = trainingHistoryService.updateStatus(CommandTrainingHistory.builder()
+//                        .id(responseTrainingTrain.getTrainingHistoryId())
+//                        .userId(command.getUserId())
+//                        .status(TrainingHistoryEntity.EStatus.SUCCESS)
+//                        .build());
 
+//                if (responseTrainingHistory == null) {
+//                    throw new Exception("update_status_training_history_fail");
+//                }
+        } catch (Throwable throwable) {
+            log.error("[{}|train]: {}", command.getUserId(), throwable.getMessage());
+        }
         return ResponseTrainingTrain.builder()
                 .trainingHistoryId(responseTrainingHistoryAdd.getId())
                 .build();
@@ -180,21 +180,41 @@ public class TrainingService extends BaseService implements ITrainingService {
         }
 
         if (CollectionUtils.isEmpty(conditionMappingEntity.getNext_node_ids())) {
-            return this.returnException(ExceptionConstant.error_occur, ResponseTrainingPredict.class);
+            return ResponseTrainingPredict.builder()
+                    .currentNodeId("_END")
+                    .message(null)
+                    .build();
         }
 
         String nextNodeId = conditionMappingEntity.getNext_node_ids().get(0);
         NodeEntity nextNode = nodes.stream()
                 .filter(nodeEntity -> nodeEntity.getNodeId().equals(nextNodeId)).findFirst().orElse(null);
         if (nextNode == null) {
-            return this.returnException(ExceptionConstant.error_occur, ResponseTrainingPredict.class);
+            return ResponseTrainingPredict.builder()
+                    .currentNodeId("_END")
+                    .message(null)
+                    .build();
         }
 
         return ResponseTrainingPredict.builder()
                 .currentNodeId(nextNodeId)
                 .message(nextNode.getMessage())
                 .build();
+    }
 
+    @Override
+    public Boolean trainDone(CommandTrainingTrain command) {
+        ResponseTrainingHistory responseTrainingHistory = trainingHistoryService.updateStatus(CommandTrainingHistory.builder()
+                .id(command.getTrainingHistoryId())
+                .userId(command.getUserId())
+                .status(TrainingHistoryEntity.EStatus.SUCCESS)
+                .build());
 
+        if (responseTrainingHistory == null ||
+                !TrainingHistoryEntity.EStatus.SUCCESS.equals(responseTrainingHistory.getStatus())) {
+            return false;
+        }
+
+        return true;
     }
 }

@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -26,7 +27,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.text.Normalizer;
 import java.util.*;
+import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/tool")
@@ -97,25 +100,41 @@ public class Tool {
     @GetMapping("/tool2")
     public ResponseEntity<Boolean> tool2() {
         try {
-            IntentEntity intent = IntentEntity.builder()
-                    .patterns(new ArrayList<>())
-                    .build();
-            File myObj = new File("patterns/say_age.txt");
+            List<IntentEntity> intentEntities = new ArrayList<>();
+            IntentEntity intent = null;
+            File myObj = new File("patterns/patterns_vi.txt");
             Scanner myReader = new Scanner(myObj);
-            int line = 1;
+            boolean isNewIntent = true;
             while (myReader.hasNextLine()) {
                 String data = myReader.nextLine();
+                if (StringUtils.isBlank(data)) continue;
 
-                // lay intent
-                if (line == 1) {
+                if (isNewIntent) {
+                    intent = IntentEntity.builder()
+                            .patterns(new ArrayList<>())
+                            .build();
                     String intentName = data.trim();
                     String intentCode = data.trim().toLowerCase();
                     while (intentCode.contains(" ")) {
                         intentCode = intentCode.replace(" ", "_");
+                        intentCode = intentCode.replace("đ", "d");
+                        intentCode = intentCode.replace("Đ", "D");
                     }
+
+                    intentCode = Normalizer.normalize(intentCode, Normalizer.Form.NFD);
+                    Pattern pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+                    intentCode = pattern.matcher(intentCode).replaceAll("");
+
                     intent.setName(intentName);
                     intent.setCode(intentCode);
-                    line++;
+                    isNewIntent = false;
+                    continue;
+                }
+
+                if (data.contains("---")) continue;
+                if (data.contains("===")) {
+                    intentEntities.add(intent);
+                    isNewIntent = true;
                     continue;
                 }
 
@@ -123,14 +142,12 @@ public class Tool {
                         .content(data.trim())
                         .build();
                 intent.getPatterns().add(pattern);
-
-                line++;
             }
             myReader.close();
 
             CommandIntentAddMany commandIntentAddMany = CommandIntentAddMany.builder()
                     .userId("637755b55c31f1122c6f6441")
-                    .intents(Collections.singletonList(intent))
+                    .intents(intentEntities)
                     .build();
             intentService.addMany(commandIntentAddMany);
 
