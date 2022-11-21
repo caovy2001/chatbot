@@ -4,6 +4,7 @@ import com.caovy2001.chatbot.entity.IntentEntity;
 import com.caovy2001.chatbot.entity.PatternEntity;
 import com.caovy2001.chatbot.service.intent.IIntentService;
 import com.caovy2001.chatbot.service.intent.command.CommandIntentAddMany;
+import com.caovy2001.chatbot.service.jedis.IJedisService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,6 +22,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Connection;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -155,6 +159,17 @@ public class Tool {
         } catch (Exception e) {
             return ResponseEntity.ok(false);
         }
+    }
+
+    @Autowired
+    private IJedisService jedisService;
+
+    @GetMapping("/tool3")
+    public ResponseEntity<String> tool3() {
+//        Jedis jedis = new Jedis("redis://default:yPqm07QgkiXFbZ9gxR9ejjpmuhO3j9sG@redis-18384.c16.us-east-1-2.ec2.cloud.redislabs.com:18384");
+        jedisService.set("test_key1", "test_value1");
+
+        return ResponseEntity.ok(jedisService.get("test_key1"));
     }
 
     @Data

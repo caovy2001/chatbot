@@ -5,6 +5,7 @@ import com.caovy2001.chatbot.entity.*;
 import com.caovy2001.chatbot.service.BaseService;
 import com.caovy2001.chatbot.service.intent.IIntentService;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
+import com.caovy2001.chatbot.service.jedis.IJedisService;
 import com.caovy2001.chatbot.service.node.INodeService;
 import com.caovy2001.chatbot.service.script.IScriptService;
 import com.caovy2001.chatbot.service.training.command.CommandTrainingPredict;
@@ -30,12 +31,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
 
 @Service
 @Slf4j
@@ -58,10 +59,18 @@ public class TrainingService extends BaseService implements ITrainingService {
     @Autowired
     private INodeService nodeService;
 
+    @Autowired
+    private IJedisService jedisService;
+
     private final ResourceBundle resourceBundle = ResourceBundle.getBundle("custom");
 
     @Override
     public ResponseTrainingTrain train(CommandTrainingTrain command) {
+        String trainingServerStatus = jedisService.get("training_server_status");
+        if (StringUtils.isNotBlank(trainingServerStatus) && trainingServerStatus.equals("busy")) {
+            return returnException("training_server_busy", ResponseTrainingTrain.class);
+        }
+
         if (StringUtils.isAnyBlank(command.getUserId(), command.getUsername())) {
             return returnException(ExceptionConstant.missing_param, ResponseTrainingTrain.class);
         }
@@ -90,26 +99,18 @@ public class TrainingService extends BaseService implements ITrainingService {
             headers.setContentType(MediaType.APPLICATION_JSON);
 
             String commandBody = objectMapper.writeValueAsString(command);
-//            log.info("[train]: Send training request: {}", commandBody);
+            log.info("[train]: Send training request: {}", commandBody);
 
-            HttpEntity<String> request =
-                    new HttpEntity<>(commandBody, headers);
-            ResponseTrainingTrain responseTrainingTrain =
-                    restTemplate.postForObject(resourceBundle.getString("training.server") + "/train", request, ResponseTrainingTrain.class);
-
-            log.info("[train]: Training response : {}", responseTrainingTrain);
-//            if (responseTrainingTrain == null || StringUtils.isBlank(responseTrainingTrain.getTrainingHistoryId())) {
-//                throw new Exception("train_fail");
-//            }
-//                ResponseTrainingHistory responseTrainingHistory = trainingHistoryService.updateStatus(CommandTrainingHistory.builder()
-//                        .id(responseTrainingTrain.getTrainingHistoryId())
-//                        .userId(command.getUserId())
-//                        .status(TrainingHistoryEntity.EStatus.SUCCESS)
-//                        .build());
-
-//                if (responseTrainingHistory == null) {
-//                    throw new Exception("update_status_training_history_fail");
-//                }
+            CompletableFuture.runAsync(() -> {
+                try {
+                    jedisService.set("training_server_status", "busy");
+                    HttpEntity<String> request =
+                            new HttpEntity<>(commandBody, headers);
+                    restTemplate.postForLocation(new URI(resourceBundle.getString("training.server") + "/train"), request);
+                } catch (Exception e) {
+                    log.info(e.getMessage());
+                }
+            });
         } catch (Throwable throwable) {
             log.error("[{}|train]: {}", command.getUserId(), throwable.getMessage());
         }
@@ -120,6 +121,11 @@ public class TrainingService extends BaseService implements ITrainingService {
 
     @Override
     public ResponseTrainingPredict predict(CommandTrainingPredict command) {
+        String trainingServerStatus = jedisService.get("training_server_status");
+        if (StringUtils.isNotBlank(trainingServerStatus) && trainingServerStatus.equals("busy")) {
+            return returnException("training_server_busy", ResponseTrainingPredict.class);
+        }
+
         // Lay user tu secret key
         UserEntity userEntity = userService.getBySecretKey(command.getSecretKey());
         if (userEntity == null) {
@@ -215,6 +221,7 @@ public class TrainingService extends BaseService implements ITrainingService {
             return false;
         }
 
+        jedisService.set("training_server_status", "free");
         return true;
     }
 }
