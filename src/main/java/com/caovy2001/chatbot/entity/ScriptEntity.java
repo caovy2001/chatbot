@@ -11,6 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -28,6 +29,11 @@ public class ScriptEntity extends BaseEntity {
     @Field("name")
     private String name;
 
+    @Field("ui_rendering")
+    private Map<String, Object> ui_rendering;
+
     @Transient
     private List<NodeEntity> nodes;
+
+
 }

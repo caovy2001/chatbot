@@ -6,6 +6,7 @@ import com.caovy2001.chatbot.service.BaseService;
 import com.caovy2001.chatbot.service.intent.IIntentService;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 import com.caovy2001.chatbot.service.jedis.IJedisService;
+import com.caovy2001.chatbot.service.jedis.JedisService;
 import com.caovy2001.chatbot.service.node.INodeService;
 import com.caovy2001.chatbot.service.script.IScriptService;
 import com.caovy2001.chatbot.service.training.command.CommandTrainingPredict;
@@ -67,7 +68,7 @@ public class TrainingService extends BaseService implements ITrainingService {
 
     @Override
     public ResponseTrainingTrain train(CommandTrainingTrain command) {
-        String trainingServerStatus = jedisService.get("training_server_status");
+        String trainingServerStatus = jedisService.get(command.getUserId() + JedisService.PrefixRedisKey.COLON + JedisService.PrefixRedisKey.trainingServerStatus);
         if (StringUtils.isNotBlank(trainingServerStatus) && trainingServerStatus.equals("busy")) {
             return returnException("training_server_busy", ResponseTrainingTrain.class);
         }
@@ -104,16 +105,14 @@ public class TrainingService extends BaseService implements ITrainingService {
 
             CompletableFuture.runAsync(() -> {
                 try {
-                    jedisService.set("training_server_status", "busy");
+                    jedisService.set(command.getUserId() + JedisService.PrefixRedisKey.COLON + JedisService.PrefixRedisKey.trainingServerStatus, "busy");
                     HttpEntity<String> request =
                             new HttpEntity<>(commandBody, headers);
                     ResponseTrainingTrain responseTrainingTrain =
                             restTemplate.postForObject(new URI(resourceBundle.getString("training.server") + "/train"), request, ResponseTrainingTrain.class);
 
-                    log.info("[train]: Training response: {}", responseTrainingTrain);
-                    if (responseTrainingTrain != null && StringUtils.isNotBlank(responseTrainingTrain.getTrainingHistoryId())) {
-                        jedisService.set("training_server_status", "free");
-                    }
+//                    log.info("[train]: Training response: {}", responseTrainingTrain);
+//                    jedisService.set("training_server_status", "free");
                 } catch (Exception e) {
                     log.info(e.getMessage());
                 }
