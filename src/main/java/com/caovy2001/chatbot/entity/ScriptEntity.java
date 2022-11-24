@@ -30,7 +30,7 @@ public class ScriptEntity extends BaseEntity {
     private String name;
 
     @Field("ui_rendering")
-    private Map<String, Object> ui_rendering;
+    private Map<String, Object> uiRendering;
 
     @Transient
     private List<NodeEntity> nodes;
