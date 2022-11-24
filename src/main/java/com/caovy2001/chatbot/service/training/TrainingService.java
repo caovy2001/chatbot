@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
@@ -106,7 +107,13 @@ public class TrainingService extends BaseService implements ITrainingService {
                     jedisService.set("training_server_status", "busy");
                     HttpEntity<String> request =
                             new HttpEntity<>(commandBody, headers);
-                    restTemplate.postForLocation(new URI(resourceBundle.getString("training.server") + "/train"), request);
+                    ResponseTrainingTrain responseTrainingTrain =
+                            restTemplate.postForObject(new URI(resourceBundle.getString("training.server") + "/train"), request, ResponseTrainingTrain.class);
+
+                    log.info("[train]: Training response: {}", responseTrainingTrain);
+                    if (responseTrainingTrain != null && StringUtils.isNotBlank(responseTrainingTrain.getTrainingHistoryId())) {
+                        jedisService.set("training_server_status", "free");
+                    }
                 } catch (Exception e) {
                     log.info(e.getMessage());
                 }

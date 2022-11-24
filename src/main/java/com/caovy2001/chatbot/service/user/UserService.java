@@ -73,6 +73,7 @@ public class UserService extends BaseService implements IUserService{
         return ResponseUserSignUp.builder()
                 .userId(savedUserEntity.getId())
                 .username(savedUserEntity.getUsername())
+                .token(savedUserEntity.getToken())
                 .build();
     }
 

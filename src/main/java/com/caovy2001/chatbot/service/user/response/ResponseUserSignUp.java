@@ -15,4 +15,5 @@ import lombok.NoArgsConstructor;
 public class ResponseUserSignUp extends ResponseBase {
     private String userId;
     private String username;
+    private String token;
 }
