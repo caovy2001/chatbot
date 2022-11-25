@@ -12,9 +12,8 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class CommandIntent {
-    private String id;
-    private String code;
+public class CommandIntentAddPattern {
     private String userId;
-    private String name;
+    private String intentId;
+    private List<PatternEntity> patterns;
 }

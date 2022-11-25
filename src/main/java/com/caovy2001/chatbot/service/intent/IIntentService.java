@@ -3,6 +3,7 @@ package com.caovy2001.chatbot.service.intent;
 import com.caovy2001.chatbot.service.IBaseService;
 import com.caovy2001.chatbot.service.intent.command.CommandIntent;
 import com.caovy2001.chatbot.service.intent.command.CommandIntentAddMany;
+import com.caovy2001.chatbot.service.intent.command.CommandIntentAddPattern;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntentAdd;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 
@@ -13,9 +14,13 @@ public interface IIntentService extends IBaseService {
 
     ResponseIntents getByUserId(String userId);
 
-    ResponseIntents getById(String id,String userId);
+    ResponseIntents getById(String id, String userId);
 
-    ResponseIntents deleteIntent(String id,String userId);
+    ResponseIntents deleteIntent(String id, String userId);
 
-    ResponseIntents updateName(CommandIntent command,String userId);
+    ResponseIntents updateName(CommandIntent command, String userId);
+
+    ResponseIntents update(CommandIntent command);
+
+    ResponseIntents addPatterns(CommandIntentAddPattern command);
 }

@@ -1,10 +1,12 @@
 package com.caovy2001.chatbot.api;
 
+import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.UserEntity;
 import com.caovy2001.chatbot.service.IBaseService;
 import com.caovy2001.chatbot.service.intent.IIntentService;
 import com.caovy2001.chatbot.service.intent.command.CommandIntent;
 import com.caovy2001.chatbot.service.intent.command.CommandIntentAddMany;
+import com.caovy2001.chatbot.service.intent.command.CommandIntentAddPattern;
 import com.caovy2001.chatbot.service.intent.command.CommandIntentDelete;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntentAdd;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
@@ -32,7 +34,7 @@ public class IntentAPI {
             if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
                 throw new Exception("auth_invalid");
 
-            command.setUser_id(userEntity.getId());
+            command.setUserId(userEntity.getId());
             ResponseIntentAdd responseIntentAdd = intentService.add(command);
             return ResponseEntity.ok(responseIntentAdd);
         } catch (Exception e) {
@@ -72,8 +74,8 @@ public class IntentAPI {
     }
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-    @GetMapping()
-    public ResponseEntity<?> getById(@RequestParam(value = "id", required = false) String id) {
+    @GetMapping("/get/{id}")
+    public ResponseEntity<ResponseIntents> getById(@PathVariable String id) {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
@@ -87,13 +89,15 @@ public class IntentAPI {
     }
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-    @PostMapping("/update_intent")
-    public  ResponseEntity<?> updateName(@RequestBody CommandIntent command){
+    @PostMapping("/update")
+    public  ResponseEntity<?> update(@RequestBody CommandIntent command){
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
                 throw new Exception("auth_invalid");
-            ResponseIntents responseIntents = intentService.updateName(command, userEntity.getId());
+
+            command.setUserId(userEntity.getId());
+            ResponseIntents responseIntents = intentService.update(command);
             return ResponseEntity.ok(responseIntents);
         } catch (Exception e) {
             return ResponseEntity.ok(baseService.returnException(e.toString(), ResponseIntents.class));
@@ -109,6 +113,25 @@ public class IntentAPI {
                 throw new Exception("auth_invalid");
 
             ResponseIntents responseIntents = intentService.deleteIntent(command.getId(), userEntity.getId());
+            return ResponseEntity.ok(responseIntents);
+        } catch (Exception e) {
+            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponseIntents.class));
+        }
+    }
+
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @PostMapping("/add_patterns")
+    public ResponseEntity<ResponseIntents> addPatterns(@RequestBody CommandIntentAddPattern command) {
+        try {
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
+                throw new Exception("auth_invalid");
+
+            if (StringUtils.isBlank(command.getIntentId())) throw new Exception(ExceptionConstant.missing_param);
+
+            command.setUserId(userEntity.getId());
+            ResponseIntents responseIntents = intentService.addPatterns(command);
             return ResponseEntity.ok(responseIntents);
         } catch (Exception e) {
             return ResponseEntity.ok(baseService.returnException(e.toString(), ResponseIntents.class));
