@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CommandPatternAdd {
-    private String user_id;
+    private String userId;
     private String content;
-    private String intent_id;
+    private String intentId;
 }

@@ -11,7 +11,9 @@ import com.caovy2001.chatbot.service.pattern.response.ResponsePatternAdd;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -21,15 +23,14 @@ public class PatternService extends BaseService implements IPatternService {
 
     @Override
     public ResponsePatternAdd add(CommandPatternAdd command) {
-        if (StringUtils.isAnyBlank(command.getUser_id(), command.getContent(), command.getIntent_id())) {
+        if (StringUtils.isAnyBlank(command.getUserId(), command.getContent(), command.getIntentId())) {
             return returnException(ExceptionConstant.missing_param, ResponsePatternAdd.class);
         }
 
-
         PatternEntity pattern = PatternEntity.builder()
                 .content(command.getContent())
-                .intentId(command.getIntent_id())
-                .userId(command.getUser_id())
+                .intentId(command.getIntentId())
+                .userId(command.getUserId())
                 .build();
         PatternEntity addedPattern = patternRepository.insert(pattern);
         return ResponsePatternAdd.builder()
@@ -57,5 +58,37 @@ public class PatternService extends BaseService implements IPatternService {
     @Override
     public List<PatternEntity> addMany(List<PatternEntity> patternsToAdd) {
         return patternRepository.insert(patternsToAdd);
+    }
+
+    @Override
+    public ResponsePattern getById(String id, String userId) {
+        if (StringUtils.isAnyBlank(id, userId)) {
+            return returnException(ExceptionConstant.missing_param, ResponsePattern.class);
+        }
+
+        PatternEntity pattern = patternRepository.findByIdAndUserId(id, userId);
+        if (pattern == null) {
+            return returnException("pattern_not_exist", ResponsePattern.class);
+        }
+
+        return ResponsePattern.builder()
+                .pattern(pattern)
+                .build();
+    }
+
+    @Override
+    public ResponsePattern getByUserId(String userId) {
+        if (StringUtils.isBlank(userId)) {
+            return returnException(ExceptionConstant.missing_param, ResponsePattern.class);
+        }
+
+        List<PatternEntity> patterns = patternRepository.findAllByUserId(userId);
+        if (CollectionUtils.isEmpty(patterns)) {
+            patterns = new ArrayList<>();
+        }
+
+        return ResponsePattern.builder()
+                .patterns(patterns)
+                .build();
     }
 }

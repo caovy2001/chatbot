@@ -15,4 +15,8 @@ public interface IPatternService extends IBaseService {
     ResponsePattern getByIntentId(String intentId,String userId);
 
     List<PatternEntity> addMany(List<PatternEntity> patternsToAdd);
+
+    ResponsePattern getById(String id, String userId);
+
+    ResponsePattern getByUserId(String userId);
 }

@@ -8,5 +8,7 @@ import java.util.List;
 public interface PatternRepository extends MongoRepository<PatternEntity, String> {
     List<PatternEntity> findByIntentIdInAndUserId(List<String> intentIds, String userId);
     List<PatternEntity> findByIntentIdInAndUserId(String intentIds, String userId);
+    List<PatternEntity> findAllByUserId(String userId);
+    PatternEntity findByIdAndUserId(String id, String userId);
     void deleteByIntentIdAndUserId(String intentId, String userId);
 }

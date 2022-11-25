@@ -34,7 +34,7 @@ public class PatternAPI {
             if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
                 throw new Exception("auth_invalid");
 
-            command.setUser_id(userEntity.getId());
+            command.setUserId(userEntity.getId());
             ResponsePatternAdd responsePatternAdd = patternService.add(command);
             return ResponseEntity.ok(responsePatternAdd);
         } catch (Exception e) {
@@ -43,14 +43,44 @@ public class PatternAPI {
     }
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-    @GetMapping
-    public ResponseEntity<ResponsePattern> getByIntentId(@RequestParam("intent_id") String intentId) {
+    @GetMapping("/get_all/by_intent_id/{intentId}")
+    public ResponseEntity<ResponsePattern> getByIntentId(@PathVariable String intentId) {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
                 throw new Exception("auth_invalid");
 
             ResponsePattern patterns = patternService.getByIntentId(intentId, userEntity.getId());
+            return ResponseEntity.ok(patterns);
+        } catch (Exception e) {
+            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponsePattern.class));
+        }
+    }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @GetMapping("/get_all/by_user_id")
+    public ResponseEntity<ResponsePattern> getByUserId() {
+        try {
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
+                throw new Exception("auth_invalid");
+
+            ResponsePattern patterns = patternService.getByUserId(userEntity.getId());
+            return ResponseEntity.ok(patterns);
+        } catch (Exception e) {
+            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponsePattern.class));
+        }
+    }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @GetMapping("/get/{id}")
+    public ResponseEntity<ResponsePattern> getById(@PathVariable String id) {
+        try {
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
+                throw new Exception("auth_invalid");
+
+            ResponsePattern patterns = patternService.getById(id, userEntity.getId());
             return ResponseEntity.ok(patterns);
         } catch (Exception e) {
             return ResponseEntity.ok(baseService.returnException(e.toString(), ResponsePattern.class));

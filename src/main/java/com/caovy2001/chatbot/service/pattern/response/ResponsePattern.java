@@ -14,4 +14,5 @@ import java.util.List;
 @NoArgsConstructor
 public class ResponsePattern extends ResponseBase {
     List<PatternEntity> patterns;
+    PatternEntity pattern;
 }

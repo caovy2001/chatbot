@@ -58,14 +58,15 @@ public class UserService extends BaseService implements IUserService{
         // Thực hiện đăng ký
         UserEntity userEntity = UserEntity.builder()
                 .username(commandUserSignUp.getUsername())
-                .password(commandUserSignUp.getPassword())
                 .fullname(commandUserSignUp.getFullname())
                 .token(String.valueOf(System.currentTimeMillis()))
-                .secretKey(UUID.randomUUID().toString().toUpperCase())
                 .build();
 
         // Khởi tạo token
         userEntity.setToken(JWTUtil.generateToken(userEntity));
+
+        userEntity.setPassword(commandUserSignUp.getPassword());
+        userEntity.setSecretKey(UUID.randomUUID().toString().toUpperCase());
 
         // Lưu user
         UserEntity savedUserEntity = userRepository.insert(userEntity);

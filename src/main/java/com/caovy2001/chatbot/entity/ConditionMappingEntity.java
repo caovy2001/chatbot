@@ -21,6 +21,9 @@ public class ConditionMappingEntity extends BaseEntity {
     @Id
     private String id;
 
+    @Field("condition_mapping_id")
+    private String conditionMappingId;
+
     @Field("intent_id")
     private String intent_id;
 

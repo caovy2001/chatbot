@@ -80,9 +80,9 @@ public class IntentService extends BaseService implements IIntentService {
             if (!CollectionUtils.isEmpty(intent.getPatterns())) {
                 for (PatternEntity pattern : intent.getPatterns()) {
                     CommandPatternAdd commandPatternAdd = CommandPatternAdd.builder()
-                            .user_id(command.getUserId())
+                            .userId(command.getUserId())
                             .content(pattern.getContent())
-                            .intent_id(savedIntent.getId())
+                            .intentId(savedIntent.getId())
                             .build();
                     patternService.add(commandPatternAdd);
                 }
