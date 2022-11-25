@@ -9,7 +9,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CommandPatternDelete {
+public class CommandPatternUpdate {
     private String id;
     private String userId;
+    private String content;
 }

@@ -4,8 +4,9 @@ import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.PatternEntity;
 import com.caovy2001.chatbot.repository.PatternRepository;
 import com.caovy2001.chatbot.service.BaseService;
-import com.caovy2001.chatbot.service.pattern.command.CommandPattern;
 import com.caovy2001.chatbot.service.pattern.command.CommandPatternAdd;
+import com.caovy2001.chatbot.service.pattern.command.CommandPatternDelete;
+import com.caovy2001.chatbot.service.pattern.command.CommandPatternUpdate;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePattern;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePatternAdd;
 import org.apache.commons.lang3.StringUtils;
@@ -39,12 +40,23 @@ public class PatternService extends BaseService implements IPatternService {
     }
 
     @Override
-    public ResponsePatternAdd delete(String id) {
-        if (id == null){
-            return  returnException(ExceptionConstant.missing_param, ResponsePatternAdd.class);
+    public ResponsePattern delete(CommandPatternDelete command) {
+        if (StringUtils.isAnyBlank(command.getId(), command.getUserId())) {
+            return returnException(ExceptionConstant.missing_param, ResponsePattern.class);
         }
-        patternRepository.deleteById(id);
-        return ResponsePatternAdd.builder().build();
+
+        PatternEntity pattern = patternRepository.findByIdAndUserId(command.getId(), command.getUserId());
+        if (pattern == null) {
+            return returnException("pattern_not_exist", ResponsePattern.class);
+        }
+
+        patternRepository.deleteById(command.getId());
+        return ResponsePattern.builder()
+                .pattern(PatternEntity.builder()
+                        .id(command.getId())
+                        .userId(command.getUserId())
+                        .build())
+                .build();
     }
 
     @Override
@@ -89,6 +101,25 @@ public class PatternService extends BaseService implements IPatternService {
 
         return ResponsePattern.builder()
                 .patterns(patterns)
+                .build();
+    }
+
+    @Override
+    public ResponsePattern update(CommandPatternUpdate command) {
+        if (StringUtils.isAnyBlank(command.getId(), command.getUserId())) {
+            return returnException(ExceptionConstant.missing_param, ResponsePattern.class);
+        }
+
+        PatternEntity pattern = patternRepository.findByIdAndUserId(command.getId(), command.getUserId());
+        if (pattern == null) {
+            return returnException("pattern_not_exist", ResponsePattern.class);
+        }
+
+        pattern.setContent(command.getContent());
+        PatternEntity updatedPattern = patternRepository.save(pattern);
+
+        return ResponsePattern.builder()
+                .pattern(updatedPattern)
                 .build();
     }
 }

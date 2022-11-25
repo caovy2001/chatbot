@@ -1,5 +1,6 @@
 package com.caovy2001.chatbot.api;
 
+import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.UserEntity;
 import com.caovy2001.chatbot.service.BaseService;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntentAdd;
@@ -8,6 +9,7 @@ import com.caovy2001.chatbot.service.pattern.IPatternService;
 import com.caovy2001.chatbot.service.pattern.command.CommandPattern;
 import com.caovy2001.chatbot.service.pattern.command.CommandPatternAdd;
 import com.caovy2001.chatbot.service.pattern.command.CommandPatternDelete;
+import com.caovy2001.chatbot.service.pattern.command.CommandPatternUpdate;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePattern;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePatternAdd;
 import org.apache.commons.lang3.StringUtils;
@@ -39,6 +41,26 @@ public class PatternAPI {
             return ResponseEntity.ok(responsePatternAdd);
         } catch (Exception e) {
             return ResponseEntity.ok(baseService.returnException(e.toString(), ResponsePatternAdd.class));
+        }
+    }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @PostMapping("/update")
+    public ResponseEntity<ResponsePattern> update(@RequestBody CommandPatternUpdate command) {
+        try {
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
+                throw new Exception("auth_invalid");
+
+            if (command == null || StringUtils.isBlank(command.getId())) {
+                throw new Exception(ExceptionConstant.missing_param);
+            }
+
+            command.setUserId(userEntity.getId());
+            ResponsePattern responsePattern = patternService.update(command);
+            return ResponseEntity.ok(responsePattern);
+        } catch (Exception e) {
+            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponsePattern.class));
         }
     }
 
@@ -89,16 +111,17 @@ public class PatternAPI {
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @DeleteMapping()
-    public ResponseEntity<ResponsePatternAdd> delete(@RequestBody CommandPatternDelete command) {
+    public ResponseEntity<ResponsePattern> delete(@RequestBody CommandPatternDelete command) {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
                 throw new Exception("auth_invalid");
 
-            ResponsePatternAdd responsePatternAdd = patternService.delete(command.getId());
-            return ResponseEntity.ok(responsePatternAdd);
+            command.setUserId(userEntity.getId());
+            ResponsePattern responsePattern = patternService.delete(command);
+            return ResponseEntity.ok(responsePattern);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponsePatternAdd.class));
+            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponsePattern.class));
         }
     }
 }
