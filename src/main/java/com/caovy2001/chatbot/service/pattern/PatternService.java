@@ -12,6 +12,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class PatternService extends BaseService implements IPatternService {
     @Autowired
@@ -50,5 +52,10 @@ public class PatternService extends BaseService implements IPatternService {
             return  returnException(ExceptionConstant.missing_param, ResponsePattern.class);
         }
         return ResponsePattern.builder().patterns(patternRepository.findByIntentIdInAndUserId(intentId,userId)).build();
+    }
+
+    @Override
+    public List<PatternEntity> addMany(List<PatternEntity> patternsToAdd) {
+        return patternRepository.insert(patternsToAdd);
     }
 }
