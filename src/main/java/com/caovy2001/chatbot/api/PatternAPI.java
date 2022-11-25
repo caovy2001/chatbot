@@ -1,7 +1,10 @@
 package com.caovy2001.chatbot.api;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
+import com.caovy2001.chatbot.entity.PatternEntity;
+import com.caovy2001.chatbot.entity.ScriptEntity;
 import com.caovy2001.chatbot.entity.UserEntity;
+import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.service.BaseService;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntentAdd;
 import com.caovy2001.chatbot.service.node.command.CommandNodeDelete;
@@ -18,6 +21,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/pattern")
@@ -122,6 +127,24 @@ public class PatternAPI {
             return ResponseEntity.ok(responsePattern);
         } catch (Exception e) {
             return ResponseEntity.ok(baseService.returnException(e.toString(), ResponsePattern.class));
+        }
+    }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @GetMapping("/get_pagination/by_user_id")
+    public ResponseEntity<Paginated<PatternEntity>> getPaginationByUserId(@RequestParam int page, @RequestParam int size){
+        try{
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
+                throw new Exception("auth_invalid");
+            }
+
+            page--;
+            Paginated<PatternEntity> patterns = patternService.getPaginationByUserId(userEntity.getId(), page, size);
+            return ResponseEntity.ok(patterns);
+        }
+        catch (Exception e){
+            return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 0, 0, 0));
         }
     }
 }

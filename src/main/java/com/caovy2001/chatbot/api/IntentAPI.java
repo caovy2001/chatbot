@@ -1,7 +1,9 @@
 package com.caovy2001.chatbot.api;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
+import com.caovy2001.chatbot.entity.IntentEntity;
 import com.caovy2001.chatbot.entity.UserEntity;
+import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.service.IBaseService;
 import com.caovy2001.chatbot.service.intent.IIntentService;
 import com.caovy2001.chatbot.service.intent.command.CommandIntent;
@@ -16,6 +18,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/intent")
@@ -70,6 +74,22 @@ public class IntentAPI {
             return ResponseEntity.ok(responseIntents);
         } catch (Exception e) {
             return ResponseEntity.ok(baseService.returnException(e.toString(), ResponseIntents.class));
+        }
+    }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @GetMapping("/get_pagination/by_user_id")
+    public ResponseEntity<Paginated<IntentEntity>> getByPaginationUserId(@RequestParam int page, @RequestParam int size) {
+        try {
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
+                throw new Exception("auth_invalid");
+
+            page--;
+            Paginated<IntentEntity> intents = intentService.getPaginationByUserId(userEntity.getId(), page, size);
+            return ResponseEntity.ok(intents);
+        } catch (Exception e) {
+            return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 0, 0, 0));
         }
     }
 

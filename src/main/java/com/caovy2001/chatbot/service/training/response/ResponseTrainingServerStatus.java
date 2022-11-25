@@ -10,8 +10,12 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ResponseTrainingPredictFromAI extends ResponseBase {
-    private String accuracy;
-    private String intentName;
-    private String intentId;
+public class ResponseTrainingServerStatus extends ResponseBase {
+
+    private EStatus status;
+
+    public enum EStatus {
+        BUSY,
+        FREE
+    }
 }

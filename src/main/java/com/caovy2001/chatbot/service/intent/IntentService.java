@@ -3,6 +3,8 @@ package com.caovy2001.chatbot.service.intent;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.IntentEntity;
 import com.caovy2001.chatbot.entity.PatternEntity;
+import com.caovy2001.chatbot.entity.ScriptEntity;
+import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.IntentRepository;
 import com.caovy2001.chatbot.repository.PatternRepository;
 import com.caovy2001.chatbot.service.BaseService;
@@ -15,6 +17,7 @@ import com.caovy2001.chatbot.service.pattern.IPatternService;
 import com.caovy2001.chatbot.service.pattern.command.CommandPatternAdd;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -202,6 +205,21 @@ public class IntentService extends BaseService implements IIntentService {
         return ResponseIntents.builder()
                 .patterns(addedPatterns)
                 .build();
+    }
+
+    @Override
+    public Paginated<IntentEntity> getPaginationByUserId(String userId, int page, int size) {
+        if (StringUtils.isBlank(userId)) {
+            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
+        }
+
+        long total = intentRepository.countByUserId(userId);
+        if (total == 0L) {
+            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
+        }
+
+        List<IntentEntity> intents = intentRepository.findByUserId(userId, PageRequest.of(page, size));
+        return new Paginated<>(intents, page, size, total);
     }
 
     @Override

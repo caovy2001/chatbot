@@ -2,6 +2,8 @@ package com.caovy2001.chatbot.service.pattern;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.PatternEntity;
+import com.caovy2001.chatbot.entity.ScriptEntity;
+import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.PatternRepository;
 import com.caovy2001.chatbot.service.BaseService;
 import com.caovy2001.chatbot.service.pattern.command.CommandPatternAdd;
@@ -11,6 +13,7 @@ import com.caovy2001.chatbot.service.pattern.response.ResponsePattern;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePatternAdd;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -121,5 +124,20 @@ public class PatternService extends BaseService implements IPatternService {
         return ResponsePattern.builder()
                 .pattern(updatedPattern)
                 .build();
+    }
+
+    @Override
+    public Paginated<PatternEntity> getPaginationByUserId(String userId, int page, int size) {
+        if (StringUtils.isBlank(userId)) {
+            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
+        }
+
+        long total = patternRepository.countByUserId(userId);
+        if (total == 0L) {
+            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
+        }
+
+        List<PatternEntity> patterns = patternRepository.findByUserId(userId, PageRequest.of(page, size));
+        return new Paginated<>(patterns, page, size, total);
     }
 }

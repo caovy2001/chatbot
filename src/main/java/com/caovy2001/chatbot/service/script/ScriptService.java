@@ -3,6 +3,7 @@ package com.caovy2001.chatbot.service.script;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.NodeEntity;
 import com.caovy2001.chatbot.entity.ScriptEntity;
+import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.ScriptRepository;
 import com.caovy2001.chatbot.service.BaseService;
 import com.caovy2001.chatbot.service.node.INodeService;
@@ -13,9 +14,11 @@ import com.caovy2001.chatbot.service.script.response.ResponseScriptAdd;
 import com.caovy2001.chatbot.service.script.response.ResponseScriptGetByUserId;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -145,5 +148,20 @@ public class ScriptService extends BaseService implements IScriptService {
         return ResponseScript.builder()
                 .script(updatedScript)
                 .build();
+    }
+
+    @Override
+    public Paginated<ScriptEntity> getPaginationByUserId(String userId, int page, int size) {
+        if (StringUtils.isBlank(userId)) {
+            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
+        }
+
+        long total = scriptRepository.countByUserId(userId);
+        if (total == 0L) {
+            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
+        }
+
+        List<ScriptEntity> scripts = scriptRepository.findByUserId(userId, PageRequest.of(page, size));
+        return new Paginated<>(scripts, page, size, total);
     }
 }

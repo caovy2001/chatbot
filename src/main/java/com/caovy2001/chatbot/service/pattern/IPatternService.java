@@ -1,6 +1,7 @@
 package com.caovy2001.chatbot.service.pattern;
 
 import com.caovy2001.chatbot.entity.PatternEntity;
+import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.service.IBaseService;
 import com.caovy2001.chatbot.service.pattern.command.CommandPattern;
 import com.caovy2001.chatbot.service.pattern.command.CommandPatternAdd;
@@ -23,4 +24,6 @@ public interface IPatternService extends IBaseService {
     ResponsePattern getByUserId(String userId);
 
     ResponsePattern update(CommandPatternUpdate command);
+
+    Paginated<PatternEntity> getPaginationByUserId(String userId, int page, int size);
 }

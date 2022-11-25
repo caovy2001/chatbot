@@ -3,6 +3,7 @@ package com.caovy2001.chatbot.api;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.ScriptEntity;
 import com.caovy2001.chatbot.entity.UserEntity;
+import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.service.BaseService;
 import com.caovy2001.chatbot.service.ResponseBase;
 import com.caovy2001.chatbot.service.script.IScriptService;
@@ -18,6 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/script")
@@ -78,6 +81,24 @@ public class ScriptAPI {
         }
         catch (Exception e){
             return ResponseEntity.ok(baseService.returnException(e.getMessage(), ResponseScriptGetByUserId.class));
+        }
+    }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @GetMapping("/get_pagination/by_user_id")
+    public ResponseEntity<Paginated<ScriptEntity>> getPaginationByUserId(@RequestParam int page, @RequestParam int size){
+        try{
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
+                throw new Exception("auth_invalid");
+            }
+
+            page--;
+            Paginated<ScriptEntity> scripts = scriptService.getPaginationByUserId(userEntity.getId(), page, size);
+            return ResponseEntity.ok(scripts);
+        }
+        catch (Exception e){
+            return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 0, 0, 0));
         }
     }
 

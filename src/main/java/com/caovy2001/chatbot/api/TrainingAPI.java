@@ -8,6 +8,7 @@ import com.caovy2001.chatbot.service.training.ITrainingService;
 import com.caovy2001.chatbot.service.training.command.CommandTrainingPredict;
 import com.caovy2001.chatbot.service.training.command.CommandTrainingTrain;
 import com.caovy2001.chatbot.service.training.response.ResponseTrainingPredict;
+import com.caovy2001.chatbot.service.training.response.ResponseTrainingServerStatus;
 import com.caovy2001.chatbot.service.training.response.ResponseTrainingTrain;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -43,6 +44,22 @@ public class TrainingAPI {
             return ResponseEntity.ok(response);
         } catch (Exception e){
             return ResponseEntity.ok(baseService.returnException(e.getMessage(), ResponseTrainingTrain.class));
+        }
+    }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @GetMapping("/get_server_status")
+    public ResponseEntity<ResponseTrainingServerStatus> getServerStatus() {
+        try {
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
+                throw new Exception("auth_invalid");
+            }
+
+            ResponseTrainingServerStatus response = trainingService.getServerStatus(userEntity.getId());
+            return ResponseEntity.ok(response);
+        } catch (Exception e){
+            return ResponseEntity.ok(baseService.returnException(e.getMessage(), ResponseTrainingServerStatus.class));
         }
     }
 
