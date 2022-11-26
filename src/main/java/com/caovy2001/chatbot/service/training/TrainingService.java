@@ -69,10 +69,10 @@ public class TrainingService extends BaseService implements ITrainingService {
 
     @Override
     public ResponseTrainingTrain train(CommandTrainingTrain command) {
-        String trainingServerStatus = jedisService.get(command.getUserId() + JedisService.PrefixRedisKey.COLON + JedisService.PrefixRedisKey.trainingServerStatus);
-        if (StringUtils.isNotBlank(trainingServerStatus) && trainingServerStatus.equals("busy")) {
-            return returnException("training_server_busy", ResponseTrainingTrain.class);
-        }
+//        String trainingServerStatus = jedisService.get(command.getUserId() + JedisService.PrefixRedisKey.COLON + JedisService.PrefixRedisKey.trainingServerStatus);
+//        if (StringUtils.isNotBlank(trainingServerStatus) && trainingServerStatus.equals("busy")) {
+//            return returnException("training_server_busy", ResponseTrainingTrain.class);
+//        }
 
         if (StringUtils.isAnyBlank(command.getUserId(), command.getUsername())) {
             return returnException(ExceptionConstant.missing_param, ResponseTrainingTrain.class);
