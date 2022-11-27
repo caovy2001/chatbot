@@ -70,7 +70,8 @@ public class TrainingAPI {
                 throw new Exception("auth_invalid");
             }
 
-            if (StringUtils.isAnyBlank(command.getMessage(), command.getScriptId(), command.getCurrentNodeId())) {
+            if (StringUtils.isAnyBlank(command.getScriptId(), command.getCurrentNodeId()) ||
+                    (StringUtils.isBlank(command.getMessage()) && !"_BEGIN".equals(command.getCurrentNodeId()))) {
                 throw new Exception(ExceptionConstant.missing_param);
             }
 

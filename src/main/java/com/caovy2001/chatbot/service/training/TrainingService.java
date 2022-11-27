@@ -69,11 +69,6 @@ public class TrainingService extends BaseService implements ITrainingService {
 
     @Override
     public ResponseTrainingTrain train(CommandTrainingTrain command) {
-//        String trainingServerStatus = jedisService.get(command.getUserId() + JedisService.PrefixRedisKey.COLON + JedisService.PrefixRedisKey.trainingServerStatus);
-//        if (StringUtils.isNotBlank(trainingServerStatus) && trainingServerStatus.equals("busy")) {
-//            return returnException("training_server_busy", ResponseTrainingTrain.class);
-//        }
-
         if (StringUtils.isAnyBlank(command.getUserId(), command.getUsername())) {
             return returnException(ExceptionConstant.missing_param, ResponseTrainingTrain.class);
         }
@@ -125,11 +120,6 @@ public class TrainingService extends BaseService implements ITrainingService {
 
     @Override
     public ResponseTrainingPredict predict(CommandTrainingPredict command) {
-//        String trainingServerStatus = jedisService.get(command.getUserId() + JedisService.PrefixRedisKey.COLON + JedisService.PrefixRedisKey.trainingServerStatus);
-//        if (StringUtils.isNotBlank(trainingServerStatus) && trainingServerStatus.equals("busy")) {
-//            return returnException("training_server_busy", ResponseTrainingPredict.class);
-//        }
-
         // Lay user tu secret key
         UserEntity userEntity = userService.getBySecretKey(command.getSecretKey());
         if (userEntity == null) {
@@ -146,10 +136,20 @@ public class TrainingService extends BaseService implements ITrainingService {
             return this.returnException(ExceptionConstant.error_occur, ResponseTrainingPredict.class);
         }
 
-        NodeEntity currNode = nodes.stream()
-                .filter(nodeEntity -> nodeEntity.getNodeId().equals(command.getCurrentNodeId())).findFirst().orElse(null);
+        NodeEntity currNode = null;
+        if ("_BEGIN".equals(command.getCurrentNodeId())) {
+            currNode = nodes.get(0);
+            return ResponseTrainingPredict.builder()
+                    .currentNodeId(currNode.getNodeId())
+                    .message(currNode.getMessage())
+                    .build();
+        } else {
+            currNode = nodes.stream()
+                    .filter(nodeEntity -> nodeEntity.getNodeId().equals(command.getCurrentNodeId())).findFirst().orElse(null);
+        }
+
         if (currNode == null) {
-            return this.returnException(ExceptionConstant.error_occur, ResponseTrainingPredict.class);
+            return this.returnException("node_id_not_exist", ResponseTrainingPredict.class);
         }
 
         if (CollectionUtils.isEmpty(currNode.getConditionMappings())) {
