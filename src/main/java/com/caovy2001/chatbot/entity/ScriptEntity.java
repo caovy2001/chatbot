@@ -32,6 +32,9 @@ public class ScriptEntity extends BaseEntity {
     @Field("ui_rendering")
     private Map<String, Object> uiRendering;
 
+    @Field("wrong_message")
+    private String wrongMessage;
+
     @Transient
     private List<NodeEntity> nodes;
 

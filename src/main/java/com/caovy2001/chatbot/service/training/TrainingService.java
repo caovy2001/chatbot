@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -156,6 +157,26 @@ public class TrainingService extends BaseService implements ITrainingService {
             return null;
         }
 
+        List<ConditionMappingEntity> keywordCMs = currNode.getConditionMappings().stream()
+                .filter(cm -> ConditionMappingEntity.EPredictType.KEYWORD.equals(cm.getPredictType())).collect(Collectors.toList());
+
+        if (!CollectionUtils.isEmpty(keywordCMs)) {
+            for (ConditionMappingEntity cm: keywordCMs) {
+                if (CollectionUtils.isEmpty(cm.getNext_node_ids())) continue;
+
+                if (command.getMessage().toLowerCase().contains(cm.getKeyword().toLowerCase())) {
+                    NodeEntity nextNode = nodes.stream()
+                            .filter(nodeEntity -> nodeEntity.getNodeId().equals(cm.getNext_node_ids().get(0))).findFirst().orElse(null);
+                    if (nextNode == null) continue;
+
+                    return ResponseTrainingPredict.builder()
+                            .currentNodeId(nextNode.getNodeId())
+                            .message(nextNode.getMessage())
+                            .build();
+                }
+            }
+        }
+
         // Predict
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
@@ -185,7 +206,7 @@ public class TrainingService extends BaseService implements ITrainingService {
         if (conditionMappingEntity == null) {
             return ResponseTrainingPredict.builder()
                     .currentNodeId(currNode.getNodeId())
-                    .message(null)
+                    .message(script.getWrongMessage())
                     .build();
         }
 

@@ -17,5 +17,6 @@ public class CommandScriptAdd {
     private String user_id;
     private String name;
     private List<NodeEntity> nodes;
+    private String wrongMessage;
     private Map<String, Object> uiRendering;
 }

@@ -44,6 +44,7 @@ public class ScriptService extends BaseService implements IScriptService {
                 .name(command.getName())
                 .userId((command.getUser_id()))
                 .uiRendering(command.getUiRendering())
+                .wrongMessage(command.getWrongMessage())
                 .build();
         ScriptEntity addedScript = scriptRepository.insert(script);
 
@@ -115,7 +116,7 @@ public class ScriptService extends BaseService implements IScriptService {
 
     @Override
     public ResponseScript update(CommandScriptUpdate command) {
-        if (StringUtils.isAnyEmpty(command.getId(), command.getUser_id()) ||
+        if (StringUtils.isAnyEmpty(command.getId(), command.getUserId()) ||
         CollectionUtils.isEmpty(command.getNodes())) {
             return returnException(ExceptionConstant.missing_param, ResponseScript.class);
         }
@@ -141,8 +142,9 @@ public class ScriptService extends BaseService implements IScriptService {
         }
 
         existScript.setName(command.getName());
-        existScript.setUserId(command.getUser_id());
-        existScript.setUiRendering(command.getUi_rendering());
+        existScript.setUserId(command.getUserId());
+        existScript.setUiRendering(command.getUiRendering());
+        existScript.setWrongMessage(command.getWrongMessage());
         ScriptEntity updatedScript = scriptRepository.save(existScript);
         updatedScript.setNodes(addedNodes);
         return ResponseScript.builder()

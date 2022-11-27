@@ -16,7 +16,8 @@ import java.util.Map;
 public class CommandScriptUpdate {
     private String id;
     private String name;
-    private String user_id;
+    private String userId;
+    private String wrongMessage;
     private List<NodeEntity> nodes;
-    private Map<String, Object> ui_rendering;
+    private Map<String, Object> uiRendering;
 }

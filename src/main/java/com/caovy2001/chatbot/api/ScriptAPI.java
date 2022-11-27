@@ -111,7 +111,7 @@ public class ScriptAPI {
                 throw new Exception("auth_invalid");
             }
 
-            command.setUser_id(userEntity.getId());
+            command.setUserId(userEntity.getId());
             ResponseScript script = scriptService.update(command);
             return ResponseEntity.ok(script);
         }
