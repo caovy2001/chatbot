@@ -87,9 +87,10 @@ public class IntentAPI {
 
             page--;
             Paginated<IntentEntity> intents = intentService.getPaginationByUserId(userEntity.getId(), page, size);
+            intents.setPageNumber(++page);
             return ResponseEntity.ok(intents);
         } catch (Exception e) {
-            return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 0, 0, 0));
+            return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 1, 0, 0));
         }
     }
 

@@ -157,6 +157,7 @@ public class TrainingService extends BaseService implements ITrainingService {
             return null;
         }
 
+        // Kiem tra keyword
         List<ConditionMappingEntity> keywordCMs = currNode.getConditionMappings().stream()
                 .filter(cm -> ConditionMappingEntity.EPredictType.KEYWORD.equals(cm.getPredictType())).collect(Collectors.toList());
 
@@ -181,9 +182,13 @@ public class TrainingService extends BaseService implements ITrainingService {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        List<String> intentIds = currNode.getConditionMappings().stream()
+                .filter(cm -> ConditionMappingEntity.EPredictType.INTENT.equals(cm.getPredictType()))
+                .map(ConditionMappingEntity::getIntentId).collect(Collectors.toList());
         Map<String, Object> commandRequest = new HashMap<>();
         commandRequest.put("text", command.getMessage());
         commandRequest.put("username", userEntity.getUsername());
+        commandRequest.put("intent_ids", intentIds);
 
         String commandBody = null;
         try {
@@ -202,7 +207,7 @@ public class TrainingService extends BaseService implements ITrainingService {
 
         String intentId = responseTrainingPredictFromAI.getIntentId();
         ConditionMappingEntity conditionMappingEntity = currNode.getConditionMappings().stream()
-                .filter(cm -> intentId.equals(cm.getIntent_id())).findFirst().orElse(null);
+                .filter(cm -> intentId.equals(cm.getIntentId())).findFirst().orElse(null);
         if (conditionMappingEntity == null) {
             return ResponseTrainingPredict.builder()
                     .currentNodeId(currNode.getNodeId())

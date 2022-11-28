@@ -95,6 +95,7 @@ public class ScriptAPI {
 
             page--;
             Paginated<ScriptEntity> scripts = scriptService.getPaginationByUserId(userEntity.getId(), page, size);
+            scripts.setPageNumber(++page);
             return ResponseEntity.ok(scripts);
         }
         catch (Exception e){

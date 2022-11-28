@@ -141,6 +141,7 @@ public class PatternAPI {
 
             page--;
             Paginated<PatternEntity> patterns = patternService.getPaginationByUserId(userEntity.getId(), page, size);
+            patterns.setPageNumber(++page);
             return ResponseEntity.ok(patterns);
         }
         catch (Exception e){

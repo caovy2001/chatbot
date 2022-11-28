@@ -28,7 +28,7 @@ public class ConditionMappingEntity extends BaseEntity {
     private EPredictType predictType = EPredictType.INTENT;
 
     @Field("intent_id")
-    private String intent_id;
+    private String intentId;
 
     @Field("keyword")
     private String keyword;
