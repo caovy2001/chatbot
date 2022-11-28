@@ -116,8 +116,7 @@ public class ScriptService extends BaseService implements IScriptService {
 
     @Override
     public ResponseScript update(CommandScriptUpdate command) {
-        if (StringUtils.isAnyEmpty(command.getId(), command.getUserId()) ||
-        CollectionUtils.isEmpty(command.getNodes())) {
+        if (StringUtils.isAnyEmpty(command.getId(), command.getUserId())) {
             return returnException(ExceptionConstant.missing_param, ResponseScript.class);
         }
 
@@ -128,17 +127,16 @@ public class ScriptService extends BaseService implements IScriptService {
 
         List<NodeEntity> oldNodes = nodeService.getAllByScriptId(existScript.getId());
 
-        for (NodeEntity node: command.getNodes()) {
-            node.setScriptId(existScript.getId());
+        List<NodeEntity> addedNodes = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(command.getNodes())) {
+            for (NodeEntity node: command.getNodes()) {
+                node.setScriptId(existScript.getId());
+            }
+            addedNodes = nodeService.addMany(command.getNodes());
         }
-        List<NodeEntity> addedNodes = nodeService.addMany(command.getNodes());
 
-        if (!CollectionUtils.isEmpty(addedNodes) && !CollectionUtils.isEmpty(oldNodes)) {
+        if (!CollectionUtils.isEmpty(oldNodes)) {
             nodeService.deleteMany(oldNodes.stream().map(NodeEntity::getId).collect(Collectors.toList()));
-        }
-
-        if (CollectionUtils.isEmpty(addedNodes)) {
-            return returnException("Add_nodes_fail", ResponseScript.class);
         }
 
         existScript.setName(command.getName());
