@@ -17,4 +17,5 @@ public class CommandNodeAdd {
     private String message;
     private String script_id;
     private List<ConditionMappingEntity> condition_mapping;
+    private List<Double> position;
 }

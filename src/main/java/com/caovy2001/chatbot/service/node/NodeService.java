@@ -28,7 +28,9 @@ public class NodeService extends BaseService implements INodeService{
             return returnException(ExceptionConstant.missing_param, ResponseNode.class);
         }
 
-        NodeEntity nodeEntity = NodeEntity.builder().message(command.getMessage())
+        NodeEntity nodeEntity = NodeEntity.builder()
+                .message(command.getMessage())
+                .position(command.getPosition())
                 .conditionMappings(command.getCondition_mapping())
                 .scriptId(command.getScript_id()).build();
 

@@ -33,4 +33,7 @@ public class NodeEntity extends BaseEntity {
 
     @Field("condition_mappings")
     private List<ConditionMappingEntity> conditionMappings;
+
+    @Field("position")
+    private List<Double> position;
 }
