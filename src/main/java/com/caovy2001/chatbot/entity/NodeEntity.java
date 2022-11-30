@@ -36,4 +36,8 @@ public class NodeEntity extends BaseEntity {
 
     @Field("position")
     private List<Double> position;
+
+    @Field("is_first_node")
+    @Builder.Default
+    private Boolean isFirstNode = false;
 }
