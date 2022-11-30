@@ -201,11 +201,18 @@ public class TrainingService extends BaseService implements ITrainingService {
         ResponseTrainingPredictFromAI responseTrainingPredictFromAI =
                 restTemplate.postForObject(resourceBundle.getString("training.server") + "/predict", request, ResponseTrainingPredictFromAI.class);
 
-        if (responseTrainingPredictFromAI == null || StringUtils.isBlank(responseTrainingPredictFromAI.getIntentId())) {
+        if (responseTrainingPredictFromAI == null) {
             return this.returnException(ExceptionConstant.error_occur, ResponseTrainingPredict.class);
         }
 
         String intentId = responseTrainingPredictFromAI.getIntentId();
+        if (StringUtils.isBlank(intentId)) {
+            return ResponseTrainingPredict.builder()
+                    .currentNodeId(currNode.getNodeId())
+                    .message(script.getWrongMessage())
+                    .build();
+        }
+
         ConditionMappingEntity conditionMappingEntity = currNode.getConditionMappings().stream()
                 .filter(cm -> intentId.equals(cm.getIntentId())).findFirst().orElse(null);
         if (conditionMappingEntity == null) {
