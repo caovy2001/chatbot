@@ -102,10 +102,10 @@ public class TrainingService extends BaseService implements ITrainingService {
 
             CompletableFuture.runAsync(() -> {
                 try {
+                    jedisService.set(command.getUserId() + JedisService.PrefixRedisKey.COLON + JedisService.PrefixRedisKey.trainingServerStatus, "busy");
                     HttpEntity<String> request =
                             new HttpEntity<>(commandBody, headers);
                     restTemplate.postForLocation(new URI(resourceBundle.getString("training.server") + "/train"), request);
-                    jedisService.set(command.getUserId() + JedisService.PrefixRedisKey.COLON + JedisService.PrefixRedisKey.trainingServerStatus, "busy");
 
                 } catch (Exception e) {
                     log.info(e.getMessage());
@@ -188,6 +188,7 @@ public class TrainingService extends BaseService implements ITrainingService {
         Map<String, Object> commandRequest = new HashMap<>();
         commandRequest.put("text", command.getMessage());
         commandRequest.put("username", userEntity.getUsername());
+        commandRequest.put("user_id", userEntity.getId());
         commandRequest.put("intent_ids", intentIds);
 
         String commandBody = null;
