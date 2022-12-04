@@ -145,6 +145,7 @@ public class PatternAPI {
             return ResponseEntity.ok(patterns);
         }
         catch (Exception e){
+            e.printStackTrace();
             return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 0, 0, 0));
         }
     }

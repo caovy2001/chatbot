@@ -35,6 +35,7 @@ public class UserService extends BaseService implements IUserService{
                 .userId(userEntity.getId())
                 .username(userEntity.getUsername())
                 .token(userEntity.getToken())
+                .secretKey(userEntity.getSecretKey())
                 .build();
     }
 

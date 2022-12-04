@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -24,6 +25,9 @@ public class PatternEntity extends BaseEntity {
 
     @Field("intent_id")
     private String intentId;
+
+    @Transient
+    private String intentName;
 
     @Field
     private String userId;

@@ -1,11 +1,14 @@
 package com.caovy2001.chatbot.service.pattern;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
+import com.caovy2001.chatbot.entity.IntentEntity;
 import com.caovy2001.chatbot.entity.PatternEntity;
 import com.caovy2001.chatbot.entity.ScriptEntity;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.PatternRepository;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.intent.IIntentService;
+import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 import com.caovy2001.chatbot.service.pattern.command.CommandPatternAdd;
 import com.caovy2001.chatbot.service.pattern.command.CommandPatternDelete;
 import com.caovy2001.chatbot.service.pattern.command.CommandPatternUpdate;
@@ -24,6 +27,9 @@ import java.util.List;
 public class PatternService extends BaseService implements IPatternService {
     @Autowired
     private PatternRepository patternRepository;
+
+    @Autowired
+    private IIntentService intentService;
 
     @Override
     public ResponsePatternAdd add(CommandPatternAdd command) {
@@ -138,6 +144,16 @@ public class PatternService extends BaseService implements IPatternService {
         }
 
         List<PatternEntity> patterns = patternRepository.findByUserId(userId, PageRequest.of(page, size));
+        if (!CollectionUtils.isEmpty(patterns)) {
+            for (PatternEntity pattern: patterns) {
+                if (StringUtils.isNotBlank(pattern.getIntentId())) {
+                    ResponseIntents responseIntents = intentService.getById(pattern.getIntentId(), pattern.getUserId());
+                    if (responseIntents != null && responseIntents.getIntent() != null) {
+                        pattern.setIntentName(responseIntents.getIntent().getName());
+                    }
+                }
+            }
+        }
         return new Paginated<>(patterns, page, size, total);
     }
 }
