@@ -1,0 +1,9 @@
+Hostname: chatbot-zlma
+IP: 14.225.192.182
+Username: root
+Password: Caodinhsyvy2001@
+Port SSH: 22
+
+
+nohup command &
+https://portal.vietnix.vn/clientarea.php?action=productdetails&id=44778
