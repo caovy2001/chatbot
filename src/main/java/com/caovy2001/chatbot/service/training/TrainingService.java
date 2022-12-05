@@ -139,7 +139,9 @@ public class TrainingService extends BaseService implements ITrainingService {
 
         NodeEntity currNode = null;
         if ("_BEGIN".equals(command.getCurrentNodeId())) {
-            currNode = nodes.get(0);
+            currNode = nodes.stream().filter(NodeEntity::getIsFirstNode).findFirst().orElse(null);
+            if (currNode == null) return this.returnException("script_not_have_first_node", ResponseTrainingPredict.class);
+
             return ResponseTrainingPredict.builder()
                     .currentNodeId(currNode.getNodeId())
                     .message(currNode.getMessage())
