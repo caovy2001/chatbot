@@ -156,7 +156,10 @@ public class TrainingService extends BaseService implements ITrainingService {
         }
 
         if (CollectionUtils.isEmpty(currNode.getConditionMappings())) {
-            return null;
+            return ResponseTrainingPredict.builder()
+                    .currentNodeId("_END")
+                    .message(script.getEndMessage())
+                    .build();
         }
 
         // Kiem tra keyword
@@ -228,7 +231,7 @@ public class TrainingService extends BaseService implements ITrainingService {
         if (CollectionUtils.isEmpty(conditionMappingEntity.getNext_node_ids())) {
             return ResponseTrainingPredict.builder()
                     .currentNodeId("_END")
-                    .message(null)
+                    .message(script.getEndMessage())
                     .build();
         }
 
@@ -238,7 +241,7 @@ public class TrainingService extends BaseService implements ITrainingService {
         if (nextNode == null) {
             return ResponseTrainingPredict.builder()
                     .currentNodeId("_END")
-                    .message(null)
+                    .message(script.getEndMessage())
                     .build();
         }
 

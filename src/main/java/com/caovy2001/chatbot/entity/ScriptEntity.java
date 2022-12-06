@@ -35,6 +35,9 @@ public class ScriptEntity extends BaseEntity {
     @Field("wrong_message")
     private String wrongMessage;
 
+    @Field("end_message")
+    private String endMessage;
+
     @Transient
     private List<NodeEntity> nodes;
 
