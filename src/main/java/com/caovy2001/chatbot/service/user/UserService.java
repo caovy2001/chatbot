@@ -76,6 +76,7 @@ public class UserService extends BaseService implements IUserService{
                 .userId(savedUserEntity.getId())
                 .username(savedUserEntity.getUsername())
                 .token(savedUserEntity.getToken())
+                .secretKey(savedUserEntity.getSecretKey())
                 .build();
     }
 
