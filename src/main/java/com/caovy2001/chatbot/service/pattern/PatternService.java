@@ -156,4 +156,19 @@ public class PatternService extends BaseService implements IPatternService {
         }
         return new Paginated<>(patterns, page, size, total);
     }
+
+    @Override
+    public Paginated<PatternEntity> getPaginationByIntentId(String intentId, int page, int size) {
+        if (StringUtils.isBlank(intentId)) {
+            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
+        }
+
+        long total = patternRepository.countByIntentId(intentId);
+        if (total == 0L) {
+            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
+        }
+
+        List<PatternEntity> patterns = patternRepository.findByIntentId(intentId, PageRequest.of(page, size));
+        return new Paginated<>(patterns, page, size, total);
+    }
 }

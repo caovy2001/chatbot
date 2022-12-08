@@ -18,6 +18,8 @@ public interface PatternRepository extends MongoRepository<PatternEntity, String
     void deleteByIntentIdAndUserId(String intentId, String userId);
 
     long countByUserId(String userId);
+    long countByIntentId(String intentId);
 
     List<PatternEntity> findByUserId(String userId, PageRequest pageRequest);
+    List<PatternEntity> findByIntentId(String intentId, PageRequest pageRequest);
 }

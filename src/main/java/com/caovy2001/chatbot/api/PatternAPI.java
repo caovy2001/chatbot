@@ -149,4 +149,24 @@ public class PatternAPI {
             return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 0, 0, 0));
         }
     }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @GetMapping("/get_pagination/by_intent_id/{intent_id}")
+    public ResponseEntity<Paginated<PatternEntity>> getPaginationByIntentId(@RequestParam int page, @RequestParam int size, @PathVariable String intent_id){
+        try{
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
+                throw new Exception("auth_invalid");
+            }
+
+            page--;
+            Paginated<PatternEntity> patterns = patternService.getPaginationByIntentId(intent_id, page, size);
+            patterns.setPageNumber(++page);
+            return ResponseEntity.ok(patterns);
+        }
+        catch (Exception e){
+            e.printStackTrace();
+            return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 0, 0, 0));
+        }
+    }
 }
