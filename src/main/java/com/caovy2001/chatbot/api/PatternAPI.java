@@ -115,7 +115,7 @@ public class PatternAPI {
     }
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-    @DeleteMapping()
+    @PostMapping("/delete")
     public ResponseEntity<ResponsePattern> delete(@RequestBody CommandPatternDelete command) {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();

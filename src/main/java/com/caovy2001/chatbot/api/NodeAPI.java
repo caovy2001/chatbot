@@ -61,7 +61,7 @@ public class NodeAPI {
     }
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-    @DeleteMapping
+    @PostMapping("/delete")
     public ResponseEntity<?> delete(@RequestBody CommandNodeDelete command){
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();

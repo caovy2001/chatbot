@@ -122,7 +122,7 @@ public class ScriptAPI {
     }
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-    @DeleteMapping
+    @PostMapping("/delete")
     public  ResponseEntity<?> deleteScriptById(@RequestBody CommandScriptDelete command){
         try{
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();

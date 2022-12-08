@@ -126,7 +126,7 @@ public class IntentAPI {
     }
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-    @DeleteMapping()
+    @PostMapping("/delete")
     public ResponseEntity<?> delete(@RequestBody CommandIntentDelete command) {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
