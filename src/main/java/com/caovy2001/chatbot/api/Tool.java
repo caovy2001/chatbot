@@ -106,7 +106,7 @@ public class Tool {
         try {
             List<IntentEntity> intentEntities = new ArrayList<>();
             IntentEntity intent = null;
-            File myObj = new File("patterns/patterns_vi.txt");
+            File myObj = new File("patterns/patterns2.txt");
             Scanner myReader = new Scanner(myObj);
             boolean isNewIntent = true;
             while (myReader.hasNextLine()) {
@@ -150,7 +150,7 @@ public class Tool {
             myReader.close();
 
             CommandIntentAddMany commandIntentAddMany = CommandIntentAddMany.builder()
-                    .userId("637755b55c31f1122c6f6441")
+                    .userId("6390ca177c627e7e8442e237")
                     .intents(intentEntities)
                     .build();
             intentService.addMany(commandIntentAddMany);
