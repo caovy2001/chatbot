@@ -17,4 +17,5 @@ public class ResponseUserLogin extends ResponseBase {
     private String username;
     private String token;
     private String secretKey;
+    private String fullName;
 }

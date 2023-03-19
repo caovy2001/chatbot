@@ -3,6 +3,7 @@ package com.caovy2001.chatbot.api;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.UserEntity;
 import com.caovy2001.chatbot.service.IBaseService;
+import com.caovy2001.chatbot.service.ResponseBase;
 import com.caovy2001.chatbot.service.user.IUserService;
 import com.caovy2001.chatbot.service.user.command.CommandUserLogin;
 import com.caovy2001.chatbot.service.user.command.CommandUserSignUp;
@@ -66,6 +67,16 @@ public class UserAPI {
                     .build());
         } catch (Exception e) {
             return ResponseEntity.ok(baseService.returnException(ExceptionConstant.error_occur, ResponseUserGetSecretKey.class));
+        }
+    }
+
+    @PostMapping("/login_from_data_everywhere")
+    public ResponseEntity<ResponseBase> loginFromDataEverywhere(@RequestBody CommandUserLogin command) {
+        try {
+            ResponseBase responseBase = userService.loginFromDataEverywhere(command);
+            return ResponseEntity.ok(responseBase);
+        } catch (Exception e) {
+            return ResponseEntity.ok(baseService.returnException(ExceptionConstant.error_occur, ResponseUserLogin.class));
         }
     }
 }

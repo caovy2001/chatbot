@@ -2,6 +2,7 @@ package com.caovy2001.chatbot.service.user;
 
 import com.caovy2001.chatbot.entity.UserEntity;
 import com.caovy2001.chatbot.service.IBaseService;
+import com.caovy2001.chatbot.service.ResponseBase;
 import com.caovy2001.chatbot.service.user.command.CommandUserLogin;
 import com.caovy2001.chatbot.service.user.command.CommandUserSignUp;
 import com.caovy2001.chatbot.service.user.response.ResponseUserLogin;
@@ -17,4 +18,6 @@ public interface IUserService extends IBaseService {
     ResponseUserSignUp signUp(CommandUserSignUp commandUserSignUp) throws Exception;
 
     UserEntity getBySecretKey(String secretKey);
+
+    ResponseBase loginFromDataEverywhere(CommandUserLogin command);
 }
