@@ -254,11 +254,10 @@ public class PatternService extends BaseService implements IPatternService {
     @Override
     public void importFromExcel(CommandImportPatternsFromExcel command) throws Exception {
 //        long startTime = System.currentTimeMillis();
-        if (StringUtils.isAnyBlank(command.getSessionId(), command.getUserId()) || command.getData() == null) {
+        if (StringUtils.isAnyBlank(command.getSessionId(), command.getUserId())) {
             throw new Exception(ExceptionConstant.missing_param);
         }
 
-        FileOutputStream fos = null;
         File importFile = null;
         Workbook workbook = null;
 
@@ -274,10 +273,7 @@ public class PatternService extends BaseService implements IPatternService {
         jedisService.setWithExpired(importExcelJedisKey, objectMapper.writeValueAsString(response), 60*24);
 
         try {
-            String path_file = UUID.randomUUID() + ".xlsx";
-            fos = new FileOutputStream(path_file);
-            byte[] data = command.getData();
-            fos.write(data);
+            String path_file = command.getSessionId() + ".xlsx";
 
             importFile = new File(path_file);
             workbook = new XSSFWorkbook(importFile);
@@ -410,7 +406,6 @@ public class PatternService extends BaseService implements IPatternService {
         } finally {
             try {
                 if (workbook != null) workbook.close();
-                if (fos != null) fos.close();
                 if (importFile != null) importFile.delete();
             } catch (IOException e) {
                 log.error(e.getLocalizedMessage());

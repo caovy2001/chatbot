@@ -3,25 +3,23 @@ package com.caovy2001.chatbot.api;
 import com.caovy2001.chatbot.constant.Constant;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.PatternEntity;
-import com.caovy2001.chatbot.entity.ScriptEntity;
 import com.caovy2001.chatbot.entity.UserEntity;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.service.BaseService;
-import com.caovy2001.chatbot.service.ResponseBase;
-import com.caovy2001.chatbot.service.intent.response.ResponseIntentAdd;
 import com.caovy2001.chatbot.service.jedis.IJedisService;
-import com.caovy2001.chatbot.service.jedis.JedisService;
-import com.caovy2001.chatbot.service.node.command.CommandNodeDelete;
 import com.caovy2001.chatbot.service.pattern.IPatternService;
-import com.caovy2001.chatbot.service.pattern.command.*;
+import com.caovy2001.chatbot.service.pattern.command.CommandImportPatternsFromExcel;
+import com.caovy2001.chatbot.service.pattern.command.CommandPatternAdd;
+import com.caovy2001.chatbot.service.pattern.command.CommandPatternDelete;
+import com.caovy2001.chatbot.service.pattern.command.CommandPatternUpdate;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePattern;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePatternAdd;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,8 +27,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.net.URI;
-import java.nio.file.Files;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.UUID;
@@ -205,15 +203,34 @@ public class PatternAPI {
             }
 
             String sessionId = UUID.randomUUID().toString();
+            FileOutputStream fos = null;
+
+            try {
+                String path_file = sessionId + ".xlsx";
+                fos = new FileOutputStream(path_file);
+                byte[] data = excelFile.getBytes();
+                fos.write(data);
+            } catch (Throwable e) {
+                e.printStackTrace();
+                log.error(e.getLocalizedMessage());
+            } finally {
+                try {
+                    if (fos != null) fos.close();
+                } catch (IOException e) {
+                    log.error(e.getLocalizedMessage());
+                }
+            }
+
             CompletableFuture.runAsync(() -> {
                 try {
                     patternService.importFromExcel(CommandImportPatternsFromExcel.builder()
                             .userId(userEntity.getId())
                             .sessionId(sessionId)
-                            .data(excelFile.getBytes())
                             .build());
                 } catch (Exception e) {
                     log.info(e.getMessage());
+                    File importFile = new File(sessionId + ".xlsx");
+                    if (importFile.exists()) importFile.delete();
                 }
             });
 
