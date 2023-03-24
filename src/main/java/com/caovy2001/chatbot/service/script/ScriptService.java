@@ -48,8 +48,8 @@ public class ScriptService extends BaseService implements IScriptService {
                 .wrongMessage(command.getWrongMessage())
                 .endMessage(command.getEndMessage())
                 .description(command.getDescription())
-                .createdDate(new Date(System.currentTimeMillis()))
-                .lastUpdatedDate(new Date(System.currentTimeMillis()))
+                .createdDate(System.currentTimeMillis())
+                .lastUpdatedDate(System.currentTimeMillis())
                 .build();
         ScriptEntity addedScript = scriptRepository.insert(script);
 
@@ -150,7 +150,7 @@ public class ScriptService extends BaseService implements IScriptService {
         existScript.setWrongMessage(command.getWrongMessage());
         existScript.setDescription(command.getDescription());
         existScript.setEndMessage(command.getEndMessage());
-        existScript.setLastUpdatedDate(new Date(System.currentTimeMillis()));
+        existScript.setLastUpdatedDate(System.currentTimeMillis());
         ScriptEntity updatedScript = scriptRepository.save(existScript);
         updatedScript.setNodes(addedNodes);
         return ResponseScript.builder()
