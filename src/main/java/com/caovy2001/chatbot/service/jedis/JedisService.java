@@ -19,7 +19,13 @@ public class JedisService implements IJedisService {
     }
 
     @Override
+    @Deprecated
     public void set(String key, String value) {
         jedis.set(key, value);
+    }
+
+    @Override
+    public void setWithExpired(String key, String value, long seconds) {
+        jedis.setex(key, seconds, value);
     }
 }

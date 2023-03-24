@@ -3,10 +3,7 @@ package com.caovy2001.chatbot.service.pattern;
 import com.caovy2001.chatbot.entity.PatternEntity;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.service.IBaseService;
-import com.caovy2001.chatbot.service.pattern.command.CommandPattern;
-import com.caovy2001.chatbot.service.pattern.command.CommandPatternAdd;
-import com.caovy2001.chatbot.service.pattern.command.CommandPatternDelete;
-import com.caovy2001.chatbot.service.pattern.command.CommandPatternUpdate;
+import com.caovy2001.chatbot.service.pattern.command.*;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePattern;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePatternAdd;
 
@@ -19,6 +16,8 @@ public interface IPatternService extends IBaseService {
 
     List<PatternEntity> addMany(List<PatternEntity> patternsToAdd);
 
+    List<PatternEntity> addMany(CommandPatternAddMany commandPatternAddMany);
+
     ResponsePattern getById(String id, String userId);
 
     ResponsePattern getByUserId(String userId);
@@ -28,4 +27,6 @@ public interface IPatternService extends IBaseService {
     Paginated<PatternEntity> getPaginationByUserId(String userId, int page, int size);
 
     Paginated<PatternEntity> getPaginationByIntentId(String intentId, int page, int size);
+
+    void importFromExcel(CommandImportPatternsFromExcel command) throws Exception;
 }

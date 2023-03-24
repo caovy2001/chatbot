@@ -10,6 +10,7 @@ import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +30,9 @@ public class ScriptEntity extends BaseEntity {
     @Field("name")
     private String name;
 
+    @Field("description")
+    private String description;
+
     @Field("ui_rendering")
     private Map<String, Object> uiRendering;
 
@@ -37,6 +41,12 @@ public class ScriptEntity extends BaseEntity {
 
     @Field("end_message")
     private String endMessage;
+
+    @Field("last_updated_date")
+    private Date lastUpdatedDate;
+
+    @Field("created_date")
+    private Date createdDate;
 
     @Transient
     private List<NodeEntity> nodes;

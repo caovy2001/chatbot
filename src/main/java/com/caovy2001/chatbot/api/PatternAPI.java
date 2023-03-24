@@ -1,30 +1,43 @@
 package com.caovy2001.chatbot.api;
 
+import com.caovy2001.chatbot.constant.Constant;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.PatternEntity;
 import com.caovy2001.chatbot.entity.ScriptEntity;
 import com.caovy2001.chatbot.entity.UserEntity;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.ResponseBase;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntentAdd;
+import com.caovy2001.chatbot.service.jedis.IJedisService;
+import com.caovy2001.chatbot.service.jedis.JedisService;
 import com.caovy2001.chatbot.service.node.command.CommandNodeDelete;
 import com.caovy2001.chatbot.service.pattern.IPatternService;
-import com.caovy2001.chatbot.service.pattern.command.CommandPattern;
-import com.caovy2001.chatbot.service.pattern.command.CommandPatternAdd;
-import com.caovy2001.chatbot.service.pattern.command.CommandPatternDelete;
-import com.caovy2001.chatbot.service.pattern.command.CommandPatternUpdate;
+import com.caovy2001.chatbot.service.pattern.command.*;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePattern;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePatternAdd;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.net.URI;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
+@Slf4j
 @RequestMapping("/pattern")
 public class PatternAPI {
     @Autowired
@@ -32,6 +45,12 @@ public class PatternAPI {
 
     @Autowired
     private IPatternService patternService;
+
+    @Autowired
+    private IJedisService jedisService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @PostMapping("/add")
@@ -132,10 +151,10 @@ public class PatternAPI {
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @GetMapping("/get_pagination/by_user_id")
-    public ResponseEntity<Paginated<PatternEntity>> getPaginationByUserId(@RequestParam int page, @RequestParam int size){
-        try{
+    public ResponseEntity<Paginated<PatternEntity>> getPaginationByUserId(@RequestParam int page, @RequestParam int size) {
+        try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))) {
                 throw new Exception("auth_invalid");
             }
 
@@ -143,8 +162,7 @@ public class PatternAPI {
             Paginated<PatternEntity> patterns = patternService.getPaginationByUserId(userEntity.getId(), page, size);
             patterns.setPageNumber(++page);
             return ResponseEntity.ok(patterns);
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 0, 0, 0));
         }
@@ -152,10 +170,10 @@ public class PatternAPI {
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @GetMapping("/get_pagination/by_intent_id/{intent_id}")
-    public ResponseEntity<Paginated<PatternEntity>> getPaginationByIntentId(@RequestParam int page, @RequestParam int size, @PathVariable String intent_id){
-        try{
+    public ResponseEntity<Paginated<PatternEntity>> getPaginationByIntentId(@RequestParam int page, @RequestParam int size, @PathVariable String intent_id) {
+        try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))) {
                 throw new Exception("auth_invalid");
             }
 
@@ -163,10 +181,93 @@ public class PatternAPI {
             Paginated<PatternEntity> patterns = patternService.getPaginationByIntentId(intent_id, page, size);
             patterns.setPageNumber(++page);
             return ResponseEntity.ok(patterns);
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 0, 0, 0));
+        }
+    }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @PostMapping("/import/excel")
+    public ResponseEntity<Document> importFromExcel(@RequestParam("excel_file") MultipartFile excelFile) {
+        try {
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))) {
+                throw new Exception("auth_invalid");
+            }
+
+            if (StringUtils.isBlank(excelFile.getOriginalFilename()) || excelFile.getOriginalFilename().split("\\.").length < 2) {
+                throw new Exception("invalid_file");
+            }
+
+            if (!Arrays.asList("xls", "xlsx").contains(excelFile.getOriginalFilename().split("\\.")[1])) {
+                throw new Exception("only_accept_xlsx");
+            }
+
+            String sessionId = UUID.randomUUID().toString();
+            CompletableFuture.runAsync(() -> {
+                try {
+                    patternService.importFromExcel(CommandImportPatternsFromExcel.builder()
+                            .userId(userEntity.getId())
+                            .sessionId(sessionId)
+                            .data(excelFile.getBytes())
+                            .build());
+                } catch (Exception e) {
+                    log.info(e.getMessage());
+                }
+            });
+
+            Document document = new Document();
+            document.put("session_id", sessionId);
+            document.put("http_status", "OK");
+            return ResponseEntity.ok(document);
+        } catch (Exception e) {
+            Document resMap = new Document();
+            resMap.put("http_status", "EXPECTATION_FAILED");
+            resMap.put("exception_code", StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
+            return ResponseEntity.ok(resMap);
+        }
+    }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @GetMapping("/import/excel/status")
+    public ResponseEntity<Document> getStatusImportExcel(@RequestParam String sessionId) {
+        try {
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))) {
+                throw new Exception("auth_invalid");
+            }
+            String importExcelJedisKey = Constant.JedisPrefix.userIdPrefix_ + userEntity.getId() +
+                    Constant.JedisPrefix.COLON +
+                    Constant.JedisPrefix.Pattern.importExcelSessionIdPrefix_ + sessionId;
+            String responseStatusStr = jedisService.get(importExcelJedisKey);
+            if (StringUtils.isBlank(responseStatusStr)) {
+                throw new Exception("status_null");
+            }
+            Document resMap = objectMapper.readValue(responseStatusStr, Document.class);
+            resMap.put("http_status", "OK");
+            return ResponseEntity.ok(resMap);
+        } catch (Exception e) {
+            Document resMap = new Document();
+            resMap.put("http_status", "EXPECTATION_FAILED");
+            resMap.put("exception_code", StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
+            return ResponseEntity.ok(resMap);
+        }
+    }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @GetMapping("/import/excel/get_template")
+    public ResponseEntity<Document> getImportExcelTemplate() {
+        try {
+            Document resMap = new Document();
+            resMap.put("link", Constant.Pattern.importExcelTemplateDownloadLink);
+            resMap.put("http_status", "OK");
+            return ResponseEntity.ok(resMap);
+        } catch (Exception e) {
+            Document resMap = new Document();
+            resMap.put("http_status", "EXPECTATION_FAILED");
+            resMap.put("exception_code", StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
+            return ResponseEntity.ok(resMap);
         }
     }
 }

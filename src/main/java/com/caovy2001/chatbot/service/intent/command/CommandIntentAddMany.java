@@ -15,4 +15,7 @@ import java.util.List;
 public class CommandIntentAddMany {
     private String userId;
     private List<IntentEntity> intents;
+
+    @Builder.Default
+    private boolean returnListDetails = false;
 }

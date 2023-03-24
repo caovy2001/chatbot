@@ -18,6 +18,7 @@ public class CommandScriptUpdate {
     private String name;
     private String userId;
     private String wrongMessage;
+    private String description;
     private String endMessage;
     private List<NodeEntity> nodes;
     private Map<String, Object> uiRendering;

@@ -15,6 +15,9 @@ import com.caovy2001.chatbot.service.intent.response.ResponseIntentAdd;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 import com.caovy2001.chatbot.service.pattern.IPatternService;
 import com.caovy2001.chatbot.service.pattern.command.CommandPatternAdd;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -26,6 +29,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class IntentService extends BaseService implements IIntentService {
 
     @Autowired
@@ -67,6 +71,7 @@ public class IntentService extends BaseService implements IIntentService {
         }
         ResponseIntentAdd responseIntentAdd = ResponseIntentAdd.builder()
                 .ids(new ArrayList<>())
+                .intents(new ArrayList<>())
                 .build();
         for (IntentEntity intent : command.getIntents()) {
             IntentEntity existIntent = intentRepository.findByCodeAndUserId(intent.getCode(), command.getUserId()).orElse(null);
@@ -79,6 +84,9 @@ public class IntentService extends BaseService implements IIntentService {
             intent.setUserId(command.getUserId());
             IntentEntity savedIntent = intentRepository.save(intent);
             responseIntentAdd.getIds().add(savedIntent.getId());
+            if (BooleanUtils.isTrue(command.isReturnListDetails())) {
+                responseIntentAdd.getIntents().add(savedIntent);
+            }
 
             if (!CollectionUtils.isEmpty(intent.getPatterns())) {
                 for (PatternEntity pattern : intent.getPatterns()) {
@@ -87,6 +95,7 @@ public class IntentService extends BaseService implements IIntentService {
                             .content(pattern.getContent())
                             .intentId(savedIntent.getId())
                             .build();
+
                     patternService.add(commandPatternAdd);
                 }
             }
@@ -220,6 +229,22 @@ public class IntentService extends BaseService implements IIntentService {
 
         List<IntentEntity> intents = intentRepository.findByUserId(userId, PageRequest.of(page, size));
         return new Paginated<>(intents, page, size, total);
+    }
+
+    @Override
+    public List<IntentEntity> addManyReturnList(@NonNull CommandIntentAddMany command) {
+        if (StringUtils.isBlank(command.getUserId()) || CollectionUtils.isEmpty(command.getIntents())) {
+            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
+            return null;
+        }
+
+        command.setReturnListDetails(true);
+        ResponseIntentAdd responseIntentAdd = this.addMany(command);
+        if (responseIntentAdd == null || CollectionUtils.isEmpty(responseIntentAdd.getIntents())) {
+            log.error("[{}]: {}", new Exception().getStackTrace()[0], "cannot_add_many_intents");
+            return null;
+        }
+        return responseIntentAdd.getIntents();
     }
 
     @Override

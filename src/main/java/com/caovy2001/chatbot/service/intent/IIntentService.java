@@ -9,6 +9,8 @@ import com.caovy2001.chatbot.service.intent.command.CommandIntentAddPattern;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntentAdd;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 
+import java.util.List;
+
 public interface IIntentService extends IBaseService {
     ResponseIntentAdd add(CommandIntent command);
 
@@ -28,4 +30,5 @@ public interface IIntentService extends IBaseService {
 
     Paginated<IntentEntity> getPaginationByUserId(String userId, int page, int size);
 
+    List<IntentEntity> addManyReturnList(CommandIntentAddMany commandIntentAddMany);
 }

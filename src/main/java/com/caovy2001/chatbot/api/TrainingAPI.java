@@ -82,6 +82,7 @@ public class TrainingAPI {
         }
     }
 
+    /** API phía training server sẽ gọi khi nó thực hiện train xong */
     @PostMapping("/train_done")
     public ResponseEntity<Boolean> trainDone(@RequestBody CommandTrainingTrain command) {
         log.info("[trainDone] Receive message: {}", command);

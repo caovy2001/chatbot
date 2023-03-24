@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -46,6 +47,9 @@ public class ScriptService extends BaseService implements IScriptService {
                 .uiRendering(command.getUiRendering())
                 .wrongMessage(command.getWrongMessage())
                 .endMessage(command.getEndMessage())
+                .description(command.getDescription())
+                .createdDate(new Date(System.currentTimeMillis()))
+                .lastUpdatedDate(new Date(System.currentTimeMillis()))
                 .build();
         ScriptEntity addedScript = scriptRepository.insert(script);
 
@@ -144,7 +148,9 @@ public class ScriptService extends BaseService implements IScriptService {
         existScript.setUserId(command.getUserId());
         existScript.setUiRendering(command.getUiRendering());
         existScript.setWrongMessage(command.getWrongMessage());
+        existScript.setDescription(command.getDescription());
         existScript.setEndMessage(command.getEndMessage());
+        existScript.setLastUpdatedDate(new Date(System.currentTimeMillis()));
         ScriptEntity updatedScript = scriptRepository.save(existScript);
         updatedScript.setNodes(addedNodes);
         return ResponseScript.builder()
