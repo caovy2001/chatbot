@@ -278,9 +278,6 @@ public class PatternService extends BaseService implements IPatternService {
             fos = new FileOutputStream(path_file);
             byte[] data = command.getData();
             fos.write(data);
-            // Free memory
-            command.setData(null);
-            data = null;
 
             importFile = new File(path_file);
             workbook = new XSSFWorkbook(importFile);
