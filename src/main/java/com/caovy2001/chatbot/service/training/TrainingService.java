@@ -3,7 +3,9 @@ package com.caovy2001.chatbot.service.training;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.*;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.entity_type.command.CommandGetListEntityType;
 import com.caovy2001.chatbot.service.intent.IIntentService;
+import com.caovy2001.chatbot.service.intent.command.CommandGetListIntent;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 import com.caovy2001.chatbot.service.jedis.IJedisService;
 import com.caovy2001.chatbot.service.jedis.JedisService;
@@ -21,11 +23,14 @@ import com.caovy2001.chatbot.service.training_history.command.CommandTrainingHis
 import com.caovy2001.chatbot.service.training_history.response.ResponseTrainingHistory;
 import com.caovy2001.chatbot.service.training_history.response.ResponseTrainingHistoryAdd;
 import com.caovy2001.chatbot.service.user.IUserService;
+import com.caovy2001.chatbot.utils.ChatbotStringUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -35,10 +40,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -70,12 +72,16 @@ public class TrainingService extends BaseService implements ITrainingService {
 
     @Override
     public ResponseTrainingTrain train(CommandTrainingTrain command) {
-        if (StringUtils.isAnyBlank(command.getUserId(), command.getUsername())) {
+        if (StringUtils.isAnyBlank(command.getScriptId(), command.getUserId(), command.getUsername())) {
             return returnException(ExceptionConstant.missing_param, ResponseTrainingTrain.class);
         }
 
-        ResponseIntents responseIntents = intentService.getByUserId(command.getUserId());
-        if (responseIntents == null || CollectionUtils.isEmpty(responseIntents.getIntents())) {
+        List<IntentEntity> intentEntities = intentService.getList(CommandGetListIntent.builder()
+                        .userId(command.getUserId())
+                        .scriptIds(List.of(command.getScriptId()))
+                        .hasPatterns(true)
+                .build());
+        if (CollectionUtils.isEmpty(intentEntities)) {
             return returnException("intents_empty", ResponseTrainingTrain.class);
         }
 
@@ -83,6 +89,7 @@ public class TrainingService extends BaseService implements ITrainingService {
         ResponseTrainingHistoryAdd responseTrainingHistoryAdd = trainingHistoryService.add(CommandTrainingHistoryAdd.builder()
                 .userId(command.getUserId())
                 .username(command.getUsername())
+                .scriptId(command.getScriptId())
                 .build());
 
         if (responseTrainingHistoryAdd == null || StringUtils.isBlank(responseTrainingHistoryAdd.getId())) {
@@ -91,7 +98,7 @@ public class TrainingService extends BaseService implements ITrainingService {
 
         // Gửi request sang python để thực hiên train
         try {
-            command.setIntents(responseIntents.getIntents());
+            command.setIntents(intentEntities);
             command.setTrainingHistoryId(responseTrainingHistoryAdd.getId());
             RestTemplate restTemplate = new RestTemplate();
             HttpHeaders headers = new HttpHeaders();
@@ -140,7 +147,8 @@ public class TrainingService extends BaseService implements ITrainingService {
         NodeEntity currNode = null;
         if ("_BEGIN".equals(command.getCurrentNodeId())) {
             currNode = nodes.stream().filter(NodeEntity::getIsFirstNode).findFirst().orElse(null);
-            if (currNode == null) return this.returnException("script_not_have_first_node", ResponseTrainingPredict.class);
+            if (currNode == null)
+                return this.returnException("script_not_have_first_node", ResponseTrainingPredict.class);
 
             return ResponseTrainingPredict.builder()
                     .currentNodeId(currNode.getNodeId())
@@ -167,7 +175,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                 .filter(cm -> ConditionMappingEntity.EPredictType.KEYWORD.equals(cm.getPredictType())).collect(Collectors.toList());
 
         if (!CollectionUtils.isEmpty(keywordCMs)) {
-            for (ConditionMappingEntity cm: keywordCMs) {
+            for (ConditionMappingEntity cm : keywordCMs) {
                 if (CollectionUtils.isEmpty(cm.getNext_node_ids())) continue;
 
                 if (command.getMessage().toLowerCase().contains(cm.getKeyword().toLowerCase())) {
@@ -195,6 +203,7 @@ public class TrainingService extends BaseService implements ITrainingService {
         commandRequest.put("username", userEntity.getUsername());
         commandRequest.put("user_id", userEntity.getId());
         commandRequest.put("intent_ids", intentIds);
+        commandRequest.put("script_id", command.getScriptId());
 
         String commandBody = null;
         try {
@@ -217,6 +226,9 @@ public class TrainingService extends BaseService implements ITrainingService {
                     .currentNodeId(currNode.getNodeId())
                     .message(script.getWrongMessage())
                     .build();
+        }
+        if (intentId.equals("-1")) {
+            return this.returnException("model_not_train_yet", ResponseTrainingPredict.class);
         }
 
         ConditionMappingEntity conditionMappingEntity = currNode.getConditionMappings().stream()

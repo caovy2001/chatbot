@@ -12,4 +12,5 @@ import lombok.NoArgsConstructor;
 public class CommandTrainingHistoryAdd {
     private String userId;
     private String username;
+    private String scriptId;
 }

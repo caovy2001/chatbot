@@ -3,6 +3,7 @@ package com.caovy2001.chatbot.service.intent;
 import com.caovy2001.chatbot.entity.IntentEntity;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.service.IBaseService;
+import com.caovy2001.chatbot.service.intent.command.CommandGetListIntent;
 import com.caovy2001.chatbot.service.intent.command.CommandIntent;
 import com.caovy2001.chatbot.service.intent.command.CommandIntentAddMany;
 import com.caovy2001.chatbot.service.intent.command.CommandIntentAddPattern;
@@ -31,4 +32,5 @@ public interface IIntentService extends IBaseService {
     Paginated<IntentEntity> getPaginationByUserId(String userId, int page, int size);
 
     List<IntentEntity> addManyReturnList(CommandIntentAddMany commandIntentAddMany);
+    List<IntentEntity> getList(CommandGetListIntent command);
 }

@@ -15,6 +15,7 @@ import java.util.List;
 public class CommandTrainingTrain {
     private String userId;
     private String username;
+    private String scriptId;
     private String trainingHistoryId;
     private List<IntentEntity> intents;
 }

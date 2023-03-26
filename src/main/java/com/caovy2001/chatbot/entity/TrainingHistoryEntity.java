@@ -27,6 +27,9 @@ public class TrainingHistoryEntity {
     @Field("username")
     private String username;
 
+    @Field("script_id")
+    private String scriptId;
+
     @Field("status")
     @Builder.Default
     private EStatus status = EStatus.TRAINING;

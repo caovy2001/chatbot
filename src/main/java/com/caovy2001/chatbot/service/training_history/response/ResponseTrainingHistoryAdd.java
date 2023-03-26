@@ -14,4 +14,5 @@ public class ResponseTrainingHistoryAdd extends ResponseBase {
     private String id;
     private String userId;
     private String username;
+    private String scriptId;
 }

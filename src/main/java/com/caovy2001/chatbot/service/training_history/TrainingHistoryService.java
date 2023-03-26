@@ -29,12 +29,14 @@ public class TrainingHistoryService extends BaseService implements ITrainingHist
         TrainingHistoryEntity trainingHistoryEntity = trainingHistoryRepository.insert(TrainingHistoryEntity.builder()
                         .username(command.getUsername())
                         .userId(command.getUserId())
+                        .scriptId(command.getScriptId())
                 .build());
 
         return ResponseTrainingHistoryAdd.builder()
                 .id(trainingHistoryEntity.getId())
                 .userId(trainingHistoryEntity.getUserId())
                 .username(trainingHistoryEntity.getUsername())
+                .scriptId(trainingHistoryEntity.getScriptId())
                 .build();
     }
 

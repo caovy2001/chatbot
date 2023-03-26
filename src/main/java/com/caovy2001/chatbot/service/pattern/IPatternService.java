@@ -29,4 +29,6 @@ public interface IPatternService extends IBaseService {
     Paginated<PatternEntity> getPaginationByIntentId(String intentId, int page, int size);
 
     void importFromExcel(CommandImportPatternsFromExcel command) throws Exception;
+
+    List<PatternEntity> getList(CommandGetListPattern command);
 }

@@ -1,6 +1,7 @@
 package com.caovy2001.chatbot.service.script;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
+import com.caovy2001.chatbot.entity.ConditionMappingEntity;
 import com.caovy2001.chatbot.entity.NodeEntity;
 import com.caovy2001.chatbot.entity.ScriptEntity;
 import com.caovy2001.chatbot.model.Paginated;
@@ -12,14 +13,15 @@ import com.caovy2001.chatbot.service.script.command.CommandScriptUpdate;
 import com.caovy2001.chatbot.service.script.response.ResponseScript;
 import com.caovy2001.chatbot.service.script.response.ResponseScriptAdd;
 import com.caovy2001.chatbot.service.script.response.ResponseScriptGetByUserId;
+import com.caovy2001.chatbot.service.script_intent_mapping.IScriptIntentMappingService;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,6 +32,9 @@ public class ScriptService extends BaseService implements IScriptService {
 
     @Autowired
     private INodeService nodeService;
+
+    @Autowired
+    private IScriptIntentMappingService scriptIntentMappingService;
     
     @Override
     public ResponseScriptAdd add(CommandScriptAdd command) {
@@ -53,8 +58,12 @@ public class ScriptService extends BaseService implements IScriptService {
                 .build();
         ScriptEntity addedScript = scriptRepository.insert(script);
 
+        List<String> intentIds = new ArrayList<>();
         for (NodeEntity node: command.getNodes()) {
             node.setScriptId(script.getId());
+            if (CollectionUtils.isNotEmpty(node.getConditionMappings())) {
+                intentIds.addAll(node.getConditionMappings().stream().map(ConditionMappingEntity::getIntentId).filter(StringUtils::isNotBlank).toList());
+            }
         }
         List<NodeEntity> addedNodes = nodeService.addMany(command.getNodes());
         if (CollectionUtils.isEmpty(addedNodes)) {
@@ -62,6 +71,14 @@ public class ScriptService extends BaseService implements IScriptService {
             return returnException("Add_nodes_fail", ResponseScriptAdd.class);
         }
         addedScript.setNodes(addedNodes);
+
+        // Thêm vào bảng script_intent_mapping
+        if (CollectionUtils.isNotEmpty(intentIds)) {
+            boolean addSuccess = scriptIntentMappingService.addForScriptIdByIntentIds(command.getUser_id(), script.getId(), intentIds);
+            if (BooleanUtils.isFalse(addSuccess)) {
+                return returnException("add_script_intent_mapping_fail", ResponseScriptAdd.class);
+            }
+        }
 
         return ResponseScriptAdd.builder()
                 .script(addedScript)
@@ -132,16 +149,29 @@ public class ScriptService extends BaseService implements IScriptService {
 
         List<NodeEntity> oldNodes = nodeService.getAllByScriptId(existScript.getId());
 
+        List<String> intentIds = new ArrayList<>();
         List<NodeEntity> addedNodes = new ArrayList<>();
         if (!CollectionUtils.isEmpty(command.getNodes())) {
             for (NodeEntity node: command.getNodes()) {
                 node.setScriptId(existScript.getId());
+                if (CollectionUtils.isNotEmpty(node.getConditionMappings())) {
+                    intentIds.addAll(node.getConditionMappings().stream().map(ConditionMappingEntity::getIntentId).filter(StringUtils::isNotBlank).toList());
+                }
             }
             addedNodes = nodeService.addMany(command.getNodes());
         }
 
         if (!CollectionUtils.isEmpty(oldNodes)) {
             nodeService.deleteMany(oldNodes.stream().map(NodeEntity::getId).collect(Collectors.toList()));
+        }
+
+        // Update bảng script_intent_mapping
+        if (CollectionUtils.isNotEmpty(intentIds)) {
+            scriptIntentMappingService.deleteByScriptId(command.getUserId(), command.getId());
+            boolean addSuccess = scriptIntentMappingService.addForScriptIdByIntentIds(command.getUserId(), command.getId(), intentIds);
+            if (BooleanUtils.isFalse(addSuccess)) {
+                return returnException("update_script_intent_mapping_fail", ResponseScript.class);
+            }
         }
 
         existScript.setName(command.getName());

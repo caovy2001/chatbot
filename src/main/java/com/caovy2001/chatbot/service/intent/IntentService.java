@@ -3,28 +3,37 @@ package com.caovy2001.chatbot.service.intent;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.IntentEntity;
 import com.caovy2001.chatbot.entity.PatternEntity;
-import com.caovy2001.chatbot.entity.ScriptEntity;
+import com.caovy2001.chatbot.entity.ScriptIntentMappingEntity;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.IntentRepository;
 import com.caovy2001.chatbot.repository.PatternRepository;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.intent.command.CommandGetListIntent;
 import com.caovy2001.chatbot.service.intent.command.CommandIntent;
 import com.caovy2001.chatbot.service.intent.command.CommandIntentAddMany;
 import com.caovy2001.chatbot.service.intent.command.CommandIntentAddPattern;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntentAdd;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 import com.caovy2001.chatbot.service.pattern.IPatternService;
+import com.caovy2001.chatbot.service.pattern.command.CommandGetListPattern;
 import com.caovy2001.chatbot.service.pattern.command.CommandPatternAdd;
+import com.caovy2001.chatbot.service.script_intent_mapping.IScriptIntentMappingService;
+import com.caovy2001.chatbot.service.script_intent_mapping.command.CommandGetListScriptIntentMapping;
+import com.caovy2001.chatbot.utils.ChatbotStringUtils;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,6 +49,12 @@ public class IntentService extends BaseService implements IIntentService {
 
     @Autowired
     private IPatternService patternService;
+
+    @Autowired
+    private IScriptIntentMappingService scriptIntentMappingService;
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
 
     @Override
     public ResponseIntentAdd add(CommandIntent command) {
@@ -105,6 +120,7 @@ public class IntentService extends BaseService implements IIntentService {
     }
 
     @Override
+    @Deprecated
     public ResponseIntents getByUserId(String userId) {
         if (StringUtils.isBlank(userId))
             return returnException(ExceptionConstant.missing_param, ResponseIntents.class);
@@ -245,6 +261,83 @@ public class IntentService extends BaseService implements IIntentService {
             return null;
         }
         return responseIntentAdd.getIntents();
+    }
+
+    @Override
+    public List<IntentEntity> getList(CommandGetListIntent command) {
+        if (StringUtils.isBlank(command.getUserId())) {
+            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
+            return null;
+        }
+
+        Query query = this.buildQueryGetList(command);
+        if (query == null) {
+            return null;
+        }
+
+        List<IntentEntity> intents = mongoTemplate.find(query, IntentEntity.class);
+        if (CollectionUtils.isEmpty(intents)) {
+            return null;
+        }
+
+        if (BooleanUtils.isTrue(command.isHasPatterns())) {
+            for (IntentEntity intent : intents) {
+                List<PatternEntity> patterns = patternService.getList(CommandGetListPattern.builder()
+                        .userId(command.getUserId())
+                        .intentId(intent.getId())
+                        .build());
+
+                intent.setPatterns(patterns);
+            }
+        }
+
+        return intents;
+    }
+
+    private Query buildQueryGetList(CommandGetListIntent command) {
+        Query query = new Query();
+        Criteria criteria = new Criteria();
+        List<Criteria> orCriteriaList = new ArrayList<>();
+        List<Criteria> andCriteriaList = new ArrayList<>();
+
+        andCriteriaList.add(Criteria.where("user_id").is(command.getUserId()));
+
+        if (StringUtils.isNotBlank(command.getKeyword())) {
+            orCriteriaList.add(Criteria.where("name").regex(ChatbotStringUtils.stripAccents(command.getKeyword().trim())));
+            orCriteriaList.add(Criteria.where("code").regex(ChatbotStringUtils.stripAccents(command.getKeyword().trim().toLowerCase())));
+        }
+
+        if (CollectionUtils.isNotEmpty(command.getIds())) {
+            andCriteriaList.add(Criteria.where("id").in(command.getIds()));
+        }
+
+        if (CollectionUtils.isNotEmpty(command.getScriptIds())) {
+            List<ScriptIntentMappingEntity> scriptIntentMappingEntities = scriptIntentMappingService.getList(CommandGetListScriptIntentMapping.builder()
+                    .userId(command.getUserId())
+                    .scriptIds(command.getScriptIds())
+                    .returnFields(List.of("intent_id"))
+                    .build());
+            if (CollectionUtils.isEmpty(scriptIntentMappingEntities)) {
+                return null;
+            } else {
+                andCriteriaList.add(Criteria.where("id").in(
+                        scriptIntentMappingEntities.stream().map(ScriptIntentMappingEntity::getIntentId).filter(StringUtils::isNotBlank).toList()
+                ));
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(orCriteriaList)) {
+            criteria.orOperator(orCriteriaList);
+        }
+        if (CollectionUtils.isNotEmpty(andCriteriaList)) {
+            criteria.andOperator(andCriteriaList);
+        }
+
+        query.addCriteria(criteria);
+        if (CollectionUtils.isNotEmpty(command.getReturnFields())) {
+            query.fields().include(Arrays.copyOf(command.getReturnFields().toArray(), command.getReturnFields().size(), String[].class));
+        }
+        return query;
     }
 
     @Override

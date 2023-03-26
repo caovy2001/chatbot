@@ -2,10 +2,7 @@ package com.caovy2001.chatbot.service.pattern;
 
 import com.caovy2001.chatbot.constant.Constant;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
-import com.caovy2001.chatbot.entity.EntityEntity;
-import com.caovy2001.chatbot.entity.EntityTypeEntity;
-import com.caovy2001.chatbot.entity.IntentEntity;
-import com.caovy2001.chatbot.entity.PatternEntity;
+import com.caovy2001.chatbot.entity.*;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.PatternRepository;
 import com.caovy2001.chatbot.service.BaseService;
@@ -15,6 +12,7 @@ import com.caovy2001.chatbot.service.entity.command.CommandEntityAddMany;
 import com.caovy2001.chatbot.service.entity_type.IEntityTypeService;
 import com.caovy2001.chatbot.service.entity_type.command.CommandEntityTypeAddMany;
 import com.caovy2001.chatbot.service.intent.IIntentService;
+import com.caovy2001.chatbot.service.intent.command.CommandGetListIntent;
 import com.caovy2001.chatbot.service.intent.command.CommandIntentAddMany;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 import com.caovy2001.chatbot.service.jedis.IJedisService;
@@ -22,12 +20,14 @@ import com.caovy2001.chatbot.service.pattern.command.*;
 import com.caovy2001.chatbot.service.pattern.response.ResponseImportExcelStatus;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePattern;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePatternAdd;
+import com.caovy2001.chatbot.service.script_intent_mapping.command.CommandGetListScriptIntentMapping;
 import com.caovy2001.chatbot.utils.ChatbotStringUtils;
 import com.caovy2001.chatbot.utils.ExcelUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -35,6 +35,9 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -63,6 +66,9 @@ public class PatternService extends BaseService implements IPatternService {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
 
     @Override
     public ResponsePatternAdd add(CommandPatternAdd command) {
@@ -411,6 +417,48 @@ public class PatternService extends BaseService implements IPatternService {
                 log.error(e.getLocalizedMessage());
             }
         }
+    }
+
+    @Override
+    public List<PatternEntity> getList(CommandGetListPattern command) {
+        if (StringUtils.isBlank(command.getUserId())) {
+            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
+            return null;
+        }
+
+        Query query = this.buildQueryGetList(command);
+        if (query == null) {
+            return null;
+        }
+
+        return mongoTemplate.find(query, PatternEntity.class);
+    }
+
+    private Query buildQueryGetList(CommandGetListPattern command) {
+        Query query = new Query();
+        Criteria criteria = new Criteria();
+        List<Criteria> orCriteriaList = new ArrayList<>();
+        List<Criteria> andCriteriaList = new ArrayList<>();
+
+        andCriteriaList.add(Criteria.where("user_id").is(command.getUserId()));
+
+        if (StringUtils.isNotBlank(command.getKeyword())) {
+            orCriteriaList.add(Criteria.where("content").regex(ChatbotStringUtils.stripAccents(command.getKeyword().trim())));
+        }
+
+        if (StringUtils.isNotBlank(command.getIntentId())) {
+            andCriteriaList.add(Criteria.where("intent_id").is(command.getIntentId()));
+        }
+
+        if (CollectionUtils.isNotEmpty(orCriteriaList)) {
+            criteria.orOperator(orCriteriaList);
+        }
+        if (CollectionUtils.isNotEmpty(andCriteriaList)) {
+            criteria.andOperator(andCriteriaList);
+        }
+
+        query.addCriteria(criteria);
+        return query;
     }
 
     /** Hàm này chỉ được dùng cho hàm importFromExcel, không được dùng hàm này ở những hàm khác */
