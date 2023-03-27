@@ -13,4 +13,6 @@ public class CommandGetListPattern {
     private String userId;
     private String intentId;
     private String keyword;
+    private int size = 0;
+    private int page = 0;
 }

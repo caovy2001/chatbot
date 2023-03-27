@@ -35,6 +35,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -243,6 +244,32 @@ public class PatternService extends BaseService implements IPatternService {
     }
 
     @Override
+    public Paginated<PatternEntity> getPaginationByUserId(CommandGetListPattern command) {
+        if (StringUtils.isBlank(command.getUserId())) {
+            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
+        }
+
+        if (command.getPage() <= 0) {
+            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
+        }
+
+        Query query = this.buildQueryGetList(command);
+        if (query == null) {
+            return new Paginated<>(new ArrayList<>(), command.getPage(), command.getSize(), 0);
+        }
+
+        long total = mongoTemplate.count(query, PatternEntity.class);
+        if (total == 0L) {
+            return new Paginated<>(new ArrayList<>(), command.getPage(), command.getSize(), 0);
+        }
+
+        PageRequest pageRequest = PageRequest.of(command.getPage() - 1, command.getSize());
+        query.with(pageRequest);
+        List<PatternEntity> patternEntities = mongoTemplate.find(query, PatternEntity.class);
+        return new Paginated<>(patternEntities, command.getPage(), command.getSize(), total);
+    }
+
+    @Override
     public Paginated<PatternEntity> getPaginationByIntentId(String intentId, int page, int size) {
         if (StringUtils.isBlank(intentId)) {
             return new Paginated<>(new ArrayList<>(), 0, 0, 0);
@@ -443,7 +470,7 @@ public class PatternService extends BaseService implements IPatternService {
         andCriteriaList.add(Criteria.where("user_id").is(command.getUserId()));
 
         if (StringUtils.isNotBlank(command.getKeyword())) {
-            orCriteriaList.add(Criteria.where("content").regex(ChatbotStringUtils.stripAccents(command.getKeyword().trim())));
+            orCriteriaList.add(Criteria.where("content").regex(command.getKeyword().trim(), "i"));
         }
 
         if (StringUtils.isNotBlank(command.getIntentId())) {

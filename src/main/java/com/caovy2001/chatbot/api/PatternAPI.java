@@ -8,10 +8,7 @@ import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.service.BaseService;
 import com.caovy2001.chatbot.service.jedis.IJedisService;
 import com.caovy2001.chatbot.service.pattern.IPatternService;
-import com.caovy2001.chatbot.service.pattern.command.CommandImportPatternsFromExcel;
-import com.caovy2001.chatbot.service.pattern.command.CommandPatternAdd;
-import com.caovy2001.chatbot.service.pattern.command.CommandPatternDelete;
-import com.caovy2001.chatbot.service.pattern.command.CommandPatternUpdate;
+import com.caovy2001.chatbot.service.pattern.command.*;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePattern;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePatternAdd;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -159,6 +156,23 @@ public class PatternAPI {
             page--;
             Paginated<PatternEntity> patterns = patternService.getPaginationByUserId(userEntity.getId(), page, size);
             patterns.setPageNumber(++page);
+            return ResponseEntity.ok(patterns);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 0, 0, 0));
+        }
+    }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @PostMapping("/get_pagination")
+    public ResponseEntity<Paginated<PatternEntity>> getPaginationByUserId(@RequestBody CommandGetListPattern command) {
+        try {
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))) {
+                throw new Exception("auth_invalid");
+            }
+            command.setUserId(userEntity.getId());
+            Paginated<PatternEntity> patterns = patternService.getPaginationByUserId(command);
             return ResponseEntity.ok(patterns);
         } catch (Exception e) {
             e.printStackTrace();
