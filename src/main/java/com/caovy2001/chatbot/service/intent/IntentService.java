@@ -4,6 +4,7 @@ import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.IntentEntity;
 import com.caovy2001.chatbot.entity.PatternEntity;
 import com.caovy2001.chatbot.entity.ScriptIntentMappingEntity;
+import com.caovy2001.chatbot.model.DateFilter;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.IntentRepository;
 import com.caovy2001.chatbot.repository.PatternRepository;
@@ -71,6 +72,8 @@ public class IntentService extends BaseService implements IIntentService {
                 .code(command.getCode())
                 .name(command.getName())
                 .userId(command.getUserId())
+                .createdDate(System.currentTimeMillis())
+                .lastUpdatedDate(System.currentTimeMillis())
                 .build();
 
         IntentEntity addedIntent = intentRepository.insert(intent);
@@ -97,6 +100,8 @@ public class IntentService extends BaseService implements IIntentService {
             }
 
             intent.setUserId(command.getUserId());
+            intent.setCreatedDate(System.currentTimeMillis());
+            intent.setLastUpdatedDate(System.currentTimeMillis());
             IntentEntity savedIntent = intentRepository.save(intent);
             responseIntentAdd.getIds().add(savedIntent.getId());
             if (BooleanUtils.isTrue(command.isReturnListDetails())) {
@@ -163,10 +168,12 @@ public class IntentService extends BaseService implements IIntentService {
         //find by intent id
         else {
             IntentEntity intent = intentRepository.findById(id).orElse(null);
-            List<PatternEntity> patterns = patternRepository.findByIntentIdInAndUserId(
-                    intent.getId(),
-                    userId);
-            intent.setPatterns(patterns);
+            if (intent != null) {
+                List<PatternEntity> patterns = patternRepository.findByIntentIdInAndUserId(
+                        intent.getId(),
+                        userId);
+                intent.setPatterns(patterns);
+            }
 
             return ResponseIntents.builder()
                     .intent(intent)
@@ -181,6 +188,7 @@ public class IntentService extends BaseService implements IIntentService {
         }
         ResponseIntents intent = this.getById(command.getId(), userId);
         intent.getIntent().setName(command.getName());
+        intent.getIntent().setLastUpdatedDate(System.currentTimeMillis());
         intentRepository.save(intent.getIntent());
         return ResponseIntents.builder().intent(intent.getIntent()).build();
     }
@@ -196,6 +204,7 @@ public class IntentService extends BaseService implements IIntentService {
 
         intent.setCode(command.getCode());
         intent.setName(command.getName());
+        intent.setLastUpdatedDate(System.currentTimeMillis());
         IntentEntity updatedIntent = intentRepository.save(intent);
 
         return ResponseIntents.builder()
@@ -248,6 +257,33 @@ public class IntentService extends BaseService implements IIntentService {
     }
 
     @Override
+    public Paginated<IntentEntity> getPagination(CommandGetListIntent command) {
+        if (StringUtils.isBlank(command.getUserId())) {
+            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
+        }
+
+        if (command.getPage() <= 0) {
+            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
+        }
+
+        Query query = this.buildQueryGetList(command);
+        if (query == null) {
+            return new Paginated<>(new ArrayList<>(), command.getPage(), command.getSize(), 0);
+        }
+
+        long total = mongoTemplate.count(query, IntentEntity.class);
+        if (total == 0L) {
+            return new Paginated<>(new ArrayList<>(), command.getPage(), command.getSize(), 0);
+        }
+
+        PageRequest pageRequest = PageRequest.of(command.getPage() - 1, command.getSize());
+        query.with(pageRequest);
+        List<IntentEntity> intentEntities = mongoTemplate.find(query, IntentEntity.class);
+        this.setViewForListIntents(intentEntities, command);
+        return new Paginated<>(intentEntities, command.getPage(), command.getSize(), total);
+    }
+
+    @Override
     public List<IntentEntity> addManyReturnList(@NonNull CommandIntentAddMany command) {
         if (StringUtils.isBlank(command.getUserId()) || CollectionUtils.isEmpty(command.getIntents())) {
             log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
@@ -280,18 +316,24 @@ public class IntentService extends BaseService implements IIntentService {
             return null;
         }
 
-        if (BooleanUtils.isTrue(command.isHasPatterns())) {
-            for (IntentEntity intent : intents) {
+        this.setViewForListIntents(intents, command);
+        return intents;
+    }
+
+    private void setViewForListIntents(List<IntentEntity> intents, CommandGetListIntent command) {
+        if (BooleanUtils.isFalse(command.isHasPatterns())) {
+            return;
+        }
+
+        for (IntentEntity intent : intents) {
+            if (BooleanUtils.isTrue(command.isHasPatterns())) {
                 List<PatternEntity> patterns = patternService.getList(CommandGetListPattern.builder()
                         .userId(command.getUserId())
                         .intentId(intent.getId())
                         .build());
-
                 intent.setPatterns(patterns);
             }
         }
-
-        return intents;
     }
 
     private Query buildQueryGetList(CommandGetListIntent command) {
@@ -323,6 +365,16 @@ public class IntentService extends BaseService implements IIntentService {
                 andCriteriaList.add(Criteria.where("id").in(
                         scriptIntentMappingEntities.stream().map(ScriptIntentMappingEntity::getIntentId).filter(StringUtils::isNotBlank).toList()
                 ));
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(command.getDateFilters())) {
+            for (DateFilter dateFilter : command.getDateFilters()) {
+                if (dateFilter.getFromDate() != null &&
+                        dateFilter.getToDate() != null &&
+                        StringUtils.isNotBlank(dateFilter.getFieldName())) {
+                    andCriteriaList.add(Criteria.where(dateFilter.getFieldName()).gte(dateFilter.getFromDate()).lte(dateFilter.getToDate()));
+                }
             }
         }
 

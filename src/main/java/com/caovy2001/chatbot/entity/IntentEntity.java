@@ -33,6 +33,12 @@ public class IntentEntity extends BaseEntity{
     @Field("name")
     private String name;
 
+    @Field("created_date")
+    private long createdDate;
+
+    @Field("last_updated_date")
+    private long lastUpdatedDate;
+
     @Transient
     private List<PatternEntity> patterns;
 

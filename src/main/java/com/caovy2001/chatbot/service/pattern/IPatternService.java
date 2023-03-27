@@ -24,8 +24,8 @@ public interface IPatternService extends IBaseService {
 
     ResponsePattern update(CommandPatternUpdate command);
 
-    Paginated<PatternEntity> getPaginationByUserId(String userId, int page, int size);
-    Paginated<PatternEntity> getPaginationByUserId(CommandGetListPattern command);
+    Paginated<PatternEntity> getPagination(String userId, int page, int size);
+    Paginated<PatternEntity> getPagination(CommandGetListPattern command);
 
     Paginated<PatternEntity> getPaginationByIntentId(String intentId, int page, int size);
 

@@ -6,10 +6,7 @@ import com.caovy2001.chatbot.entity.UserEntity;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.service.IBaseService;
 import com.caovy2001.chatbot.service.intent.IIntentService;
-import com.caovy2001.chatbot.service.intent.command.CommandIntent;
-import com.caovy2001.chatbot.service.intent.command.CommandIntentAddMany;
-import com.caovy2001.chatbot.service.intent.command.CommandIntentAddPattern;
-import com.caovy2001.chatbot.service.intent.command.CommandIntentDelete;
+import com.caovy2001.chatbot.service.intent.command.*;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntentAdd;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 import org.apache.commons.lang3.StringUtils;
@@ -89,6 +86,21 @@ public class IntentAPI {
             Paginated<IntentEntity> intents = intentService.getPaginationByUserId(userEntity.getId(), page, size);
             intents.setPageNumber(++page);
             return ResponseEntity.ok(intents);
+        } catch (Exception e) {
+            return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 1, 0, 0));
+        }
+    }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @PostMapping("/get_pagination")
+    public ResponseEntity<Paginated<IntentEntity>> getByPagination(@RequestBody CommandGetListIntent command) {
+        try {
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
+                throw new Exception("auth_invalid");
+
+            command.setUserId(userEntity.getId());
+            return ResponseEntity.ok(intentService.getPagination(command));
         } catch (Exception e) {
             return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 1, 0, 0));
         }

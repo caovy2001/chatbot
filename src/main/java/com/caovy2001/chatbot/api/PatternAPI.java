@@ -14,7 +14,6 @@ import com.caovy2001.chatbot.service.pattern.response.ResponsePatternAdd;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.poi.ss.usermodel.Workbook;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -154,7 +153,7 @@ public class PatternAPI {
             }
 
             page--;
-            Paginated<PatternEntity> patterns = patternService.getPaginationByUserId(userEntity.getId(), page, size);
+            Paginated<PatternEntity> patterns = patternService.getPagination(userEntity.getId(), page, size);
             patterns.setPageNumber(++page);
             return ResponseEntity.ok(patterns);
         } catch (Exception e) {
@@ -172,7 +171,7 @@ public class PatternAPI {
                 throw new Exception("auth_invalid");
             }
             command.setUserId(userEntity.getId());
-            Paginated<PatternEntity> patterns = patternService.getPaginationByUserId(command);
+            Paginated<PatternEntity> patterns = patternService.getPagination(command);
             return ResponseEntity.ok(patterns);
         } catch (Exception e) {
             e.printStackTrace();

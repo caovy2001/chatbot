@@ -219,7 +219,7 @@ public class PatternService extends BaseService implements IPatternService {
     }
 
     @Override
-    public Paginated<PatternEntity> getPaginationByUserId(String userId, int page, int size) {
+    public Paginated<PatternEntity> getPagination(String userId, int page, int size) {
         if (StringUtils.isBlank(userId)) {
             return new Paginated<>(new ArrayList<>(), 0, 0, 0);
         }
@@ -244,7 +244,7 @@ public class PatternService extends BaseService implements IPatternService {
     }
 
     @Override
-    public Paginated<PatternEntity> getPaginationByUserId(CommandGetListPattern command) {
+    public Paginated<PatternEntity> getPagination(CommandGetListPattern command) {
         if (StringUtils.isBlank(command.getUserId())) {
             return new Paginated<>(new ArrayList<>(), 0, 0, 0);
         }

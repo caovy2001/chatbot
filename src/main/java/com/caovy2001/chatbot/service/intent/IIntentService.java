@@ -30,6 +30,7 @@ public interface IIntentService extends IBaseService {
     ResponseIntents addPatterns(CommandIntentAddPattern command);
 
     Paginated<IntentEntity> getPaginationByUserId(String userId, int page, int size);
+    Paginated<IntentEntity> getPagination(CommandGetListIntent command);
 
     List<IntentEntity> addManyReturnList(CommandIntentAddMany commandIntentAddMany);
     List<IntentEntity> getList(CommandGetListIntent command);
