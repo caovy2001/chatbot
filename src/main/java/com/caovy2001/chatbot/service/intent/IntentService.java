@@ -262,7 +262,7 @@ public class IntentService extends BaseService implements IIntentService {
             return new Paginated<>(new ArrayList<>(), 0, 0, 0);
         }
 
-        if (command.getPage() <= 0) {
+        if (command.getPage() <= 0 || command.getSize() <= 0) {
             return new Paginated<>(new ArrayList<>(), 0, 0, 0);
         }
 

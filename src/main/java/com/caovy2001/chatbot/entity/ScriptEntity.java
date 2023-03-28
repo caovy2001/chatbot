@@ -43,13 +43,13 @@ public class ScriptEntity extends BaseEntity {
     private String endMessage;
 
     @Field("last_updated_date")
-    private long lastUpdatedDate;
+    @Builder.Default
+    private long lastUpdatedDate = System.currentTimeMillis();
 
     @Field("created_date")
-    private long createdDate;
+    @Builder.Default
+    private long createdDate = System.currentTimeMillis();
 
     @Transient
     private List<NodeEntity> nodes;
-
-
 }

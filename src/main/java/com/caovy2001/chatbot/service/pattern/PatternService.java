@@ -13,7 +13,6 @@ import com.caovy2001.chatbot.service.entity.command.CommandEntityAddMany;
 import com.caovy2001.chatbot.service.entity_type.IEntityTypeService;
 import com.caovy2001.chatbot.service.entity_type.command.CommandEntityTypeAddMany;
 import com.caovy2001.chatbot.service.intent.IIntentService;
-import com.caovy2001.chatbot.service.intent.command.CommandGetListIntent;
 import com.caovy2001.chatbot.service.intent.command.CommandIntentAddMany;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 import com.caovy2001.chatbot.service.jedis.IJedisService;
@@ -21,14 +20,12 @@ import com.caovy2001.chatbot.service.pattern.command.*;
 import com.caovy2001.chatbot.service.pattern.response.ResponseImportExcelStatus;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePattern;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePatternAdd;
-import com.caovy2001.chatbot.service.script_intent_mapping.command.CommandGetListScriptIntentMapping;
 import com.caovy2001.chatbot.utils.ChatbotStringUtils;
 import com.caovy2001.chatbot.utils.ExcelUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -36,14 +33,14 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -250,7 +247,7 @@ public class PatternService extends BaseService implements IPatternService {
             return new Paginated<>(new ArrayList<>(), 0, 0, 0);
         }
 
-        if (command.getPage() <= 0) {
+        if (command.getPage() <= 0 || command.getSize() <= 0) {
             return new Paginated<>(new ArrayList<>(), 0, 0, 0);
         }
 
@@ -286,14 +283,16 @@ public class PatternService extends BaseService implements IPatternService {
     }
 
     @Override
-    public void importFromExcel(CommandImportPatternsFromExcel command) throws Exception {
+    public void importFromFile(CommandImportPatternsFromFile command) throws Exception {
 //        long startTime = System.currentTimeMillis();
-        if (StringUtils.isAnyBlank(command.getSessionId(), command.getUserId())) {
+        if (StringUtils.isAnyBlank(command.getSessionId(), command.getUserId(), command.getSessionId())) {
             throw new Exception(ExceptionConstant.missing_param);
         }
 
-        File importFile = null;
-        Workbook workbook = null;
+        // Check extension type
+        if (!Arrays.asList("xls", "xlsx", "csv").contains(command.getExtensionType())) {
+            throw new Exception("only_accept_xlsx_or_xls_or_csv");
+        }
 
         ResponseImportExcelStatus response = ResponseImportExcelStatus.builder()
                 .userId(command.getUserId())
@@ -301,27 +300,172 @@ public class PatternService extends BaseService implements IPatternService {
                 .numOfSuccess(0)
                 .numOfFailed(0)
                 .build();
-        String importExcelJedisKey = Constant.JedisPrefix.userIdPrefix_ + command.getUserId() +
+        String importFileJedisKey = Constant.JedisPrefix.userIdPrefix_ + command.getUserId() +
                 Constant.JedisPrefix.COLON +
                 Constant.JedisPrefix.Pattern.importExcelSessionIdPrefix_ + command.getSessionId();
-        jedisService.setWithExpired(importExcelJedisKey, objectMapper.writeValueAsString(response), 60*24);
+        jedisService.setWithExpired(importFileJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
 
+        if (Arrays.asList("xls", "xlsx").contains(command.getExtensionType())) { // File xls/xlsx
+            this.importFromFile_Excel(command, importFileJedisKey, response);
+        } else {
+            this.importFromFile_CSV(command, importFileJedisKey, response);
+        }
+
+//            System.out.println("Slow: " + (System.currentTimeMillis() - startTime));
+    }
+
+    @Deprecated
+    private void importFromFile_CSV(CommandImportPatternsFromFile command, String importFileJedisKey, ResponseImportExcelStatus response) {
         try {
-            String path_file = command.getSessionId() + ".xlsx";
-
-            importFile = new File(path_file);
-            workbook = new XSSFWorkbook(importFile);
-            workbook.getCreationHelper().createFormulaEvaluator().evaluateAll();
-            Sheet mySheet = workbook.getSheetAt(0);
-
+            BufferedReader br = new BufferedReader(new FileReader(command.getSessionId() + "." + command.getExtensionType()));
             List<IntentEntity> intentEntities = new ArrayList<>();
             List<PatternEntity> patternEntities = new ArrayList<>();
             List<EntityEntity> entityEntities = new ArrayList<>();
             List<EntityTypeEntity> entityTypeEntities = new ArrayList<>();
 
+            String nextLine;
             int rowIndex = 0;
+            while ((nextLine = br.readLine()) != null) {
+                if (rowIndex < 2) { // bỏ qua 2 row chứa title
+                    rowIndex++;
+                    continue;
+                }
+
+                String[] rowData = nextLine.split(",");
+
+                // Check xem có phải là dòng trống không
+                if (rowData.length == 0) {
+                    break;
+                }
+
+                // Nếu 2 cột đầu tiên rỗng thì bỏ qua (do không có giá trị của pattern và intent)
+                if (rowData.length < 2 ||
+                        StringUtils.isBlank(rowData[0]) ||
+                        StringUtils.isBlank(rowData[1])) {
+                    response.setNumOfFailed(response.getNumOfFailed() + 1);
+                    rowIndex++;
+                    continue;
+                }
+
+                IntentEntity intentEntity = IntentEntity.builder().build();
+                PatternEntity patternEntity = PatternEntity.builder().build();
+
+                // Lấy intent từ excel
+                intentEntity.setName(rowData[1].trim());
+                intentEntity.setCode(ChatbotStringUtils.stripAccents(rowData[1].trim()).replace(" ", "_").toLowerCase());
+                intentEntity.setUserId(command.getUserId());
+                IntentEntity existIntent = intentEntities.stream().filter(intent -> intent.getCode().equals(intentEntity.getCode())).findFirst().orElse(null);
+                if (existIntent == null) {
+                    intentEntities.add(intentEntity);
+                }
+
+                // Lấy pattern từ excel
+                patternEntity.setContent(rowData[0].trim());
+                patternEntity.setIntentCode(intentEntity.getCode());
+                patternEntity.setUserId(command.getUserId());
+                patternEntity.setUuid(UUID.randomUUID().toString());
+                patternEntities.add(patternEntity);
+
+                // Lấy entity type và entity từ excel
+                for (int i = 1; i <= 10; i++) {
+                    int entityCellIdx = 2 * i;
+                    int entityTypeCellIdx = 2 * i + 1;
+                    if (rowData.length < entityCellIdx + 1 ||
+                            StringUtils.isBlank(rowData[entityCellIdx]) ||
+                            StringUtils.isBlank(rowData[entityTypeCellIdx])) {
+                        continue;
+                    }
+
+                    EntityEntity entityEntity = EntityEntity.builder().build();
+                    EntityTypeEntity entityTypeEntity = EntityTypeEntity.builder().build();
+
+                    // Lấy entity type
+                    String entityTypeUuid = UUID.randomUUID().toString();
+                    entityTypeEntity.setName(rowData[entityTypeCellIdx].trim());
+                    entityTypeEntity.setUserId(command.getUserId());
+                    entityTypeEntity.setUuid(entityTypeUuid);
+                    EntityTypeEntity existEntityType = entityTypeEntities.stream()
+                            .filter(e -> e.getName().equals(entityTypeEntity.getName())).findFirst().orElse(null);
+                    if (existEntityType == null) {
+                        entityTypeEntities.add(entityTypeEntity);
+                    } else {
+                        entityTypeUuid = existEntityType.getUuid();
+                    }
+
+                    // Lấy entity
+                    entityEntity.setUserId(command.getUserId());
+                    entityEntity.setEntityTypeUuid(entityTypeUuid);
+                    entityEntity.setPatternUuid(patternEntity.getUuid());
+                    entityEntity.setValue(rowData[entityCellIdx].trim());
+                    entityEntity.setStartPosition(patternEntity.getContent().indexOf(entityEntity.getValue()));
+                    entityEntity.setEndPosition(entityEntity.getStartPosition() + entityEntity.getValue().length() - 1);
+                    EntityEntity existEntity = entityEntities.stream()
+                            .filter(e ->
+                                    e.getPatternUuid().equals(entityEntity.getPatternUuid()) &&
+                                            e.getStartPosition() == entityEntity.getStartPosition() &&
+                                            e.getEndPosition() == entityEntity.getEndPosition()).findFirst().orElse(null);
+                    if (existEntity == null) {
+                        entityEntities.add(entityEntity);
+                    }
+                }
+
+                // Cứ 10 patterns thì submit xuống db một lần
+                if (patternEntities.size() == 10) {
+                    this.saveObjectWhenImportFile(command.getUserId(),
+                            response,
+                            intentEntities,
+                            patternEntities,
+                            entityTypeEntities,
+                            entityEntities);
+
+                    // Giải phóng bộ nhớ
+                    intentEntities = new ArrayList<>();
+                    patternEntities = new ArrayList<>();
+                    entityTypeEntities = new ArrayList<>();
+                    entityEntities = new ArrayList<>();
+
+                    // Cập nhật trạng thái trên redis
+                    jedisService.setWithExpired(importFileJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
+                }
+
+                rowIndex++;
+            }
+
+            if (CollectionUtils.isNotEmpty(patternEntities)) {
+                this.saveObjectWhenImportFile(command.getUserId(),
+                        response,
+                        intentEntities,
+                        patternEntities,
+                        entityTypeEntities,
+                        entityEntities);
+
+                // Cập nhật trạng thái trên redis
+                jedisService.setWithExpired(importFileJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
+            }
+        } catch (Throwable e) {
+            e.printStackTrace();
+            log.error(e.getLocalizedMessage());
+        }
+    }
+
+    @Deprecated
+    private void importFromFile_Excel(CommandImportPatternsFromFile command, String importFileJedisKey, ResponseImportExcelStatus response) {
+        File importFile = null;
+        Workbook workbook = null;
+
+        try {
+            List<IntentEntity> intentEntities = new ArrayList<>();
+            List<PatternEntity> patternEntities = new ArrayList<>();
+            List<EntityEntity> entityEntities = new ArrayList<>();
+            List<EntityTypeEntity> entityTypeEntities = new ArrayList<>();
+
+            importFile = new File(command.getSessionId() + "." + command.getExtensionType());
+            workbook = new XSSFWorkbook(importFile);
+            workbook.getCreationHelper().createFormulaEvaluator().evaluateAll();
+            Sheet mySheet = workbook.getSheetAt(0);
+
             for (Row currentRow : mySheet) {
-                rowIndex = currentRow.getRowNum();
+                int rowIndex = currentRow.getRowNum();
                 if (rowIndex < 2) { // bỏ qua 2 row chứa title
                     continue;
                 }
@@ -403,7 +547,7 @@ public class PatternService extends BaseService implements IPatternService {
 
                 // Cứ 10 patterns thì submit xuống db một lần
                 if (patternEntities.size() == 10) {
-                    this.saveObjectWhenImportExcel(command.getUserId(),
+                    this.saveObjectWhenImportFile(command.getUserId(),
                             response,
                             intentEntities,
                             patternEntities,
@@ -417,12 +561,12 @@ public class PatternService extends BaseService implements IPatternService {
                     entityEntities = new ArrayList<>();
 
                     // Cập nhật trạng thái trên redis
-                    jedisService.setWithExpired(importExcelJedisKey, objectMapper.writeValueAsString(response), 60*24);
+                    jedisService.setWithExpired(importFileJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
                 }
             }
 
             if (CollectionUtils.isNotEmpty(patternEntities)) {
-                this.saveObjectWhenImportExcel(command.getUserId(),
+                this.saveObjectWhenImportFile(command.getUserId(),
                         response,
                         intentEntities,
                         patternEntities,
@@ -430,10 +574,9 @@ public class PatternService extends BaseService implements IPatternService {
                         entityEntities);
 
                 // Cập nhật trạng thái trên redis
-                jedisService.setWithExpired(importExcelJedisKey, objectMapper.writeValueAsString(response), 60*24);
+                jedisService.setWithExpired(importFileJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
             }
 
-//            System.out.println("Slow: " + (System.currentTimeMillis() - startTime));
         } catch (Throwable e) {
             e.printStackTrace();
             log.error(e.getLocalizedMessage());
@@ -499,14 +642,16 @@ public class PatternService extends BaseService implements IPatternService {
         return query;
     }
 
-    /** Hàm này chỉ được dùng cho hàm importFromExcel, không được dùng hàm này ở những hàm khác */
+    /**
+     * Hàm này chỉ được dùng cho hàm importFromFile, không được dùng hàm này ở những hàm khác
+     */
     @Deprecated
-    private void saveObjectWhenImportExcel(@NonNull String userId,
-                                           @NonNull ResponseImportExcelStatus response,
-                                           @NonNull List<IntentEntity> intentEntities,
-                                           @NonNull List<PatternEntity> patternEntities,
-                                           @NonNull List<EntityTypeEntity> entityTypeEntities,
-                                           @NonNull List<EntityEntity> entityEntities) {
+    private void saveObjectWhenImportFile(@NonNull String userId,
+                                          @NonNull ResponseImportExcelStatus response,
+                                          @NonNull List<IntentEntity> intentEntities,
+                                          @NonNull List<PatternEntity> patternEntities,
+                                          @NonNull List<EntityTypeEntity> entityTypeEntities,
+                                          @NonNull List<EntityEntity> entityEntities) {
         // Lưu intent
         CommandIntentAddMany commandIntentAddMany = CommandIntentAddMany.builder()
                 .userId(userId)

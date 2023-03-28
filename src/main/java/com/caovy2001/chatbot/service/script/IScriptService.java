@@ -3,6 +3,7 @@ package com.caovy2001.chatbot.service.script;
 import com.caovy2001.chatbot.entity.ScriptEntity;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.service.IBaseService;
+import com.caovy2001.chatbot.service.script.command.CommandGetListScript;
 import com.caovy2001.chatbot.service.script.command.CommandScriptAdd;
 import com.caovy2001.chatbot.service.script.command.CommandScriptUpdate;
 import com.caovy2001.chatbot.service.script.response.ResponseScript;
@@ -19,4 +20,5 @@ public interface IScriptService extends IBaseService {
     ResponseScript update(CommandScriptUpdate command);
 
     Paginated<ScriptEntity> getPaginationByUserId(String userId, int page, int size);
+    Paginated<ScriptEntity> getPagination(CommandGetListScript command);
 }

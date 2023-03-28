@@ -2,26 +2,35 @@ package com.caovy2001.chatbot.service.script;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.ConditionMappingEntity;
+import com.caovy2001.chatbot.entity.IntentEntity;
 import com.caovy2001.chatbot.entity.NodeEntity;
 import com.caovy2001.chatbot.entity.ScriptEntity;
+import com.caovy2001.chatbot.model.DateFilter;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.ScriptRepository;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.entity_type.command.CommandGetListEntityType;
 import com.caovy2001.chatbot.service.node.INodeService;
+import com.caovy2001.chatbot.service.script.command.CommandGetListScript;
 import com.caovy2001.chatbot.service.script.command.CommandScriptAdd;
 import com.caovy2001.chatbot.service.script.command.CommandScriptUpdate;
 import com.caovy2001.chatbot.service.script.response.ResponseScript;
 import com.caovy2001.chatbot.service.script.response.ResponseScriptAdd;
 import com.caovy2001.chatbot.service.script.response.ResponseScriptGetByUserId;
 import com.caovy2001.chatbot.service.script_intent_mapping.IScriptIntentMappingService;
+import com.caovy2001.chatbot.utils.ChatbotStringUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,7 +44,10 @@ public class ScriptService extends BaseService implements IScriptService {
 
     @Autowired
     private IScriptIntentMappingService scriptIntentMappingService;
-    
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
+
     @Override
     public ResponseScriptAdd add(CommandScriptAdd command) {
         if (StringUtils.isAnyBlank(command.getUser_id(),command.getName())){
@@ -201,5 +213,88 @@ public class ScriptService extends BaseService implements IScriptService {
 
         List<ScriptEntity> scripts = scriptRepository.findByUserId(userId, PageRequest.of(page, size));
         return new Paginated<>(scripts, page, size, total);
+    }
+
+    @Override
+    public Paginated<ScriptEntity> getPagination(CommandGetListScript command) {
+        if (StringUtils.isBlank(command.getUserId())) {
+            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
+        }
+
+        if (command.getPage() <= 0 || command.getSize() <= 0) {
+            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
+        }
+
+        Query query = this.buildQueryGetList(command);
+        if (query == null) {
+            return new Paginated<>(new ArrayList<>(), command.getPage(), command.getSize(), 0);
+        }
+
+        long total = mongoTemplate.count(query, ScriptEntity.class);
+        if (total == 0L) {
+            return new Paginated<>(new ArrayList<>(), command.getPage(), command.getSize(), 0);
+        }
+
+        PageRequest pageRequest = PageRequest.of(command.getPage() - 1, command.getSize());
+        query.with(pageRequest);
+        List<ScriptEntity> scriptEntities = mongoTemplate.find(query, ScriptEntity.class);
+        this.setViewForListScripts(scriptEntities, command);
+        return new Paginated<>(scriptEntities, command.getPage(), command.getSize(), total);
+    }
+
+    private void setViewForListScripts(List<ScriptEntity> scriptEntities, CommandGetListScript command) {
+        if (CollectionUtils.isEmpty(scriptEntities)) {
+            return;
+        }
+
+        if (BooleanUtils.isFalse(command.isHasNodes())) {
+            return;
+        }
+
+        for (ScriptEntity script: scriptEntities) {
+            if (BooleanUtils.isTrue(command.isHasNodes())) {
+                script.setNodes(nodeService.getAllByScriptId(script.getId()));
+            }
+        }
+    }
+
+    private Query buildQueryGetList(CommandGetListScript command) {
+        Query query = new Query();
+        Criteria criteria = new Criteria();
+        List<Criteria> orCriteriaList = new ArrayList<>();
+        List<Criteria> andCriteriaList = new ArrayList<>();
+
+        andCriteriaList.add(Criteria.where("user_id").is(command.getUserId()));
+
+        if (StringUtils.isNotBlank(command.getKeyword())) {
+            orCriteriaList.add(Criteria.where("name").regex(command.getKeyword().trim()));
+        }
+
+        if (CollectionUtils.isNotEmpty(command.getIds())) {
+            andCriteriaList.add(Criteria.where("id").in(command.getIds()));
+        }
+
+        if (CollectionUtils.isNotEmpty(command.getDateFilters())) {
+            for (DateFilter dateFilter : command.getDateFilters()) {
+                if (dateFilter.getFromDate() != null &&
+                        dateFilter.getToDate() != null &&
+                        StringUtils.isNotBlank(dateFilter.getFieldName())) {
+                    andCriteriaList.add(Criteria.where(dateFilter.getFieldName()).gte(dateFilter.getFromDate()).lte(dateFilter.getToDate()));
+                }
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(orCriteriaList)) {
+            criteria.orOperator(orCriteriaList);
+        }
+        if (CollectionUtils.isNotEmpty(andCriteriaList)) {
+            criteria.andOperator(andCriteriaList);
+        }
+
+        query.addCriteria(criteria);
+        if (CollectionUtils.isNotEmpty(command.getReturnFields())) {
+            query.fields().include(Arrays.copyOf(command.getReturnFields().toArray(), command.getReturnFields().size(), String[].class));
+        }
+        return query;
     }
 }

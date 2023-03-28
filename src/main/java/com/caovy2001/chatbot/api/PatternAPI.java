@@ -200,29 +200,29 @@ public class PatternAPI {
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @PostMapping("/import/excel")
-    public ResponseEntity<Document> importFromExcel(@RequestParam("excel_file") MultipartFile excelFile) {
+    public ResponseEntity<Document> importFromExcel(@RequestParam("file") MultipartFile file) {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (userEntity == null || StringUtils.isBlank((userEntity.getId()))) {
                 throw new Exception("auth_invalid");
             }
 
-            if (StringUtils.isBlank(excelFile.getOriginalFilename()) || excelFile.getOriginalFilename().split("\\.").length < 2) {
+            if (StringUtils.isBlank(file.getOriginalFilename()) || file.getOriginalFilename().split("\\.").length < 2) {
                 throw new Exception("invalid_file");
             }
 
-            if (!Arrays.asList("xls", "xlsx").contains(excelFile.getOriginalFilename().split("\\.")[1])) {
-                throw new Exception("only_accept_xlsx");
+            // Check extension type
+            String extensionType = file.getOriginalFilename().split("\\.")[file.getOriginalFilename().split("\\.").length - 1];
+            if (!Arrays.asList("xls", "xlsx", "csv").contains(extensionType)) {
+                throw new Exception("only_accept_xlsx_or_xls_or_csv");
             }
 
             String sessionId = UUID.randomUUID().toString();
             FileOutputStream fos = null;
 
             try {
-                String path_file = sessionId + ".xlsx";
-                fos = new FileOutputStream(path_file);
-                byte[] data = excelFile.getBytes();
-                fos.write(data);
+                fos = new FileOutputStream(sessionId + "." + extensionType);
+                fos.write(file.getBytes());
             } catch (Throwable e) {
                 e.printStackTrace();
                 log.error(e.getLocalizedMessage());
@@ -236,13 +236,14 @@ public class PatternAPI {
 
             CompletableFuture.runAsync(() -> {
                 try {
-                    patternService.importFromExcel(CommandImportPatternsFromExcel.builder()
+                    patternService.importFromFile(CommandImportPatternsFromFile.builder()
                             .userId(userEntity.getId())
                             .sessionId(sessionId)
+                            .extensionType(extensionType)
                             .build());
                 } catch (Exception e) {
                     log.info(e.getMessage());
-                    File importFile = new File(sessionId + ".xlsx");
+                    File importFile = new File(sessionId + "." + extensionType);
                     if (importFile.exists()) importFile.delete();
                 }
             });

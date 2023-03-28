@@ -65,7 +65,11 @@ public class EntityTypeService extends BaseService implements IEntityTypeService
         }
 
         if (command.getPage() <= 0) {
-            throw new Exception("invalid_page");
+            throw new Exception("invalid_page_or_size");
+        }
+
+        if (command.getSize() <= 0) {
+            return new Paginated<>(new ArrayList<>(), command.getPage(), command.getSize(), 0);
         }
 
         Query query = this.buildQueryGetList(command);

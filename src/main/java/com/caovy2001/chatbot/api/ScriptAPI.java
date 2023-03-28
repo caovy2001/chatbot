@@ -7,6 +7,7 @@ import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.service.BaseService;
 import com.caovy2001.chatbot.service.ResponseBase;
 import com.caovy2001.chatbot.service.script.IScriptService;
+import com.caovy2001.chatbot.service.script.command.CommandGetListScript;
 import com.caovy2001.chatbot.service.script.command.CommandScriptAdd;
 import com.caovy2001.chatbot.service.script.command.CommandScriptDelete;
 import com.caovy2001.chatbot.service.script.command.CommandScriptUpdate;
@@ -97,6 +98,23 @@ public class ScriptAPI {
             Paginated<ScriptEntity> scripts = scriptService.getPaginationByUserId(userEntity.getId(), page, size);
             scripts.setPageNumber(++page);
             return ResponseEntity.ok(scripts);
+        }
+        catch (Exception e){
+            return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 0, 0, 0));
+        }
+    }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @PostMapping("/get_pagination")
+    public ResponseEntity<Paginated<ScriptEntity>> getPagination(@RequestBody CommandGetListScript command){
+        try{
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
+                throw new Exception("auth_invalid");
+            }
+            command.setUserId(userEntity.getId());
+
+            return ResponseEntity.ok(scriptService.getPagination(command));
         }
         catch (Exception e){
             return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 0, 0, 0));
