@@ -3,6 +3,7 @@ package com.caovy2001.chatbot.service.pattern;
 import com.caovy2001.chatbot.constant.Constant;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.*;
+import com.caovy2001.chatbot.model.DateFilter;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.PatternRepository;
 import com.caovy2001.chatbot.service.BaseService;
@@ -475,6 +476,16 @@ public class PatternService extends BaseService implements IPatternService {
 
         if (StringUtils.isNotBlank(command.getIntentId())) {
             andCriteriaList.add(Criteria.where("intent_id").is(command.getIntentId()));
+        }
+
+        if (CollectionUtils.isNotEmpty(command.getDateFilters())) {
+            for (DateFilter dateFilter : command.getDateFilters()) {
+                if (dateFilter.getFromDate() != null &&
+                        dateFilter.getToDate() != null &&
+                        StringUtils.isNotBlank(dateFilter.getFieldName())) {
+                    andCriteriaList.add(Criteria.where(dateFilter.getFieldName()).gte(dateFilter.getFromDate()).lte(dateFilter.getToDate()));
+                }
+            }
         }
 
         if (CollectionUtils.isNotEmpty(orCriteriaList)) {

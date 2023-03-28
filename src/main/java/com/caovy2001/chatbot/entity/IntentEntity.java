@@ -34,10 +34,12 @@ public class IntentEntity extends BaseEntity{
     private String name;
 
     @Field("created_date")
-    private long createdDate;
+    @Builder.Default
+    private long createdDate = System.currentTimeMillis();
 
     @Field("last_updated_date")
-    private long lastUpdatedDate;
+    @Builder.Default
+    private long lastUpdatedDate = System.currentTimeMillis();
 
     @Transient
     private List<PatternEntity> patterns;

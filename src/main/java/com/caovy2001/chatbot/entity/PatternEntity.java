@@ -34,6 +34,14 @@ public class PatternEntity extends BaseEntity {
     @Field("uuid")
     private String uuid;
 
+    @Field("created_date")
+    @Builder.Default
+    private long createdDate = System.currentTimeMillis();
+
+    @Field("last_updated_date")
+    @Builder.Default    
+    private long lastCreatedDate = System.currentTimeMillis();
+
     @Transient
     private String intentName;
 
