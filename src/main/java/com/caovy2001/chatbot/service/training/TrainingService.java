@@ -72,14 +72,15 @@ public class TrainingService extends BaseService implements ITrainingService {
 
     @Override
     public ResponseTrainingTrain train(CommandTrainingTrain command) {
-        if (StringUtils.isAnyBlank(command.getScriptId(), command.getUserId(), command.getUsername())) {
+        if (StringUtils.isAnyBlank(command.getUserId(), command.getUsername())) {
             return returnException(ExceptionConstant.missing_param, ResponseTrainingTrain.class);
         }
 
         List<IntentEntity> intentEntities = intentService.getList(CommandGetListIntent.builder()
                         .userId(command.getUserId())
-                        .scriptIds(List.of(command.getScriptId()))
                         .hasPatterns(true)
+                        .hasEntitiesOfPatterns(true)
+                        .hasEntityTypesOfEntitiesOfPatterns(true)
                 .build());
         if (CollectionUtils.isEmpty(intentEntities)) {
             return returnException("intents_empty", ResponseTrainingTrain.class);
@@ -89,7 +90,6 @@ public class TrainingService extends BaseService implements ITrainingService {
         ResponseTrainingHistoryAdd responseTrainingHistoryAdd = trainingHistoryService.add(CommandTrainingHistoryAdd.builder()
                 .userId(command.getUserId())
                 .username(command.getUsername())
-                .scriptId(command.getScriptId())
                 .build());
 
         if (responseTrainingHistoryAdd == null || StringUtils.isBlank(responseTrainingHistoryAdd.getId())) {
@@ -105,7 +105,7 @@ public class TrainingService extends BaseService implements ITrainingService {
             headers.setContentType(MediaType.APPLICATION_JSON);
 
             String commandBody = objectMapper.writeValueAsString(command);
-            log.info("[train]: Send training request: {}", commandBody);
+//            log.info("[train]: Send training request: {}", commandBody);
 
             CompletableFuture.runAsync(() -> {
                 try {
@@ -172,7 +172,7 @@ public class TrainingService extends BaseService implements ITrainingService {
 
         // Kiem tra keyword
         List<ConditionMappingEntity> keywordCMs = currNode.getConditionMappings().stream()
-                .filter(cm -> ConditionMappingEntity.EPredictType.KEYWORD.equals(cm.getPredictType())).collect(Collectors.toList());
+                .filter(cm -> ConditionMappingEntity.EPredictType.KEYWORD.equals(cm.getPredictType())).toList();
 
         if (!CollectionUtils.isEmpty(keywordCMs)) {
             for (ConditionMappingEntity cm : keywordCMs) {
@@ -203,7 +203,6 @@ public class TrainingService extends BaseService implements ITrainingService {
         commandRequest.put("username", userEntity.getUsername());
         commandRequest.put("user_id", userEntity.getId());
         commandRequest.put("intent_ids", intentIds);
-        commandRequest.put("script_id", command.getScriptId());
 
         String commandBody = null;
         try {
@@ -221,15 +220,15 @@ public class TrainingService extends BaseService implements ITrainingService {
         }
 
         String intentId = responseTrainingPredictFromAI.getIntentId();
-        if (StringUtils.isBlank(intentId)) {
+        if (StringUtils.isBlank(intentId) || intentId.equals("-1")) {
             return ResponseTrainingPredict.builder()
                     .currentNodeId(currNode.getNodeId())
                     .message(script.getWrongMessage())
                     .build();
         }
-        if (intentId.equals("-1")) {
-            return this.returnException("model_not_train_yet", ResponseTrainingPredict.class);
-        }
+//        if (intentId.equals("-1")) {
+//            return this.returnException("model_not_train_yet", ResponseTrainingPredict.class);
+//        }
 
         ConditionMappingEntity conditionMappingEntity = currNode.getConditionMappings().stream()
                 .filter(cm -> intentId.equals(cm.getIntentId())).findFirst().orElse(null);

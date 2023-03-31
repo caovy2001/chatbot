@@ -10,6 +10,8 @@ import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import java.util.List;
+
 @Data
 @Builder
 @AllArgsConstructor
@@ -45,4 +47,6 @@ public class PatternEntity extends BaseEntity {
     @Transient
     private String intentName;
 
+    @Transient
+    private List<EntityEntity> entities;
 }

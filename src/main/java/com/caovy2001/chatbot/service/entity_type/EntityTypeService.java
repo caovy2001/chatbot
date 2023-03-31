@@ -2,6 +2,8 @@ package com.caovy2001.chatbot.service.entity_type;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.EntityTypeEntity;
+import com.caovy2001.chatbot.entity.IntentEntity;
+import com.caovy2001.chatbot.entity.PatternEntity;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.EntityTypeRepository;
 import com.caovy2001.chatbot.service.BaseService;
@@ -163,5 +165,25 @@ public class EntityTypeService extends BaseService implements IEntityTypeService
             entityTypesToSave.add(entityTypeToSave);
         }
         return entityTypeRepository.saveAll(entityTypesToSave);
+    }
+
+    @Override
+    public List<EntityTypeEntity> getList(CommandGetListEntityType command) {
+        if (StringUtils.isBlank(command.getUserId())) {
+            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
+            return null;
+        }
+
+        Query query = this.buildQueryGetList(command);
+        if (query == null) {
+            return null;
+        }
+
+        List<EntityTypeEntity> entityTypes = mongoTemplate.find(query, EntityTypeEntity.class);
+        if (CollectionUtils.isEmpty(entityTypes)) {
+            return null;
+        }
+
+        return entityTypes;
     }
 }

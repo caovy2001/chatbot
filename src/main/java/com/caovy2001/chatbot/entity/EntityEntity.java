@@ -38,6 +38,9 @@ public class EntityEntity {
     @Transient
     private String entityTypeUuid;
 
+    @Transient
+    private EntityTypeEntity entityType;
+
     @Field("start_position")
     private int startPosition;
 

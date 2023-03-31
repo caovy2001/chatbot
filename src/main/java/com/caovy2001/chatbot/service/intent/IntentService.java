@@ -330,6 +330,8 @@ public class IntentService extends BaseService implements IIntentService {
                 List<PatternEntity> patterns = patternService.getList(CommandGetListPattern.builder()
                         .userId(command.getUserId())
                         .intentId(intent.getId())
+                        .hasEntities(command.isHasEntitiesOfPatterns())
+                        .hasEntityTypeOfEntities(command.isHasEntityTypesOfEntitiesOfPatterns())
                         .build());
                 intent.setPatterns(patterns);
             }

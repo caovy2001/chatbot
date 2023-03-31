@@ -19,4 +19,8 @@ public class CommandGetListPattern {
     private int size = 0;
     private int page = 0;
     private List<DateFilter> dateFilters;
+    @Builder.Default
+    private boolean hasEntities = false;
+    @Builder.Default
+    private boolean hasEntityTypeOfEntities = false;
 }

@@ -30,14 +30,16 @@ public class TrainingAPI {
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @PostMapping("/train")
-    public ResponseEntity<ResponseTrainingTrain> train(@RequestBody CommandTrainingTrain command) {
+    public ResponseEntity<ResponseTrainingTrain> train() {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
                 throw new Exception("auth_invalid");
             }
-            command.setUserId(userEntity.getId());
-            command.setUsername(userEntity.getUsername());
+            CommandTrainingTrain command = CommandTrainingTrain.builder()
+                    .userId(userEntity.getId())
+                    .username(userEntity.getUsername())
+                    .build();
 
             ResponseTrainingTrain response = trainingService.train(command);
             return ResponseEntity.ok(response);

@@ -10,6 +10,7 @@ import com.caovy2001.chatbot.service.BaseService;
 import com.caovy2001.chatbot.service.entity.IEntityService;
 import com.caovy2001.chatbot.service.entity.command.CommandAddEntity;
 import com.caovy2001.chatbot.service.entity.command.CommandEntityAddMany;
+import com.caovy2001.chatbot.service.entity.command.CommandGetListEntity;
 import com.caovy2001.chatbot.service.entity_type.IEntityTypeService;
 import com.caovy2001.chatbot.service.entity_type.command.CommandEntityTypeAddMany;
 import com.caovy2001.chatbot.service.intent.IIntentService;
@@ -26,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -602,7 +604,26 @@ public class PatternService extends BaseService implements IPatternService {
             return null;
         }
 
-        return mongoTemplate.find(query, PatternEntity.class);
+        List<PatternEntity> patterns = mongoTemplate.find(query, PatternEntity.class);
+        this.setViewForListPatterns(patterns, command);
+        return patterns;
+    }
+
+    private void setViewForListPatterns(List<PatternEntity> patterns, CommandGetListPattern command) {
+        if (BooleanUtils.isFalse(command.isHasEntities())) {
+            return;
+        }
+
+        for (PatternEntity pattern : patterns) {
+            if (BooleanUtils.isTrue(command.isHasEntities())) {
+                List<EntityEntity> entities = entityService.getList(CommandGetListEntity.builder()
+                        .userId(command.getUserId())
+                        .patternId(pattern.getId())
+                        .hasEntityType(command.isHasEntityTypeOfEntities())
+                        .build());
+                pattern.setEntities(entities);
+            }
+        }
     }
 
     private Query buildQueryGetList(CommandGetListPattern command) {
@@ -731,11 +752,13 @@ public class PatternService extends BaseService implements IPatternService {
             }
         }
 
-        CommandEntityAddMany commandEntityAddMany = CommandEntityAddMany.builder()
-                .userId(userId)
-                .entities(entityEntities)
-                .build();
-        entityService.addMany(commandEntityAddMany);
+        if (CollectionUtils.isNotEmpty(entityEntities)) {
+            CommandEntityAddMany commandEntityAddMany = CommandEntityAddMany.builder()
+                    .userId(userId)
+                    .entities(entityEntities)
+                    .build();
+            entityService.addMany(commandEntityAddMany);
+        }
         response.setNumOfSuccess(response.getNumOfSuccess() + patternEntities.size());
     }
 }
