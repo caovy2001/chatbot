@@ -100,9 +100,9 @@ public class PatternService extends BaseService implements IPatternService {
                 .build();
     }
 
-    private void addEntityForPattern(@NonNull List<CommandAddEntity> commandAddEntities, @NonNull String userId, @NonNull String patternId) {
+    private List<EntityEntity> addEntityForPattern(@NonNull List<CommandAddEntity> commandAddEntities, @NonNull String userId, @NonNull String patternId) {
         if (CollectionUtils.isEmpty(commandAddEntities)) {
-            return;
+            return null;
         }
         List<CommandAddEntity> commandAddEntitiesToAdd = new ArrayList<>();
         for (CommandAddEntity commandAddEntity : commandAddEntities) {
@@ -116,7 +116,7 @@ public class PatternService extends BaseService implements IPatternService {
                     .build());
         }
 
-        entityService.add(commandAddEntitiesToAdd);
+        return entityService.add(commandAddEntitiesToAdd);
     }
 
     @Override
@@ -200,18 +200,40 @@ public class PatternService extends BaseService implements IPatternService {
     }
 
     @Override
-    public ResponsePattern update(CommandPatternUpdate command) {
+    public ResponsePattern update(CommandPatternUpdate command) throws Exception {
         if (StringUtils.isAnyBlank(command.getId(), command.getUserId())) {
             return returnException(ExceptionConstant.missing_param, ResponsePattern.class);
         }
 
-        PatternEntity pattern = patternRepository.findByIdAndUserId(command.getId(), command.getUserId());
-        if (pattern == null) {
+        List<PatternEntity> patterns = this.getList(CommandGetListPattern.builder()
+                .id(command.getId())
+                .userId(command.getUserId())
+                .hasEntities(true)
+                .build());
+        if (CollectionUtils.isEmpty(patterns)) {
             return returnException("pattern_not_exist", ResponsePattern.class);
         }
 
+        PatternEntity pattern = patterns.get(0);
         pattern.setContent(command.getContent());
         PatternEntity updatedPattern = patternRepository.save(pattern);
+
+        // Xóa entity cũ
+        if (CollectionUtils.isNotEmpty(pattern.getEntities())) {
+            boolean removeEntities = entityService.delete(CommandGetListEntity.builder()
+                    .userId(command.getUserId())
+                    .ids(pattern.getEntities().stream().map(EntityEntity::getId).toList())
+                    .build());
+
+            if (BooleanUtils.isFalse(removeEntities)) {
+                throw new Exception("update_entities_fail");
+            }
+        }
+
+        // Thêm entities mới
+        if (CollectionUtils.isNotEmpty(command.getEntities())) {
+            updatedPattern.setEntities(this.addEntityForPattern(command.getEntities(), command.getUserId(), pattern.getId()));
+        }
 
         return ResponsePattern.builder()
                 .pattern(updatedPattern)
@@ -636,6 +658,10 @@ public class PatternService extends BaseService implements IPatternService {
 
         if (StringUtils.isNotBlank(command.getKeyword())) {
             orCriteriaList.add(Criteria.where("content").regex(command.getKeyword().trim(), "i"));
+        }
+
+        if (StringUtils.isNotBlank(command.getId())) {
+            andCriteriaList.add(Criteria.where("id").is(command.getId()));
         }
 
         if (StringUtils.isNotBlank(command.getIntentId())) {

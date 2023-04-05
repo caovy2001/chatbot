@@ -10,4 +10,6 @@ public interface EntityTypeRepository extends MongoRepository<EntityTypeEntity, 
     List<EntityTypeEntity> findByUserIdAndLowerCaseName(String userId, String toLowerCase);
 
     List<EntityTypeEntity> findByUserIdAndLowerCaseNameIn(String userId, List<String> lowerCaseName);
+
+    long deleteAllByIdIn(List<String> ids);
 }

@@ -14,5 +14,8 @@ public interface IEntityService extends IBaseService {
     List<EntityEntity> findByUserIdAndPatternId(String userId, String patternId);
 
     List<EntityEntity> addMany(CommandEntityAddMany command);
+
     List<EntityEntity> getList(CommandGetListEntity command);
+
+    boolean delete(CommandGetListEntity command);
 }

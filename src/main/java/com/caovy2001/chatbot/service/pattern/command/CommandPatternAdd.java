@@ -16,6 +16,5 @@ public class CommandPatternAdd {
     private String userId;
     private String content;
     private String intentId;
-
     private List<CommandAddEntity> entities;
 }

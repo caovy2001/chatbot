@@ -3,6 +3,7 @@ package com.caovy2001.chatbot.service.entity;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.EntityEntity;
 import com.caovy2001.chatbot.entity.EntityTypeEntity;
+import com.caovy2001.chatbot.entity.PatternEntity;
 import com.caovy2001.chatbot.repository.EntityRepository;
 import com.caovy2001.chatbot.service.BaseService;
 import com.caovy2001.chatbot.service.entity.command.CommandAddEntity;
@@ -10,6 +11,8 @@ import com.caovy2001.chatbot.service.entity.command.CommandEntityAddMany;
 import com.caovy2001.chatbot.service.entity.command.CommandGetListEntity;
 import com.caovy2001.chatbot.service.entity_type.IEntityTypeService;
 import com.caovy2001.chatbot.service.entity_type.command.CommandGetListEntityType;
+import com.caovy2001.chatbot.service.pattern.IPatternService;
+import com.caovy2001.chatbot.service.pattern.command.CommandGetListPattern;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -22,6 +25,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -36,6 +40,8 @@ public class EntityService extends BaseService implements IEntityServiceAPI, IEn
     @Autowired
     private IEntityTypeService entityTypeService;
 
+    @Autowired
+    private IPatternService patternService;
     @Override
     @Deprecated
     public List<EntityEntity> add(List<CommandAddEntity> commandAddEntities) {
@@ -139,6 +145,29 @@ public class EntityService extends BaseService implements IEntityServiceAPI, IEn
         return entities;
     }
 
+    @Override
+    public boolean delete(CommandGetListEntity command) {
+        if (StringUtils.isBlank(command.getUserId())) {
+            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
+            return false;
+        }
+
+        // Quyết định những trường trả về
+        command.setReturnFields(List.of("id"));
+
+        List<EntityEntity> entities = this.getList(command);
+        if (CollectionUtils.isEmpty(entities)) {
+            return false;
+        }
+
+        List<String> entityIds = entities.stream().map(EntityEntity::getId).toList();
+        if (CollectionUtils.isEmpty(entityIds)) {
+            return false;
+        }
+
+        return entityRepository.deleteAllByIdIn(entityIds) > 0;
+    }
+
     private Query buildQueryGetList(CommandGetListEntity command) {
         Query query = new Query();
         Criteria criteria = new Criteria();
@@ -155,6 +184,14 @@ public class EntityService extends BaseService implements IEntityServiceAPI, IEn
             andCriteriaList.add(Criteria.where("pattern_id").is(command.getPatternId()));
         }
 
+        if (CollectionUtils.isNotEmpty(command.getEntityTypeIds())) {
+            andCriteriaList.add(Criteria.where("entity_type_id").in(command.getEntityTypeIds()));
+        }
+
+        if (CollectionUtils.isNotEmpty(command.getIds())) {
+            andCriteriaList.add(Criteria.where("id").in(command.getIds()));
+        }
+
         if (CollectionUtils.isNotEmpty(orCriteriaList)) {
             criteria.orOperator(orCriteriaList);
         }
@@ -163,11 +200,14 @@ public class EntityService extends BaseService implements IEntityServiceAPI, IEn
         }
 
         query.addCriteria(criteria);
+        if (CollectionUtils.isNotEmpty(command.getReturnFields())) {
+            query.fields().include(Arrays.copyOf(command.getReturnFields().toArray(), command.getReturnFields().size(), String[].class));
+        }
         return query;
     }
 
     private void setViewForListEntities(List<EntityEntity> entities, CommandGetListEntity command) {
-        if (BooleanUtils.isFalse(command.isHasEntityType())) {
+        if (BooleanUtils.isFalse(command.isHasEntityType()) && BooleanUtils.isFalse(command.isHasPattern())) {
             return;
         }
 
@@ -179,6 +219,16 @@ public class EntityService extends BaseService implements IEntityServiceAPI, IEn
                         .build());
                 if (CollectionUtils.isNotEmpty(entityTypes)) {
                     entity.setEntityType(entityTypes.get(0));
+                }
+            }
+
+            if (BooleanUtils.isTrue(command.isHasPattern())) {
+                List<PatternEntity> patterns = patternService.getList(CommandGetListPattern.builder()
+                        .id(entity.getPatternId())
+                        .userId(command.getUserId())
+                        .build());
+                if (CollectionUtils.isNotEmpty(patterns)) {
+                    entity.setPattern(patterns.get(0));
                 }
             }
         }

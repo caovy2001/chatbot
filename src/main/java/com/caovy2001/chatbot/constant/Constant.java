@@ -4,6 +4,7 @@ public class Constant {
     public static class JedisPrefix {
         public static String COLON = ":";
         public static String userIdPrefix_ = "userIdPrefix_";
+        public static String scriptSessionId_ = "scriptSessionId_";
 
         public static class Pattern {
             public static String importExcelSessionIdPrefix_ = "importExcelSessionIdPrefix_";

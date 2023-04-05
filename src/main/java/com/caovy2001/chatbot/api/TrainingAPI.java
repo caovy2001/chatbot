@@ -72,7 +72,8 @@ public class TrainingAPI {
             }
 
             if (StringUtils.isAnyBlank(command.getScriptId(), command.getCurrentNodeId()) ||
-                    (StringUtils.isBlank(command.getMessage()) && !"_BEGIN".equals(command.getCurrentNodeId()))) {
+                    (StringUtils.isBlank(command.getMessage()) && !"_BEGIN".equals(command.getCurrentNodeId())) ||
+            StringUtils.isBlank(command.getSessionId())) {
                 throw new Exception(ExceptionConstant.missing_param);
             }
 

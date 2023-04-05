@@ -14,6 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 public class CommandGetListPattern {
     private String userId;
+    private String id;
     private String intentId;
     private String keyword;
     private int size = 0;

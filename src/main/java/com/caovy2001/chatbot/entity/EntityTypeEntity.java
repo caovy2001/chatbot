@@ -6,8 +6,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
+
+import java.util.List;
 
 @Builder
 @NoArgsConstructor
@@ -33,4 +36,7 @@ public class EntityTypeEntity extends BaseEntity {
 
     @Field("searchable_name")
     private String searchableName;
+
+    @Transient
+    private List<EntityEntity> entities;
 }

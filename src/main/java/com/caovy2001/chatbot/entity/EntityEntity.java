@@ -32,6 +32,9 @@ public class EntityEntity {
     @Transient
     private String patternUuid;
 
+    @Transient
+    private PatternEntity pattern;
+
     @Field("entity_type_id")
     private String entityTypeId;
 

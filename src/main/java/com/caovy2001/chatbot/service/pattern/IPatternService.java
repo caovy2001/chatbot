@@ -22,7 +22,7 @@ public interface IPatternService extends IBaseService {
 
     ResponsePattern getByUserId(String userId);
 
-    ResponsePattern update(CommandPatternUpdate command);
+    ResponsePattern update(CommandPatternUpdate command) throws Exception;
 
     Paginated<PatternEntity> getPagination(String userId, int page, int size);
     Paginated<PatternEntity> getPagination(CommandGetListPattern command);

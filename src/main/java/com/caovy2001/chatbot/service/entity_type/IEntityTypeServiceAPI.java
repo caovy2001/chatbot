@@ -10,4 +10,6 @@ public interface IEntityTypeServiceAPI extends IBaseService {
     EntityTypeEntity add(CommandAddEntityType command) throws Exception;
 
     Paginated<EntityTypeEntity> getPaginatedEntityTypeList(CommandGetListEntityType command) throws Exception;
+
+    boolean delete(CommandGetListEntityType command) throws Exception;
 }

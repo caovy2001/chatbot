@@ -36,6 +36,9 @@ public class ConditionMappingEntity extends BaseEntity {
     @Field("next_node_ids")
     private List<String> next_node_ids;
 
+    @Field
+    private List<EntityEntity> entities;
+
     public  ConditionMappingEntity(){
         id = new ObjectId().toString();
     }

@@ -14,4 +14,5 @@ public class CommandTrainingPredict {
     private String scriptId;
     private String currentNodeId;
     private String message;
+    private String sessionId;
 }

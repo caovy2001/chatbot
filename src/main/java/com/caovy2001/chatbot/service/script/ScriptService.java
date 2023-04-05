@@ -116,7 +116,7 @@ public class ScriptService extends BaseService implements IScriptService {
 
         // Lay cac node cua script nay
         List<NodeEntity> nodes = nodeService.getAllByScriptId(script.getId());
-        if (!CollectionUtils.isEmpty(nodes)) {
+        if (CollectionUtils.isNotEmpty(nodes)) {
             script.setNodes(nodes);
         }
 

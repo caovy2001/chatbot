@@ -16,6 +16,11 @@ public class CommandGetListEntityType {
     private int size = 0;
     private int page = 0;
     private String keyword;
+    private String id;
     private List<String> ids;
     private List<String> returnFields;
+    @Builder.Default
+    private boolean hasEntities = false;
+    @Builder.Default
+    private boolean hasPatternOfEntities = false;
 }

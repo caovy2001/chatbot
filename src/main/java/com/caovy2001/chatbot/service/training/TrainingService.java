@@ -1,18 +1,23 @@
 package com.caovy2001.chatbot.service.training;
 
+import com.caovy2001.chatbot.constant.Constant;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.*;
+import com.caovy2001.chatbot.enumeration.EMessageHistoryFrom;
+import com.caovy2001.chatbot.repository.ConditionMapping;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.entity_type.IEntityTypeService;
 import com.caovy2001.chatbot.service.entity_type.command.CommandGetListEntityType;
 import com.caovy2001.chatbot.service.intent.IIntentService;
 import com.caovy2001.chatbot.service.intent.command.CommandGetListIntent;
-import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 import com.caovy2001.chatbot.service.jedis.IJedisService;
 import com.caovy2001.chatbot.service.jedis.JedisService;
+import com.caovy2001.chatbot.service.message_history.IMessageHistoryService;
+import com.caovy2001.chatbot.service.message_history.command.CommandAddMessageHistory;
 import com.caovy2001.chatbot.service.node.INodeService;
+import com.caovy2001.chatbot.service.pattern.command.CommandImportPatternsFromFile;
 import com.caovy2001.chatbot.service.script.IScriptService;
-import com.caovy2001.chatbot.service.training.command.CommandTrainingPredict;
-import com.caovy2001.chatbot.service.training.command.CommandTrainingTrain;
+import com.caovy2001.chatbot.service.training.command.*;
 import com.caovy2001.chatbot.service.training.response.ResponseTrainingPredict;
 import com.caovy2001.chatbot.service.training.response.ResponseTrainingPredictFromAI;
 import com.caovy2001.chatbot.service.training.response.ResponseTrainingServerStatus;
@@ -23,30 +28,31 @@ import com.caovy2001.chatbot.service.training_history.command.CommandTrainingHis
 import com.caovy2001.chatbot.service.training_history.response.ResponseTrainingHistory;
 import com.caovy2001.chatbot.service.training_history.response.ResponseTrainingHistoryAdd;
 import com.caovy2001.chatbot.service.user.IUserService;
-import com.caovy2001.chatbot.utils.ChatbotStringUtils;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.File;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
+
+import static com.caovy2001.chatbot.service.jedis.JedisService.PrefixRedisKey.COLON;
 
 @Service
 @Slf4j
 public class TrainingService extends BaseService implements ITrainingService {
+    @Autowired
+    private ConditionMapping conditionMapping;
     @Autowired
     private IIntentService intentService;
 
@@ -68,6 +74,12 @@ public class TrainingService extends BaseService implements ITrainingService {
     @Autowired
     private IJedisService jedisService;
 
+    @Autowired
+    private IEntityTypeService entityTypeService;
+
+    @Autowired
+    private IMessageHistoryService messageHistoryService;
+
     private final ResourceBundle resourceBundle = ResourceBundle.getBundle("custom");
 
     @Override
@@ -77,10 +89,10 @@ public class TrainingService extends BaseService implements ITrainingService {
         }
 
         List<IntentEntity> intentEntities = intentService.getList(CommandGetListIntent.builder()
-                        .userId(command.getUserId())
-                        .hasPatterns(true)
-                        .hasEntitiesOfPatterns(true)
-                        .hasEntityTypesOfEntitiesOfPatterns(true)
+                .userId(command.getUserId())
+                .hasPatterns(true)
+                .hasEntitiesOfPatterns(true)
+                .hasEntityTypesOfEntitiesOfPatterns(true)
                 .build());
         if (CollectionUtils.isEmpty(intentEntities)) {
             return returnException("intents_empty", ResponseTrainingTrain.class);
@@ -109,7 +121,7 @@ public class TrainingService extends BaseService implements ITrainingService {
 
             CompletableFuture.runAsync(() -> {
                 try {
-                    jedisService.set(command.getUserId() + JedisService.PrefixRedisKey.COLON + JedisService.PrefixRedisKey.trainingServerStatus, "busy");
+                    jedisService.set(command.getUserId() + COLON + JedisService.PrefixRedisKey.trainingServerStatus, "busy");
                     HttpEntity<String> request =
                             new HttpEntity<>(commandBody, headers);
                     restTemplate.postForLocation(new URI(resourceBundle.getString("training.server") + "/train"), request);
@@ -127,139 +139,179 @@ public class TrainingService extends BaseService implements ITrainingService {
     }
 
     @Override
-    public ResponseTrainingPredict predict(CommandTrainingPredict command) {
-        // Lay user tu secret key
+    public ResponseTrainingPredict predict(CommandTrainingPredict command) throws Exception {
+        //region Lay user tu secret key
         UserEntity userEntity = userService.getBySecretKey(command.getSecretKey());
         if (userEntity == null) {
             return this.returnException("user_not_exist", ResponseTrainingPredict.class);
         }
+        //endregion
 
+        //region Lấy script
         ScriptEntity script = scriptService.getScriptById(command.getScriptId());
-        if (script == null || !script.getUserId().equals(userEntity.getId())) {
+        if (script == null || !script.getUserId().equals(userEntity.getId()) || CollectionUtils.isEmpty(script.getNodes())) {
             return this.returnException(ExceptionConstant.error_occur, ResponseTrainingPredict.class);
         }
+        final String wrongMessage = script.getWrongMessage();
+        final String endMessage = script.getEndMessage();
+        //endregion
 
-        List<NodeEntity> nodes = nodeService.getAllByScriptId(script.getId());
-        if (CollectionUtils.isEmpty(nodes)) {
-            return this.returnException(ExceptionConstant.error_occur, ResponseTrainingPredict.class);
+        //region Lưu message đầu tiên mà người dùng gửi lên
+        messageHistoryService.add(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+                .nodeId(command.getCurrentNodeId())
+                .message(command.getMessage())
+                .from(EMessageHistoryFrom.CUSTOMER)
+                .build());
+        //endregion
+
+        //region Đổ node vào map => Phục vụ việc search
+        NodeEntity firstNode = null;
+        Map<String, NodeEntity> nodesByNodeId = new HashMap<>();
+        for (NodeEntity node : script.getNodes()) {
+            nodesByNodeId.put(node.getNodeId(), node);
+            if (BooleanUtils.isTrue(node.getIsFirstNode())) {
+                firstNode = node;
+            }
         }
+        if (firstNode == null)
+            return this.returnException("script_not_have_first_node", ResponseTrainingPredict.class);
+        //endregion
 
-        NodeEntity currNode = null;
+        //region Nếu đây là câu bắt đầu thì trả về message của node đầu tiên
         if ("_BEGIN".equals(command.getCurrentNodeId())) {
-            currNode = nodes.stream().filter(NodeEntity::getIsFirstNode).findFirst().orElse(null);
-            if (currNode == null)
-                return this.returnException("script_not_have_first_node", ResponseTrainingPredict.class);
+            // Lưu message mà bot gửi đi
+            NodeEntity finalFirstNode = firstNode;
+            CompletableFuture.runAsync(() -> {
+                try {
+                    messageHistoryService.add(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+                            .nodeId(finalFirstNode.getNodeId())
+                            .message(finalFirstNode.getMessage())
+                            .from(EMessageHistoryFrom.BOT)
+                            .build());
+                } catch (Exception e) {
+                    log.info("[{}]: {}", e.getStackTrace()[0], e.getMessage());
+                }
+            });
 
             return ResponseTrainingPredict.builder()
-                    .currentNodeId(currNode.getNodeId())
-                    .message(currNode.getMessage())
+                    .currentNodeId(firstNode.getNodeId())
+                    .message(firstNode.getMessage())
                     .build();
-        } else {
-            currNode = nodes.stream()
-                    .filter(nodeEntity -> nodeEntity.getNodeId().equals(command.getCurrentNodeId())).findFirst().orElse(null);
         }
+        //endregion
 
+        //region Lấy ra node hiện tại
+        NodeEntity currNode = nodesByNodeId.get(command.getCurrentNodeId());
         if (currNode == null) {
             return this.returnException("node_id_not_exist", ResponseTrainingPredict.class);
         }
+        //endregion
 
-        if (CollectionUtils.isEmpty(currNode.getConditionMappings())) {
-            return ResponseTrainingPredict.builder()
-                    .currentNodeId("_END")
-                    .message(script.getEndMessage())
-                    .build();
-        }
+        //region Check điều kiện
+        ResponseCheckConditionByConditionMapping responseCheckConditionByConditionMapping = this.getNextNodeByConditionMapping(CommandCheckConditionByConditionMapping.builder()
+                .currentNode(currNode)
+                .user(userEntity)
+                .message(command.getMessage())
+                .build());
+        final String nextNodeId = responseCheckConditionByConditionMapping.getNextNodeId();
+        final ResponseTrainingPredictFromAI responseTrainingPredictFromAI = responseCheckConditionByConditionMapping.getResponseTrainingPredictFromAI();
 
-        // Kiem tra keyword
-        List<ConditionMappingEntity> keywordCMs = currNode.getConditionMappings().stream()
-                .filter(cm -> ConditionMappingEntity.EPredictType.KEYWORD.equals(cm.getPredictType())).toList();
-
-        if (!CollectionUtils.isEmpty(keywordCMs)) {
-            for (ConditionMappingEntity cm : keywordCMs) {
-                if (CollectionUtils.isEmpty(cm.getNext_node_ids())) continue;
-
-                if (command.getMessage().toLowerCase().contains(cm.getKeyword().toLowerCase())) {
-                    NodeEntity nextNode = nodes.stream()
-                            .filter(nodeEntity -> nodeEntity.getNodeId().equals(cm.getNext_node_ids().get(0))).findFirst().orElse(null);
-                    if (nextNode == null) continue;
-
-                    return ResponseTrainingPredict.builder()
-                            .currentNodeId(nextNode.getNodeId())
-                            .message(nextNode.getMessage())
-                            .build();
+        // Không thỏa đk nào => Trả về wrongMessage
+        if (StringUtils.isBlank(nextNodeId)) {
+            //region Lưu message mà bot gửi đi
+            CompletableFuture.runAsync(() -> {
+                try {
+                    messageHistoryService.add(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+                            .nodeId(currNode.getNodeId())
+                            .message(wrongMessage)
+                            .from(EMessageHistoryFrom.BOT)
+                            .entities(responseTrainingPredictFromAI.getEntities())
+                            .build());
+                } catch (Exception e) {
+                    log.info("[{}]: {}", e.getStackTrace()[0], e.getMessage());
                 }
-            }
-        }
+            });
 
-        // Predict
-        RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        List<String> intentIds = currNode.getConditionMappings().stream()
-                .filter(cm -> ConditionMappingEntity.EPredictType.INTENT.equals(cm.getPredictType()))
-                .map(ConditionMappingEntity::getIntentId).collect(Collectors.toList());
-        Map<String, Object> commandRequest = new HashMap<>();
-        commandRequest.put("text", command.getMessage());
-        commandRequest.put("username", userEntity.getUsername());
-        commandRequest.put("user_id", userEntity.getId());
-        commandRequest.put("intent_ids", intentIds);
-
-        String commandBody = null;
-        try {
-            commandBody = objectMapper.writeValueAsString(commandRequest);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-        HttpEntity<String> request =
-                new HttpEntity<>(commandBody, headers);
-        ResponseTrainingPredictFromAI responseTrainingPredictFromAI =
-                restTemplate.postForObject(resourceBundle.getString("training.server") + "/predict", request, ResponseTrainingPredictFromAI.class);
-
-        if (responseTrainingPredictFromAI == null) {
-            return this.returnException(ExceptionConstant.error_occur, ResponseTrainingPredict.class);
-        }
-
-        String intentId = responseTrainingPredictFromAI.getIntentId();
-        if (StringUtils.isBlank(intentId) || intentId.equals("-1")) {
             return ResponseTrainingPredict.builder()
                     .currentNodeId(currNode.getNodeId())
-                    .message(script.getWrongMessage())
+                    .message(wrongMessage)
                     .build();
-        }
-//        if (intentId.equals("-1")) {
-//            return this.returnException("model_not_train_yet", ResponseTrainingPredict.class);
-//        }
-
-        ConditionMappingEntity conditionMappingEntity = currNode.getConditionMappings().stream()
-                .filter(cm -> intentId.equals(cm.getIntentId())).findFirst().orElse(null);
-        if (conditionMappingEntity == null) {
-            return ResponseTrainingPredict.builder()
-                    .currentNodeId(currNode.getNodeId())
-                    .message(script.getWrongMessage())
-                    .build();
+            //endregion
         }
 
-        if (CollectionUtils.isEmpty(conditionMappingEntity.getNext_node_ids())) {
+        // Node cuối
+        if (nextNodeId.equals("_END")) {
+            //region Lưu message mà bot gửi đi
+            CompletableFuture.runAsync(() -> {
+                try {
+                    messageHistoryService.add(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+                            .nodeId("_END")
+                            .message(endMessage)
+                            .from(EMessageHistoryFrom.BOT)
+                            .entities(responseTrainingPredictFromAI.getEntities())
+                            .build());
+                } catch (Exception e) {
+                    log.info("[{}]: {}", e.getStackTrace()[0], e.getMessage());
+                }
+            });
+
             return ResponseTrainingPredict.builder()
                     .currentNodeId("_END")
-                    .message(script.getEndMessage())
+                    .message(endMessage)
                     .build();
+            //endregion
         }
 
-        String nextNodeId = conditionMappingEntity.getNext_node_ids().get(0);
-        NodeEntity nextNode = nodes.stream()
-                .filter(nodeEntity -> nodeEntity.getNodeId().equals(nextNodeId)).findFirst().orElse(null);
+        // Chuyển node tiếp theo
+        NodeEntity nextNode = nodesByNodeId.get(nextNodeId);
         if (nextNode == null) {
+            // Nếu không có node tiếp theo thì đây là node cuối cùng
+            //region Lưu message mà bot gửi đi
+            CompletableFuture.runAsync(() -> {
+                try {
+                    messageHistoryService.add(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+                            .nodeId("_END")
+                            .message(endMessage)
+                            .from(EMessageHistoryFrom.BOT)
+                            .entities(responseTrainingPredictFromAI.getEntities())
+                            .build());
+                } catch (Exception e) {
+                    log.info("[{}]: {}", e.getStackTrace()[0], e.getMessage());
+                }
+            });
+
             return ResponseTrainingPredict.builder()
                     .currentNodeId("_END")
-                    .message(script.getEndMessage())
+                    .message(endMessage)
                     .build();
+            //endregion
         }
+
+        List<EntityEntity> redisEntities = this.updateRedisEntities(userEntity.getId(), command.getSessionId(), responseTrainingPredictFromAI.getEntities()); // Cập nhật entities cho session này trên redis
+        Map<String, String> variableMap = this.convertEntitiesToVariableMap(redisEntities);
+        String returnMessage = this.variableMapping(variableMap, nextNode.getMessage());
+
+        //region Lưu message mà bot gửi đi
+        CompletableFuture.runAsync(() -> {
+            try {
+                messageHistoryService.add(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+                        .nodeId(nextNodeId)
+                        .message(returnMessage)
+                        .from(EMessageHistoryFrom.BOT)
+                        .entities(responseTrainingPredictFromAI.getEntities())
+                        .build());
+            } catch (Exception e) {
+                log.info("[{}]: {}", e.getStackTrace()[0], e.getMessage());
+            }
+        });
 
         return ResponseTrainingPredict.builder()
                 .currentNodeId(nextNodeId)
-                .message(nextNode.getMessage())
+                .message(returnMessage)
                 .build();
+        //endregion
+
+        //endregion
     }
 
     @Override
@@ -285,7 +337,7 @@ public class TrainingService extends BaseService implements ITrainingService {
             return returnException(ExceptionConstant.missing_param, ResponseTrainingServerStatus.class);
         }
 
-        String status = jedisService.get(userId + JedisService.PrefixRedisKey.COLON + JedisService.PrefixRedisKey.trainingServerStatus);
+        String status = jedisService.get(userId + COLON + JedisService.PrefixRedisKey.trainingServerStatus);
         if (StringUtils.isBlank(status) || status.equals(ResponseTrainingServerStatus.EStatus.FREE.name().toLowerCase())) {
             return ResponseTrainingServerStatus.builder()
                     .status(ResponseTrainingServerStatus.EStatus.FREE)
@@ -295,5 +347,239 @@ public class TrainingService extends BaseService implements ITrainingService {
         return ResponseTrainingServerStatus.builder()
                 .status(ResponseTrainingServerStatus.EStatus.BUSY)
                 .build();
+    }
+
+    private List<EntityEntity> updateRedisEntities(String userId, String sessionId, List<EntityEntity> responseEntities) throws Exception {
+        // Lấy entity từ redis
+        List<EntityEntity> redisEntities = new ArrayList<>();
+        String redisKey = Constant.JedisPrefix.userIdPrefix_ + userId + COLON +
+                Constant.JedisPrefix.scriptSessionId_ + sessionId + COLON + "list_entities";
+        String entitiesStr = jedisService.get(redisKey);
+        if (StringUtils.isNotBlank(entitiesStr) &&
+                CollectionUtils.isNotEmpty(redisEntities = objectMapper.readValue(entitiesStr, new TypeReference<List<EntityEntity>>() {
+                }))) {
+            // Xóa redis entity trùng với entity lấy từ predict response
+            List<String> responseEntityTypeIds = responseEntities.stream().map(EntityEntity::getEntityTypeId).toList();
+            List<EntityEntity> redisEntitiesNeedToRemove = redisEntities.stream().filter(e -> responseEntityTypeIds.contains(e.getEntityTypeId())).toList();
+            redisEntities.removeAll(redisEntitiesNeedToRemove);
+        }
+        if (CollectionUtils.isNotEmpty(responseEntities)) {
+            redisEntities.addAll(responseEntities);
+        }
+        // Set lại lên redis
+        jedisService.setWithExpired(redisKey, objectMapper.writeValueAsString(redisEntities), 60 * 60);
+
+        // Trả về list redis entities
+        return redisEntities;
+    }
+
+    private void setEntityTypeForListEntity(String userId, List<EntityEntity> entities) {
+        // Từ entity type id có trong mỗi entity => get ra được list entity type
+        List<String> entityTypeIds = entities.stream().map(EntityEntity::getEntityTypeId).toList();
+        if (CollectionUtils.isEmpty(entityTypeIds)) {
+            return;
+        }
+
+        List<EntityTypeEntity> entityTypeEntities = entityTypeService.getList(CommandGetListEntityType.builder()
+                .userId(userId)
+                .ids(entityTypeIds)
+                .build());
+        if (CollectionUtils.isEmpty(entityTypeEntities)) {
+            return;
+        }
+
+        Map<String, EntityTypeEntity> entityTypeById = new HashMap<>(); // <entity_type_id, entity type>
+        for (EntityTypeEntity entityType : entityTypeEntities) {
+            entityTypeById.put(entityType.getId(), entityType);
+        }
+
+        for (EntityEntity entity : entities) {
+            EntityTypeEntity entityType = entityTypeById.get(entity.getEntityTypeId());
+            if (entityType == null)
+                continue;
+
+            entity.setEntityType(entityType);
+        }
+    }
+
+    private Map<String, String> convertEntitiesToVariableMap(List<EntityEntity> entities) {
+        if (CollectionUtils.isEmpty(entities)) {
+            return new HashMap<>();
+        }
+
+        Map<String, String> variableMap = new HashMap<>();
+        for (EntityEntity entity : entities) {
+            variableMap.put(entity.getEntityTypeId() + "_" + entity.getEntityType().getName(), entity.getValue()); // Ví dụ: <"642802a8a535b67455a850f0_Tên", "Nguyễn Văn A">
+        }
+
+        return variableMap;
+    }
+
+    private String variableMapping(Map<String, String> variableMap, String content) {
+        for (String variableKey : variableMap.keySet()) {
+            content = content.replace("{{" + variableKey + "}}", variableMap.get(variableKey));
+        }
+        return content.replaceAll("\\{\\{.*?\\}\\}", "");
+    }
+
+    private ResponseCheckConditionByConditionMapping getNextNodeByConditionMapping(CommandCheckConditionByConditionMapping command) {
+        if (command.getCurrentNode() == null) {
+            log.error("[{}]: {}", new Exception().getStackTrace()[0], "condition_mappings_empty");
+            return ResponseCheckConditionByConditionMapping.builder()
+                    .nextNodeId(null)
+                    .responseTrainingPredictFromAI(null)
+                    .build();
+        }
+
+        // Nếu k có condition mapping nào thì trả về "_END"
+        if (CollectionUtils.isEmpty(command.getCurrentNode().getConditionMappings())) {
+            return ResponseCheckConditionByConditionMapping.builder()
+                    .nextNodeId("_END")
+                    .responseTrainingPredictFromAI(null)
+                    .build();
+        }
+
+        // Nếu condition mapping không có next node nào cả thì trả về "_END"
+        List<String> totalNextNodeIds = new ArrayList<>();
+        command.getCurrentNode().getConditionMappings().forEach(cm -> {
+            if (CollectionUtils.isNotEmpty(cm.getNext_node_ids())) {
+                totalNextNodeIds.addAll(cm.getNext_node_ids());
+            }
+        });
+        if (CollectionUtils.isEmpty(totalNextNodeIds)) {
+            return ResponseCheckConditionByConditionMapping.builder()
+                    .nextNodeId("_END")
+                    .responseTrainingPredictFromAI(null)
+                    .build();
+        }
+
+        // Check điều kiện của từng condition mapping
+        List<String> intentIds = command.getCurrentNode().getConditionMappings().stream()
+                .map(ConditionMappingEntity::getIntentId).toList();
+        ResponseTrainingPredictFromAI responseTrainingPredictFromAI = null;
+        for (ConditionMappingEntity conditionMapping : command.getCurrentNode().getConditionMappings()) {
+            // Check đầu vào của condition mapping
+            if (CollectionUtils.isEmpty(conditionMapping.getNext_node_ids())) {
+                continue;
+            }
+            if (StringUtils.isBlank(conditionMapping.getIntentId()) &&
+                    StringUtils.isBlank(conditionMapping.getKeyword()) &&
+                    CollectionUtils.isEmpty(conditionMapping.getEntities())) {
+                continue;
+            }
+
+            // Check keyword
+            if (StringUtils.isNotBlank(conditionMapping.getKeyword())) {
+                if (!command.getMessage().toLowerCase().contains(conditionMapping.getKeyword().toLowerCase())) {
+                    continue; // Không thỏa mãn thì check condition mapping khác
+                }
+            }
+
+            // Check intent
+            if (StringUtils.isNotBlank(conditionMapping.getIntentId())) {
+                try {
+                    if (responseTrainingPredictFromAI == null) {
+                        responseTrainingPredictFromAI = this.sendPredictRequest(CommandSendPredictRequest.builder()
+                                .user(command.getUser())
+                                .message(command.getMessage())
+                                .intentIds(intentIds)
+                                .build());
+                        if (responseTrainingPredictFromAI == null) {
+                            continue;
+                        }
+
+                        String intentId = responseTrainingPredictFromAI.getIntentId();
+                        if (StringUtils.isBlank(intentId) || intentId.equals("-1")) {
+                            continue;
+                        }
+                    }
+
+                    if (!conditionMapping.getIntentId().equals(responseTrainingPredictFromAI.getIntentId())) {
+                        continue;
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            // Check entity
+            if (CollectionUtils.isNotEmpty(conditionMapping.getEntities())) {
+                if (responseTrainingPredictFromAI == null) {
+                    responseTrainingPredictFromAI = this.sendPredictRequest(CommandSendPredictRequest.builder()
+                            .user(command.getUser())
+                            .message(command.getMessage())
+                            .intentIds(intentIds)
+                            .build());
+                    if (responseTrainingPredictFromAI == null) {
+                        continue;
+                    }
+                }
+
+                if (CollectionUtils.isEmpty(responseTrainingPredictFromAI.getEntities())) {
+                    continue;
+                }
+
+                boolean isEntityPass = true;
+                for (EntityEntity entity : conditionMapping.getEntities()) {
+                    EntityEntity responseEntity = responseTrainingPredictFromAI.getEntities().stream()
+                            .filter(e -> e.getEntityTypeId().equals(entity.getEntityTypeId())).findFirst().orElse(null);
+                    if (responseEntity == null) {
+                        isEntityPass = false;
+                        break;
+                    }
+                }
+                if (BooleanUtils.isFalse(isEntityPass)) {
+                    continue;
+                }
+            }
+
+            if (responseTrainingPredictFromAI != null && CollectionUtils.isNotEmpty(responseTrainingPredictFromAI.getEntities())) {
+                this.setEntityTypeForListEntity(command.getUser().getId(), responseTrainingPredictFromAI.getEntities()); // Khi predict từ training server về thì entity sẽ không có sẵn entity type mà chỉ có entity_type_id => Hàm này để set chi tiết entity_type cho từng entity
+            }
+            return ResponseCheckConditionByConditionMapping.builder()
+                    .nextNodeId(conditionMapping.getNext_node_ids().get(0))
+                    .responseTrainingPredictFromAI(responseTrainingPredictFromAI)
+                    .build();
+        }
+
+        return ResponseCheckConditionByConditionMapping.builder()
+                .nextNodeId(null)
+                .responseTrainingPredictFromAI(null)
+                .build();
+    }
+
+    private ResponseTrainingPredictFromAI sendPredictRequest(CommandSendPredictRequest command) {
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            Map<String, Object> commandRequest = new HashMap<>();
+            commandRequest.put("text", command.getMessage());
+            commandRequest.put("username", command.getUser().getUsername());
+            commandRequest.put("user_id", command.getUser().getId());
+            commandRequest.put("intent_ids", command.getIntentIds());
+
+            String commandBody = objectMapper.writeValueAsString(commandRequest);
+            HttpEntity<String> request =
+                    new HttpEntity<>(commandBody, headers);
+
+            ResponseTrainingPredictFromAI responseTrainingPredictFromAI = restTemplate.postForObject(resourceBundle.getString("training.server") + "/predict", request, ResponseTrainingPredictFromAI.class);
+            if (responseTrainingPredictFromAI == null) {
+                return null;
+            }
+
+            if (CollectionUtils.isEmpty(responseTrainingPredictFromAI.getEntities())) {
+                return responseTrainingPredictFromAI;
+            }
+
+            // Lấy entity value từ trong message bằng start và end pos
+            for (EntityEntity responseEntity : responseTrainingPredictFromAI.getEntities()) {
+                responseEntity.setValue(command.getMessage().substring(responseEntity.getStartPosition(), responseEntity.getEndPosition() + 1));
+            }
+            return responseTrainingPredictFromAI;
+        } catch (Exception e) {
+            log.error("[{}]: {}", e.getStackTrace()[0], e.getMessage());
+            return null;
+        }
     }
 }

@@ -1,12 +1,13 @@
 package com.caovy2001.chatbot.service.entity_type;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
+import com.caovy2001.chatbot.entity.EntityEntity;
 import com.caovy2001.chatbot.entity.EntityTypeEntity;
-import com.caovy2001.chatbot.entity.IntentEntity;
-import com.caovy2001.chatbot.entity.PatternEntity;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.EntityTypeRepository;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.entity.IEntityService;
+import com.caovy2001.chatbot.service.entity.command.CommandGetListEntity;
 import com.caovy2001.chatbot.service.entity_type.command.CommandAddEntityType;
 import com.caovy2001.chatbot.service.entity_type.command.CommandEntityTypeAddMany;
 import com.caovy2001.chatbot.service.entity_type.command.CommandGetListEntityType;
@@ -14,6 +15,7 @@ import com.caovy2001.chatbot.utils.ChatbotStringUtils;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -23,6 +25,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
@@ -32,6 +35,9 @@ public class EntityTypeService extends BaseService implements IEntityTypeService
 
     @Autowired
     private MongoTemplate mongoTemplate;
+
+    @Autowired
+    private IEntityService entityService;
 
     @Override
     public EntityTypeEntity add(CommandAddEntityType command) throws Exception {
@@ -87,7 +93,86 @@ public class EntityTypeService extends BaseService implements IEntityTypeService
         PageRequest pageRequest = PageRequest.of(command.getPage() - 1, command.getSize());
         query.with(pageRequest);
         List<EntityTypeEntity> entityTypeEntities = mongoTemplate.find(query, EntityTypeEntity.class);
+        this.setViewForListEntityType(entityTypeEntities, command);
         return new Paginated<>(entityTypeEntities, command.getPage(), command.getSize(), total);
+    }
+
+    private void setViewForListEntityType(List<EntityTypeEntity> entityTypes, CommandGetListEntityType command) {
+        if (CollectionUtils.isEmpty(entityTypes)) {
+            return;
+        }
+
+        if ((BooleanUtils.isFalse(command.isHasEntities()) || (CollectionUtils.isNotEmpty(command.getReturnFields()) && !command.getReturnFields().contains("entities")))) {
+            return;
+        }
+
+        // Lấy toàn bộ entity của toàn bộ entity type
+        Map<String, List<EntityEntity>> entitiesByEntityTypeId = new HashMap<>();
+        if (BooleanUtils.isTrue(command.isHasEntities()) &&
+                (CollectionUtils.isEmpty(command.getReturnFields()) || command.getReturnFields().contains("entities"))) {
+            List<EntityEntity> entities = entityService.getList(CommandGetListEntity.builder()
+                    .userId(command.getUserId())
+                    .entityTypeIds(entityTypes.stream().map(EntityTypeEntity::getId).toList())
+                    .hasPattern(command.isHasPatternOfEntities())
+                    .build());
+
+            for (EntityEntity entity : entities) {
+                List<EntityEntity> entitiesByEntityTypeIdTmp = entitiesByEntityTypeId.get(entity.getEntityTypeId());
+                if (CollectionUtils.isEmpty(entitiesByEntityTypeIdTmp)) {
+                    entitiesByEntityTypeIdTmp = new ArrayList<>();
+                }
+                entitiesByEntityTypeIdTmp.add(entity);
+                entitiesByEntityTypeId.put(entity.getEntityTypeId(), entitiesByEntityTypeIdTmp);
+            }
+        }
+
+        for (EntityTypeEntity entityType : entityTypes) {
+            if (BooleanUtils.isTrue(command.isHasEntities()) &&
+                    (CollectionUtils.isEmpty(command.getReturnFields()) || command.getReturnFields().contains("entities"))) {
+                entityType.setEntities(entitiesByEntityTypeId.get(entityType.getId()));
+            }
+        }
+    }
+
+    @Override
+    public boolean delete(CommandGetListEntityType command) throws Exception {
+        if (StringUtils.isBlank(command.getUserId())) {
+            throw new Exception(ExceptionConstant.missing_param);
+        }
+
+        // Quyết định những trường trả về
+        command.setReturnFields(new ArrayList<>());
+        command.getReturnFields().add("id");
+        command.getReturnFields().add("entities");
+
+        List<EntityTypeEntity> entityTypes = this.getList(command);
+        if (CollectionUtils.isEmpty(entityTypes)) {
+            return false;
+        }
+
+        List<String> entityTypeIds = entityTypes.stream().map(EntityTypeEntity::getId).toList();
+        if (CollectionUtils.isEmpty(entityTypeIds)) {
+            return false;
+        }
+        boolean result = entityTypeRepository.deleteAllByIdIn(entityTypeIds) > 0;
+
+        if (BooleanUtils.isTrue(result)) {
+            if (BooleanUtils.isTrue(command.isHasEntities())) {
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        entityService.delete(CommandGetListEntity.builder()
+                                .userId(command.getUserId())
+                                .entityTypeIds(entityTypeIds)
+                                .build());
+                    } catch (Exception e) {
+                        log.info(e.getMessage());
+                    }
+                });
+            }
+        }
+
+        return result;
+//        return true;
     }
 
     private Query buildQueryGetList(CommandGetListEntityType command) {
@@ -100,6 +185,10 @@ public class EntityTypeService extends BaseService implements IEntityTypeService
 
         if (StringUtils.isNotBlank(command.getKeyword())) {
             orCriteriaList.add(Criteria.where("searchable_name").regex(ChatbotStringUtils.stripAccents(command.getKeyword().trim().toLowerCase())));
+        }
+
+        if (StringUtils.isNotBlank(command.getId())) {
+            andCriteriaList.add(Criteria.where("id").is(command.getId()));
         }
 
         if (CollectionUtils.isNotEmpty(command.getIds())) {
@@ -115,7 +204,9 @@ public class EntityTypeService extends BaseService implements IEntityTypeService
 
         query.addCriteria(criteria);
         if (CollectionUtils.isNotEmpty(command.getReturnFields())) {
-            query.fields().include(Arrays.copyOf(command.getReturnFields().toArray(), command.getReturnFields().size(), String[].class));
+            List<String> returnFields = new ArrayList<>(command.getReturnFields());
+            returnFields.removeAll(Collections.singletonList("entities"));
+            query.fields().include(Arrays.copyOf(returnFields.toArray(), returnFields.size(), String[].class));
         }
         return query;
     }
@@ -184,6 +275,7 @@ public class EntityTypeService extends BaseService implements IEntityTypeService
             return null;
         }
 
+        this.setViewForListEntityType(entityTypes, command);
         return entityTypes;
     }
 }
