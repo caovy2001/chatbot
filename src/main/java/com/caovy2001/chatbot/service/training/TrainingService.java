@@ -220,7 +220,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                     .nodeId(currNode.getNodeId())
                     .message(wrongMessage)
                     .from(EMessageHistoryFrom.BOT)
-                    .entities(responseTrainingPredictFromAI.getEntities())
+                    .entities(responseTrainingPredictFromAI != null? responseTrainingPredictFromAI.getEntities(): null)
                     .build()));
 
             return ResponseTrainingPredict.builder()
@@ -237,7 +237,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                     .nodeId("_END")
                     .message(endMessage)
                     .from(EMessageHistoryFrom.BOT)
-                    .entities(responseTrainingPredictFromAI.getEntities())
+                    .entities(responseTrainingPredictFromAI != null? responseTrainingPredictFromAI.getEntities(): null)
                     .build()));
 
             return ResponseTrainingPredict.builder()
@@ -256,7 +256,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                     .nodeId("_END")
                     .message(endMessage)
                     .from(EMessageHistoryFrom.BOT)
-                    .entities(responseTrainingPredictFromAI.getEntities())
+                    .entities(responseTrainingPredictFromAI != null? responseTrainingPredictFromAI.getEntities(): null)
                     .build()));
 
             return ResponseTrainingPredict.builder()
@@ -266,7 +266,7 @@ public class TrainingService extends BaseService implements ITrainingService {
             //endregion
         }
 
-        List<EntityEntity> redisEntities = this.updateRedisEntities(userEntity.getId(), command.getSessionId(), responseTrainingPredictFromAI.getEntities()); // Cập nhật entities cho session này trên redis
+        List<EntityEntity> redisEntities = this.updateRedisEntities(userEntity.getId(), command.getSessionId(), responseTrainingPredictFromAI != null? responseTrainingPredictFromAI.getEntities(): null); // Cập nhật entities cho session này trên redis
         Map<String, String> variableMap = this.convertEntitiesToVariableMap(redisEntities);
         String returnMessage = this.variableMapping(variableMap, nextNode.getMessage());
 
@@ -275,7 +275,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                 .nodeId(nextNodeId)
                 .message(returnMessage)
                 .from(EMessageHistoryFrom.BOT)
-                .entities(responseTrainingPredictFromAI.getEntities())
+                .entities(responseTrainingPredictFromAI != null? responseTrainingPredictFromAI.getEntities(): null)
                 .build()));
 
         return ResponseTrainingPredict.builder()
@@ -356,9 +356,11 @@ public class TrainingService extends BaseService implements ITrainingService {
                 CollectionUtils.isNotEmpty(redisEntities = objectMapper.readValue(entitiesStr, new TypeReference<List<EntityEntity>>() {
                 }))) {
             // Xóa redis entity trùng với entity lấy từ predict response
-            List<String> responseEntityTypeIds = responseEntities.stream().map(EntityEntity::getEntityTypeId).toList();
-            List<EntityEntity> redisEntitiesNeedToRemove = redisEntities.stream().filter(e -> responseEntityTypeIds.contains(e.getEntityTypeId())).toList();
-            redisEntities.removeAll(redisEntitiesNeedToRemove);
+            if (CollectionUtils.isNotEmpty(responseEntities)) {
+                List<String> responseEntityTypeIds = responseEntities.stream().map(EntityEntity::getEntityTypeId).toList();
+                List<EntityEntity> redisEntitiesNeedToRemove = redisEntities.stream().filter(e -> responseEntityTypeIds.contains(e.getEntityTypeId())).toList();
+                redisEntities.removeAll(redisEntitiesNeedToRemove);
+            }
         }
         if (CollectionUtils.isNotEmpty(responseEntities)) {
             redisEntities.addAll(responseEntities);
