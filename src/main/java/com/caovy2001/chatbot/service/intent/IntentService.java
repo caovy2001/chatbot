@@ -89,16 +89,13 @@ public class IntentService extends BaseService implements IIntentService {
                 .build();
 
         IntentEntity addedIntent = intentRepository.insert(intent);
-        try {
-            // Đẩy vào kafka để index lên ES
-            kafkaTemplate.send(Constant.KafkaTopic.process_indexing_intent_es, objectMapper.writeValueAsString(CommandIndexingIntentES.builder()
-                    .userId(command.getUserId())
-                    .intents(List.of(intent))
-                    .doSetUserId(false)
-                    .build()));
-        } catch (JsonProcessingException e) {
-            log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage())? e.getMessage(): ExceptionConstant.error_occur);
-        }
+
+        // Index ES
+        this.indexES(CommandIndexingIntentES.builder()
+                .userId(command.getUserId())
+                .intents(List.of(intent))
+                .doSetUserId(false)
+                .build());
 
         return ResponseIntentAdd.builder()
                 .id(addedIntent.getId())
@@ -114,6 +111,7 @@ public class IntentService extends BaseService implements IIntentService {
                 .ids(new ArrayList<>())
                 .intents(new ArrayList<>())
                 .build();
+        List<IntentEntity> savedIntents = new ArrayList<>();
         for (IntentEntity intent : command.getIntents()) {
             IntentEntity existIntent = intentRepository.findByCodeAndUserId(intent.getCode(), command.getUserId()).orElse(null);
             if (existIntent != null) {
@@ -127,9 +125,7 @@ public class IntentService extends BaseService implements IIntentService {
             intent.setLastUpdatedDate(System.currentTimeMillis());
             IntentEntity savedIntent = intentRepository.save(intent);
             responseIntentAdd.getIds().add(savedIntent.getId());
-            if (BooleanUtils.isTrue(command.isReturnListDetails())) {
-                responseIntentAdd.getIntents().add(savedIntent);
-            }
+            savedIntents.add(savedIntent);
 
             if (!CollectionUtils.isEmpty(intent.getPatterns())) {
                 for (PatternEntity pattern : intent.getPatterns()) {
@@ -143,6 +139,17 @@ public class IntentService extends BaseService implements IIntentService {
                 }
             }
         }
+
+        if (BooleanUtils.isTrue(command.isReturnListDetails())) {
+            responseIntentAdd.setIntents(savedIntents);
+        }
+
+        // Index ES
+        this.indexES(CommandIndexingIntentES.builder()
+                .userId(command.getUserId())
+                .intents(savedIntents)
+                .doSetUserId(false)
+                .build());
 
         return responseIntentAdd;
     }
@@ -212,7 +219,15 @@ public class IntentService extends BaseService implements IIntentService {
         ResponseIntents intent = this.getById(command.getId(), userId);
         intent.getIntent().setName(command.getName());
         intent.getIntent().setLastUpdatedDate(System.currentTimeMillis());
-        intentRepository.save(intent.getIntent());
+        IntentEntity savedIntent = intentRepository.save(intent.getIntent());
+
+        // Index ES
+        this.indexES(CommandIndexingIntentES.builder()
+                .userId(command.getUserId())
+                .intents(List.of(savedIntent))
+                .doSetUserId(false)
+                .build());
+
         return ResponseIntents.builder().intent(intent.getIntent()).build();
     }
 
@@ -229,6 +244,13 @@ public class IntentService extends BaseService implements IIntentService {
         intent.setName(command.getName());
         intent.setLastUpdatedDate(System.currentTimeMillis());
         IntentEntity updatedIntent = intentRepository.save(intent);
+
+        // Index ES
+        this.indexES(CommandIndexingIntentES.builder()
+                .userId(command.getUserId())
+                .intents(List.of(updatedIntent))
+                .doSetUserId(false)
+                .build());
 
         return ResponseIntents.builder()
                 .intent(updatedIntent)
@@ -425,5 +447,14 @@ public class IntentService extends BaseService implements IIntentService {
         intentRepository.deleteById(id);
         patternRepository.deleteByIntentIdAndUserId(id, userId);
         return ResponseIntents.builder().build();
+    }
+
+    private void indexES(CommandIndexingIntentES command) {
+        try {
+            // Đẩy vào kafka để index lên ES
+            kafkaTemplate.send(Constant.KafkaTopic.process_indexing_intent_es, objectMapper.writeValueAsString(command));
+        } catch (JsonProcessingException e) {
+            log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage())? e.getMessage(): ExceptionConstant.error_occur);
+        }
     }
 }

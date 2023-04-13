@@ -235,14 +235,15 @@ public class PatternAPI {
             }
 
             CompletableFuture.runAsync(() -> {
+                final String finalUserId = userEntity.getId();
                 try {
                     patternService.importFromFile(CommandImportPatternsFromFile.builder()
-                            .userId(userEntity.getId())
+                            .userId(finalUserId)
                             .sessionId(sessionId)
                             .extensionType(extensionType)
                             .build());
                 } catch (Exception e) {
-                    log.info(e.getMessage());
+                    log.error(e.getMessage());
                     File importFile = new File(sessionId + "." + extensionType);
                     if (importFile.exists()) importFile.delete();
                 }

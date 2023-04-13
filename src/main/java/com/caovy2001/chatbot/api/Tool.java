@@ -2,9 +2,14 @@ package com.caovy2001.chatbot.api;
 
 import com.caovy2001.chatbot.entity.IntentEntity;
 import com.caovy2001.chatbot.entity.PatternEntity;
+import com.caovy2001.chatbot.entity.es.IntentEntityES;
+import com.caovy2001.chatbot.repository.IntentRepository;
+import com.caovy2001.chatbot.repository.es.IntentRepositoryES;
 import com.caovy2001.chatbot.service.intent.IIntentService;
 import com.caovy2001.chatbot.service.intent.command.CommandIntentAddMany;
 import com.caovy2001.chatbot.service.jedis.IJedisService;
+import com.caovy2001.chatbot.service.kafka.KafkaConsumer;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -40,7 +45,7 @@ public class Tool {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @GetMapping("/tool1")
+//    @GetMapping("/tool1")
     public ResponseEntity<Boolean> tool1() {
         try {
             ResponseListPatterns responseListPatterns = null;
@@ -99,7 +104,7 @@ public class Tool {
     @Autowired
     private IIntentService intentService;
 
-    @GetMapping("/tool2")
+//    @GetMapping("/tool2")
     public ResponseEntity<Boolean> tool2() {
         try {
             List<IntentEntity> intentEntities = new ArrayList<>();
@@ -162,7 +167,7 @@ public class Tool {
     @Autowired
     private IJedisService jedisService;
 
-    @GetMapping("/tool3")
+//    @GetMapping("/tool3")
     public ResponseEntity<String> tool3() {
 //        Jedis jedis = new Jedis("redis://default:yPqm07QgkiXFbZ9gxR9ejjpmuhO3j9sG@redis-18384.c16.us-east-1-2.ec2.cloud.redislabs.com:18384");
         jedisService.set("test_key1", "test_value1");
@@ -196,8 +201,24 @@ public class Tool {
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
 
-    @GetMapping("/test_kafka")
+//    @GetMapping("/test_kafka")
     public void testKafka() {
         kafkaTemplate.send("process_save_message_when_predict", "Helloooooo!");
     }
+
+    @Autowired
+    private IntentRepository intentRepository;
+
+    @Autowired
+    private IntentRepositoryES intentRepositoryES;
+
+//    @GetMapping("/index_all_intents")
+    public void indexESIntent() throws Exception{
+        List<IntentEntity> intents = intentRepository.findAll();
+        List<IntentEntityES> intentESes = objectMapper.readValue(objectMapper.writeValueAsString(intents), new TypeReference<List<IntentEntityES>>() {
+        });
+
+        intentRepositoryES.saveAll(intentESes);
+    }
+
 }
