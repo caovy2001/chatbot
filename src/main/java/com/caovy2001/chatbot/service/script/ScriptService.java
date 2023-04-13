@@ -1,5 +1,6 @@
 package com.caovy2001.chatbot.service.script;
 
+import com.caovy2001.chatbot.constant.Constant;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.ConditionMappingEntity;
 import com.caovy2001.chatbot.entity.IntentEntity;
@@ -9,6 +10,8 @@ import com.caovy2001.chatbot.model.DateFilter;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.ScriptRepository;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.jedis.IJedisService;
+import com.caovy2001.chatbot.service.jedis.JedisService;
 import com.caovy2001.chatbot.service.node.INodeService;
 import com.caovy2001.chatbot.service.script.command.CommandGetListScript;
 import com.caovy2001.chatbot.service.script.command.CommandScriptAdd;
@@ -17,6 +20,7 @@ import com.caovy2001.chatbot.service.script.response.ResponseScript;
 import com.caovy2001.chatbot.service.script.response.ResponseScriptAdd;
 import com.caovy2001.chatbot.service.script.response.ResponseScriptGetByUserId;
 import com.caovy2001.chatbot.service.script_intent_mapping.IScriptIntentMappingService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
@@ -26,12 +30,19 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.http.HttpEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+
+import static com.caovy2001.chatbot.service.jedis.JedisService.PrefixRedisKey.COLON;
 
 @Service
 @Slf4j
@@ -48,9 +59,18 @@ public class ScriptService extends BaseService implements IScriptService {
     @Autowired
     private MongoTemplate mongoTemplate;
 
+    @Autowired
+    private KafkaTemplate<String, String> kafkaTemplate;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private IJedisService jedisService;
+
     @Override
     public ResponseScriptAdd add(CommandScriptAdd command) {
-        if (StringUtils.isAnyBlank(command.getUser_id(),command.getName())){
+        if (StringUtils.isAnyBlank(command.getUser_id(), command.getName())) {
             return returnException(ExceptionConstant.missing_param, ResponseScriptAdd.class);
         }
 
@@ -71,7 +91,7 @@ public class ScriptService extends BaseService implements IScriptService {
         ScriptEntity addedScript = scriptRepository.insert(script);
 
         List<String> intentIds = new ArrayList<>();
-        for (NodeEntity node: command.getNodes()) {
+        for (NodeEntity node : command.getNodes()) {
             node.setScriptId(script.getId());
             if (CollectionUtils.isNotEmpty(node.getConditionMappings())) {
                 intentIds.addAll(node.getConditionMappings().stream().map(ConditionMappingEntity::getIntentId).filter(StringUtils::isNotBlank).toList());
@@ -99,8 +119,8 @@ public class ScriptService extends BaseService implements IScriptService {
 
     @Override
     public ResponseScriptGetByUserId getScriptByUserId(String userId) {
-        if (StringUtils.isAnyBlank(userId)){
-            return  returnException(ExceptionConstant.missing_param, ResponseScriptGetByUserId.class);
+        if (StringUtils.isAnyBlank(userId)) {
+            return returnException(ExceptionConstant.missing_param, ResponseScriptGetByUserId.class);
         }
         return ResponseScriptGetByUserId.builder()
                 .scripts(scriptRepository.findByUserId(userId))
@@ -122,10 +142,11 @@ public class ScriptService extends BaseService implements IScriptService {
 
         return script;
     }
+
     @Override
     public ResponseScript updateName(CommandScriptUpdate command) {
         ScriptEntity script = scriptRepository.findById(command.getId()).orElse(null);
-        if (script == null){
+        if (script == null) {
             return returnException(ExceptionConstant.item_not_found, ResponseScript.class);
         }
         script.setName(command.getName());
@@ -133,7 +154,7 @@ public class ScriptService extends BaseService implements IScriptService {
     }
 
     @Override
-    public ResponseScript  deleteScript(String id) {
+    public ResponseScript deleteScript(String id) {
         scriptRepository.deleteById(id);
 
         List<NodeEntity> nodes = nodeService.getAllByScriptId(id);
@@ -164,7 +185,7 @@ public class ScriptService extends BaseService implements IScriptService {
         List<String> intentIds = new ArrayList<>();
         List<NodeEntity> addedNodes = new ArrayList<>();
         if (!CollectionUtils.isEmpty(command.getNodes())) {
-            for (NodeEntity node: command.getNodes()) {
+            for (NodeEntity node : command.getNodes()) {
                 node.setScriptId(existScript.getId());
                 if (CollectionUtils.isNotEmpty(node.getConditionMappings())) {
                     intentIds.addAll(node.getConditionMappings().stream().map(ConditionMappingEntity::getIntentId).filter(StringUtils::isNotBlank).toList());
@@ -195,6 +216,7 @@ public class ScriptService extends BaseService implements IScriptService {
         existScript.setLastUpdatedDate(System.currentTimeMillis());
         ScriptEntity updatedScript = scriptRepository.save(existScript);
         updatedScript.setNodes(addedNodes);
+
         return ResponseScript.builder()
                 .script(updatedScript)
                 .build();
@@ -273,7 +295,7 @@ public class ScriptService extends BaseService implements IScriptService {
             return;
         }
 
-        for (ScriptEntity script: scriptEntities) {
+        for (ScriptEntity script : scriptEntities) {
             if (BooleanUtils.isTrue(command.isHasNodes()) && (CollectionUtils.isEmpty(command.getReturnFields()) || command.getReturnFields().contains("nodes"))) {
                 script.setNodes(nodeService.getAllByScriptId(script.getId()));
             }

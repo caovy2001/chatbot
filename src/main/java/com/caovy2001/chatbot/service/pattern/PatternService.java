@@ -2,7 +2,10 @@ package com.caovy2001.chatbot.service.pattern;
 
 import com.caovy2001.chatbot.constant.Constant;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
-import com.caovy2001.chatbot.entity.*;
+import com.caovy2001.chatbot.entity.EntityEntity;
+import com.caovy2001.chatbot.entity.EntityTypeEntity;
+import com.caovy2001.chatbot.entity.IntentEntity;
+import com.caovy2001.chatbot.entity.PatternEntity;
 import com.caovy2001.chatbot.model.DateFilter;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.PatternRepository;
@@ -23,6 +26,7 @@ import com.caovy2001.chatbot.service.pattern.response.ResponsePattern;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePatternAdd;
 import com.caovy2001.chatbot.utils.ChatbotStringUtils;
 import com.caovy2001.chatbot.utils.ExcelUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +42,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -71,8 +76,11 @@ public class PatternService extends BaseService implements IPatternService {
     @Autowired
     private MongoTemplate mongoTemplate;
 
+    @Autowired
+    private KafkaTemplate<String, String> kafkaTemplate;
+
     @Override
-    public ResponsePatternAdd add(CommandPatternAdd command) {
+    public ResponsePatternAdd add(CommandPatternAdd command) throws Exception {
         if (StringUtils.isAnyBlank(command.getUserId(), command.getContent(), command.getIntentId())) {
             return returnException(ExceptionConstant.missing_param, ResponsePatternAdd.class);
         }
@@ -83,6 +91,13 @@ public class PatternService extends BaseService implements IPatternService {
                 .userId(command.getUserId())
                 .build();
         PatternEntity addedPattern = patternRepository.insert(pattern);
+
+        // Index ES
+        this.indexES(CommandIndexingPatternES.builder()
+                .userId(command.getUserId())
+                .patterns(List.of(addedPattern))
+                .doSetUserId(false)
+                .build());
 
         // Add entity of this pattern
         if (CollectionUtils.isNotEmpty(command.getEntities())) {
@@ -793,5 +808,14 @@ public class PatternService extends BaseService implements IPatternService {
             entityService.addMany(commandEntityAddMany);
         }
         response.setNumOfSuccess(response.getNumOfSuccess() + patternEntities.size());
+    }
+
+    private void indexES(CommandIndexingPatternES command) {
+        try {
+            // Đẩy vào kafka để index lên ES
+            kafkaTemplate.send(Constant.KafkaTopic.process_indexing_pattern_es, objectMapper.writeValueAsString(command));
+        } catch (JsonProcessingException e) {
+            log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage())? e.getMessage(): ExceptionConstant.error_occur);
+        }
     }
 }

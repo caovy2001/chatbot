@@ -5,6 +5,7 @@ public class Constant {
         public static final String COLON = ":";
         public static final String userIdPrefix_ = "userIdPrefix_";
         public static final String scriptSessionId_ = "scriptSessionId_";
+        public static final String scriptId_ = "scriptId_";
         public static final String secretKeyPrefix_ = "secretKeyPrefix_";
 
         public static class Pattern {
@@ -19,5 +20,7 @@ public class Constant {
     public static class KafkaTopic {
         public static final String process_save_message_when_predict = "process_save_message_when_predict";
         public static final String process_indexing_intent_es = "process_indexing_intent_es";
+        public static final String process_indexing_pattern_es = "process_indexing_pattern_es";
+        public static final String process_cache_entity_type_mapping = "process_cache_entity_type_mapping";
     }
 }

@@ -5,7 +5,6 @@ import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.IntentEntity;
 import com.caovy2001.chatbot.entity.PatternEntity;
 import com.caovy2001.chatbot.entity.ScriptIntentMappingEntity;
-import com.caovy2001.chatbot.entity.es.IntentEntityES;
 import com.caovy2001.chatbot.model.DateFilter;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.IntentRepository;
@@ -135,7 +134,11 @@ public class IntentService extends BaseService implements IIntentService {
                             .intentId(savedIntent.getId())
                             .build();
 
-                    patternService.add(commandPatternAdd);
+                    try {
+                        patternService.add(commandPatternAdd);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
         }

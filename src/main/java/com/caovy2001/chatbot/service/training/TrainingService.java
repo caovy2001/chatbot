@@ -220,7 +220,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                     .nodeId(currNode.getNodeId())
                     .message(wrongMessage)
                     .from(EMessageHistoryFrom.BOT)
-                    .entities(responseTrainingPredictFromAI != null? responseTrainingPredictFromAI.getEntities(): null)
+                    .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
                     .build()));
 
             return ResponseTrainingPredict.builder()
@@ -237,7 +237,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                     .nodeId("_END")
                     .message(endMessage)
                     .from(EMessageHistoryFrom.BOT)
-                    .entities(responseTrainingPredictFromAI != null? responseTrainingPredictFromAI.getEntities(): null)
+                    .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
                     .build()));
 
             return ResponseTrainingPredict.builder()
@@ -256,7 +256,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                     .nodeId("_END")
                     .message(endMessage)
                     .from(EMessageHistoryFrom.BOT)
-                    .entities(responseTrainingPredictFromAI != null? responseTrainingPredictFromAI.getEntities(): null)
+                    .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
                     .build()));
 
             return ResponseTrainingPredict.builder()
@@ -266,7 +266,7 @@ public class TrainingService extends BaseService implements ITrainingService {
             //endregion
         }
 
-        List<EntityEntity> redisEntities = this.updateRedisEntities(userEntity.getId(), command.getSessionId(), responseTrainingPredictFromAI != null? responseTrainingPredictFromAI.getEntities(): null); // Cập nhật entities cho session này trên redis
+        List<EntityEntity> redisEntities = this.updateRedisEntities(userEntity.getId(), command.getSessionId(), responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null); // Cập nhật entities cho session này trên redis
         Map<String, String> variableMap = this.convertEntitiesToVariableMap(redisEntities);
         String returnMessage = this.variableMapping(variableMap, nextNode.getMessage());
 
@@ -275,7 +275,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                 .nodeId(nextNodeId)
                 .message(returnMessage)
                 .from(EMessageHistoryFrom.BOT)
-                .entities(responseTrainingPredictFromAI != null? responseTrainingPredictFromAI.getEntities(): null)
+                .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
                 .build()));
 
         return ResponseTrainingPredict.builder()
@@ -410,7 +410,7 @@ public class TrainingService extends BaseService implements ITrainingService {
             if (entity.getEntityType() == null) {
                 continue;
             }
-            variableMap.put(entity.getEntityTypeId() + "_" + entity.getEntityType().getName(), entity.getValue()); // Ví dụ: <"642802a8a535b67455a850f0_Tên", "Nguyễn Văn A">
+            variableMap.put(entity.getEntityType().getName(), entity.getValue()); // Ví dụ: <"Tên", "Nguyễn Văn A">
         }
 
         return variableMap;
@@ -499,7 +499,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                         continue;
                     }
                 } catch (Exception e) {
-                    log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage())? e.getMessage(): ExceptionConstant.error_occur);
+                    log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
                     continue;
                 }
             }
