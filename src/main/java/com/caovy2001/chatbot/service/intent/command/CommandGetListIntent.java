@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Collection;
 import java.util.List;
 
 @Builder
@@ -29,5 +28,5 @@ public class CommandGetListIntent {
     @Builder.Default
     private boolean hasEntityTypesOfEntitiesOfPatterns = false;
 
-    public Collection<DateFilter> dateFilters;
+    public List<DateFilter> dateFilters;
 }

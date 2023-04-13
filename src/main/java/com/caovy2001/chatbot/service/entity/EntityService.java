@@ -3,7 +3,9 @@ package com.caovy2001.chatbot.service.entity;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.EntityEntity;
 import com.caovy2001.chatbot.entity.EntityTypeEntity;
+import com.caovy2001.chatbot.entity.MessageHistoryEntity;
 import com.caovy2001.chatbot.entity.PatternEntity;
+import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.EntityRepository;
 import com.caovy2001.chatbot.service.BaseService;
 import com.caovy2001.chatbot.service.entity.command.CommandAddEntity;
@@ -19,6 +21,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -226,11 +229,43 @@ public class EntityService extends BaseService implements IEntityServiceAPI, IEn
                 List<PatternEntity> patterns = patternService.getList(CommandGetListPattern.builder()
                         .id(entity.getPatternId())
                         .userId(command.getUserId())
+                        .returnFields(List.of("content"))
                         .build());
                 if (CollectionUtils.isNotEmpty(patterns)) {
                     entity.setPattern(patterns.get(0));
                 }
             }
         }
+    }
+
+    @Override
+    public Paginated<EntityEntity> getPaginatedList(CommandGetListEntity command) throws Exception {
+        if (StringUtils.isBlank(command.getUserId())) {
+            throw new Exception(ExceptionConstant.missing_param);
+        }
+
+        if (command.getPage() <= 0) {
+            throw new Exception("invalid_page_or_size");
+        }
+
+        if (command.getSize() <= 0) {
+            return new Paginated<>(new ArrayList<>(), command.getPage(), command.getSize(), 0);
+        }
+
+        Query query = this.buildQueryGetList(command);
+        if (query == null) {
+            return new Paginated<>(new ArrayList<>(), command.getPage(), command.getSize(), 0);
+        }
+
+        long total = mongoTemplate.count(query, EntityEntity.class);
+        if (total == 0L) {
+            return new Paginated<>(new ArrayList<>(), command.getPage(), command.getSize(), 0);
+        }
+
+        PageRequest pageRequest = PageRequest.of(command.getPage() - 1, command.getSize());
+        query.with(pageRequest);
+        List<EntityEntity> entities = mongoTemplate.find(query, EntityEntity.class);
+        this.setViewForListEntities(entities, command);
+        return new Paginated<>(entities, command.getPage(), command.getSize(), total);
     }
 }

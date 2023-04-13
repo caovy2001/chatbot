@@ -49,4 +49,12 @@ public class EntityEntity {
 
     @Field("end_position")
     private int endPosition;
+
+    @Field("created_date")
+    @Builder.Default
+    private long createdDate = System.currentTimeMillis();
+
+    @Field("last_updated_date")
+    @Builder.Default
+    private long lastUpdatedDate = System.currentTimeMillis();
 }

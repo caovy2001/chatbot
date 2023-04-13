@@ -686,6 +686,13 @@ public class PatternService extends BaseService implements IPatternService {
         }
 
         query.addCriteria(criteria);
+        if (CollectionUtils.isNotEmpty(command.getReturnFields())) {
+            List<String> returnFields = new ArrayList<>(command.getReturnFields());
+            returnFields.removeAll(Collections.singletonList("entities"));
+            returnFields.addAll(List.of("created_date", "last_updated_date"));
+            query.fields().include(Arrays.copyOf(returnFields.toArray(), returnFields.size(), String[].class));
+        }
+
         return query;
     }
 

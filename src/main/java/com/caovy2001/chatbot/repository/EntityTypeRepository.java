@@ -7,8 +7,6 @@ import java.util.List;
 
 public interface EntityTypeRepository extends MongoRepository<EntityTypeEntity, String> {
 
-    List<EntityTypeEntity> findByUserIdAndLowerCaseName(String userId, String toLowerCase);
-
     List<EntityTypeEntity> findByUserIdAndLowerCaseNameIn(String userId, List<String> lowerCaseName);
 
     long deleteAllByIdIn(List<String> ids);

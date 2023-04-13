@@ -5,12 +5,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+@Builder
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
-public class CommandAddEntityType {
+public class CommandUpdateEntityType {
+    private String id;
     private String userId;
     private String name;
-    private String uuid;
 }

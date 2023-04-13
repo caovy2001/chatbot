@@ -12,6 +12,8 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CommandGetListEntity {
+    private int page;
+    private int size;
     private String userId;
     private List<String> ids;
     private String keyword;

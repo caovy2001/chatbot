@@ -50,4 +50,12 @@ public class EntityEntityES {
 
     @Field(type = FieldType.Integer, name = "end_position")
     private int endPosition;
+
+    @Field(type = FieldType.Long, name = "created_date")
+    @Builder.Default
+    private long createdDate = System.currentTimeMillis();
+
+    @Field(type = FieldType.Long, name = "last_updated_date")
+    @Builder.Default
+    private long lastUpdatedDate = System.currentTimeMillis();
 }

@@ -40,4 +40,12 @@ public class EntityTypeEntityES extends BaseEntity {
 
     @Transient
     private List<EntityEntityES> entities;
+
+    @Field(type = FieldType.Long, name = "created_date")
+    @Builder.Default
+    private long createdDate = System.currentTimeMillis();
+
+    @Field(type = FieldType.Long, name = "last_updated_date")
+    @Builder.Default
+    private long lastUpdatedDate = System.currentTimeMillis();
 }

@@ -3,6 +3,7 @@ package com.caovy2001.chatbot.service.entity_type;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.EntityEntity;
 import com.caovy2001.chatbot.entity.EntityTypeEntity;
+import com.caovy2001.chatbot.model.DateFilter;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.EntityTypeRepository;
 import com.caovy2001.chatbot.service.BaseService;
@@ -11,6 +12,7 @@ import com.caovy2001.chatbot.service.entity.command.CommandGetListEntity;
 import com.caovy2001.chatbot.service.entity_type.command.CommandAddEntityType;
 import com.caovy2001.chatbot.service.entity_type.command.CommandEntityTypeAddMany;
 import com.caovy2001.chatbot.service.entity_type.command.CommandGetListEntityType;
+import com.caovy2001.chatbot.service.entity_type.command.CommandUpdateEntityType;
 import com.caovy2001.chatbot.utils.ChatbotStringUtils;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -45,9 +47,12 @@ public class EntityTypeService extends BaseService implements IEntityTypeService
             throw new Exception(ExceptionConstant.missing_param);
         }
 
-        List<EntityTypeEntity> existingEntityTypes = entityTypeRepository
-                .findByUserIdAndLowerCaseName(command.getUserId(), command.getName().trim().toLowerCase());
-        if (CollectionUtils.isNotEmpty(existingEntityTypes)) {
+        List<EntityTypeEntity> existEntityTypesByLowerCaseName = this.getList(CommandGetListEntityType.builder()
+                .userId(command.getUserId())
+                .lowerCaseName(command.getName().trim().toLowerCase())
+                .returnFields(List.of("id", "lower_case_name"))
+                .build());
+        if (CollectionUtils.isNotEmpty(existEntityTypesByLowerCaseName)) {
             throw new Exception("name_exist");
         }
 
@@ -59,6 +64,42 @@ public class EntityTypeService extends BaseService implements IEntityTypeService
                 .searchableName(ChatbotStringUtils.stripAccents(command.getName().trim().toLowerCase()))
                 .build();
         EntityTypeEntity resEntityType = entityTypeRepository.insert(entityType);
+        if (StringUtils.isBlank(resEntityType.getId())) {
+            throw new Exception("add_entity_type_error");
+        }
+
+        return resEntityType;
+    }
+
+    @Override
+    public EntityTypeEntity update(CommandUpdateEntityType command) throws Exception {
+        if (StringUtils.isAnyBlank(command.getId(), command.getUserId(), command.getName())) {
+            throw new Exception(ExceptionConstant.missing_param);
+        }
+
+        List<EntityTypeEntity> existEntityTypesById = this.getList(CommandGetListEntityType.builder()
+                .id(command.getId())
+                .userId(command.getUserId())
+                .build());
+        if (CollectionUtils.isEmpty(existEntityTypesById)) {
+            throw new Exception("entity_type_not_exist");
+        }
+
+        List<EntityTypeEntity> existEntityTypesByLowerCaseName = this.getList(CommandGetListEntityType.builder()
+                .userId(command.getUserId())
+                .lowerCaseName(command.getName().trim().toLowerCase())
+                .returnFields(List.of("id", "lower_case_name"))
+                .build());
+        if (CollectionUtils.isNotEmpty(existEntityTypesByLowerCaseName)) {
+            throw new Exception("name_exist");
+        }
+
+        EntityTypeEntity entityType = existEntityTypesById.get(0);
+        entityType.setName(command.getName().trim());
+        entityType.setLowerCaseName(command.getName().trim().toLowerCase());
+        entityType.setSearchableName(ChatbotStringUtils.stripAccents(command.getName().trim().toLowerCase()));
+        entityType.setLastUpdatedDate(System.currentTimeMillis());
+        EntityTypeEntity resEntityType = entityTypeRepository.save(entityType);
         if (StringUtils.isBlank(resEntityType.getId())) {
             throw new Exception("add_entity_type_error");
         }
@@ -197,6 +238,24 @@ public class EntityTypeService extends BaseService implements IEntityTypeService
             andCriteriaList.add(Criteria.where("id").in(command.getIds()));
         }
 
+        if (StringUtils.isNotBlank(command.getLowerCaseName())) {
+            andCriteriaList.add(Criteria.where("lower_case_name").is(command.getLowerCaseName()));
+        }
+
+        if (CollectionUtils.isNotEmpty(command.getLowerCaseNames())) {
+            andCriteriaList.add(Criteria.where("lower_case_name").in(command.getLowerCaseNames()));
+        }
+
+        if (CollectionUtils.isNotEmpty(command.getDateFilters())) {
+            for (DateFilter dateFilter : command.getDateFilters()) {
+                if (dateFilter.getFromDate() != null &&
+                        dateFilter.getToDate() != null &&
+                        StringUtils.isNotBlank(dateFilter.getFieldName())) {
+                    andCriteriaList.add(Criteria.where(dateFilter.getFieldName()).gte(dateFilter.getFromDate()).lte(dateFilter.getToDate()));
+                }
+            }
+        }
+
         if (CollectionUtils.isNotEmpty(orCriteriaList)) {
             criteria.orOperator(orCriteriaList);
         }
@@ -221,13 +280,16 @@ public class EntityTypeService extends BaseService implements IEntityTypeService
         }
 
         //region Tìm những entity đã tồn tại theo name được truyền lên
-        List<String> lowerCaseName = new ArrayList<>();
+        List<String> lowerCaseNames = new ArrayList<>();
         command.getEntityTypes().forEach(et -> {
             if (StringUtils.isNotBlank(et.getName())) {
-                lowerCaseName.add(et.getName().trim().toLowerCase());
+                lowerCaseNames.add(et.getName().trim().toLowerCase());
             }
         });
-        List<EntityTypeEntity> existEntityTypes = entityTypeRepository.findByUserIdAndLowerCaseNameIn(command.getUserId(), lowerCaseName);
+        List<EntityTypeEntity> existEntityTypes = this.getList(CommandGetListEntityType.builder()
+                .userId(command.getUserId())
+                .lowerCaseNames(lowerCaseNames)
+                .build());
         Map<String, EntityTypeEntity> existEntityTypeByName = new HashMap<>(); // <entity_type lowercase name, EntityTypeEntity>
         existEntityTypes.forEach(et -> {
             if (StringUtils.isNotBlank(et.getLowerCaseName())) {
@@ -254,6 +316,7 @@ public class EntityTypeService extends BaseService implements IEntityTypeService
             EntityTypeEntity existEntityType = existEntityTypeByName.get(entityTypeToSave.getLowerCaseName());
             if (existEntityType != null) {
                 entityTypeToSave.setId(existEntityType.getId());
+                entityTypeToSave.setCreatedDate(existEntityType.getCreatedDate());
             }
             entityTypesToSave.add(entityTypeToSave);
         }

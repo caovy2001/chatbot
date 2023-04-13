@@ -20,6 +20,7 @@ public class CommandGetListPattern {
     private int size = 0;
     private int page = 0;
     private List<DateFilter> dateFilters;
+    private List<String> returnFields;
     @Builder.Default
     private boolean hasEntities = false;
     @Builder.Default

@@ -7,6 +7,7 @@ import com.caovy2001.chatbot.service.IBaseService;
 import com.caovy2001.chatbot.service.entity_type.IEntityTypeServiceAPI;
 import com.caovy2001.chatbot.service.entity_type.command.CommandAddEntityType;
 import com.caovy2001.chatbot.service.entity_type.command.CommandGetListEntityType;
+import com.caovy2001.chatbot.service.entity_type.command.CommandUpdateEntityType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -58,6 +59,30 @@ public class EntityTypeAPI {
         }
     }
 
+    @PostMapping("/update")
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    public ResponseEntity<Document> update(@RequestBody CommandUpdateEntityType command) {
+        try {
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
+                throw new Exception("auth_invalid");
+            }
+
+            command.setUserId(userEntity.getId());
+            Document resMap = objectMapper.convertValue(entityTypeServiceAPI.update(command), Document.class);
+            if (resMap == null) {
+                throw new Exception("cannot_parse_result");
+            }
+            resMap.put("http_status", "OK");
+            return ResponseEntity.ok(resMap);
+        } catch (Exception e) {
+            Document resMap = new Document();
+            resMap.put("http_status", "EXPECTATION_FAILED");
+            resMap.put("exception_code", StringUtils.isNotBlank(e.getMessage())? e.getMessage() : ExceptionConstant.error_occur);
+            return ResponseEntity.ok(resMap);
+        }
+    }
+
     @PostMapping("/")
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     public ResponseEntity<Document> getPaginatedList(@RequestBody CommandGetListEntityType command) {
@@ -94,8 +119,6 @@ public class EntityTypeAPI {
             CommandGetListEntityType command = CommandGetListEntityType.builder()
                     .userId(userEntity.getId())
                     .id(id)
-                    .hasEntities(true)
-                    .hasPatternOfEntities(true)
                     .page(1)
                     .size(1)
                     .build();
