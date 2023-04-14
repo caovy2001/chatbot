@@ -24,5 +24,7 @@ public class CommandGetListPattern {
     @Builder.Default
     private boolean hasEntities = false;
     @Builder.Default
+    private boolean hasIntentName = false;
+    @Builder.Default
     private boolean hasEntityTypeOfEntities = false;
 }

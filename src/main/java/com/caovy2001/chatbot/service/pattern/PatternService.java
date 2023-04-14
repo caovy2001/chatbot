@@ -17,6 +17,7 @@ import com.caovy2001.chatbot.service.entity.command.CommandGetListEntity;
 import com.caovy2001.chatbot.service.entity_type.IEntityTypeService;
 import com.caovy2001.chatbot.service.entity_type.command.CommandEntityTypeAddMany;
 import com.caovy2001.chatbot.service.intent.IIntentService;
+import com.caovy2001.chatbot.service.intent.command.CommandGetListIntent;
 import com.caovy2001.chatbot.service.intent.command.CommandIntentAddMany;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 import com.caovy2001.chatbot.service.jedis.IJedisService;
@@ -51,6 +52,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -146,6 +148,13 @@ public class PatternService extends BaseService implements IPatternService {
         }
 
         patternRepository.deleteById(command.getId());
+
+        if (BooleanUtils.isTrue(command.isDoDeleteEntities())) {
+            entityService.delete(CommandGetListEntity.builder()
+                    .userId(command.getUserId())
+                    .patternId(command.getId())
+                    .build());
+        }
         return ResponsePattern.builder()
                 .pattern(PatternEntity.builder()
                         .id(command.getId())
@@ -303,6 +312,7 @@ public class PatternService extends BaseService implements IPatternService {
         PageRequest pageRequest = PageRequest.of(command.getPage() - 1, command.getSize());
         query.with(pageRequest);
         List<PatternEntity> patternEntities = mongoTemplate.find(query, PatternEntity.class);
+        this.setViewForListPatterns(patternEntities, command);
         return new Paginated<>(patternEntities, command.getPage(), command.getSize(), total);
     }
 
@@ -647,8 +657,23 @@ public class PatternService extends BaseService implements IPatternService {
     }
 
     private void setViewForListPatterns(List<PatternEntity> patterns, CommandGetListPattern command) {
-        if (BooleanUtils.isFalse(command.isHasEntities())) {
+        if (BooleanUtils.isFalse(command.isHasEntities()) &&
+                BooleanUtils.isFalse(command.isHasIntentName())) {
             return;
+        }
+
+        Map<String, IntentEntity> intentsById = new HashMap<>();
+        if (BooleanUtils.isTrue(command.isHasIntentName())) {
+            Set<String> intentIds = patterns.stream().map(PatternEntity::getIntentId).filter(StringUtils::isNotBlank).collect(Collectors.toSet());
+            List<IntentEntity> intents = intentService.getList(CommandGetListIntent.builder()
+                    .userId(command.getUserId())
+                    .ids(intentIds.stream().toList())
+                    .build());
+            if (CollectionUtils.isNotEmpty(intents)) {
+                intents.forEach(i -> {
+                    intentsById.put(i.getId(), i);
+                });
+            }
         }
 
         for (PatternEntity pattern : patterns) {
@@ -659,6 +684,13 @@ public class PatternService extends BaseService implements IPatternService {
                         .hasEntityType(command.isHasEntityTypeOfEntities())
                         .build());
                 pattern.setEntities(entities);
+            }
+
+            if (BooleanUtils.isTrue(command.isHasIntentName())) {
+                IntentEntity intent = intentsById.get(pattern.getIntentId());
+                if (intent != null) {
+                    pattern.setIntentName(intent.getName());
+                }
             }
         }
     }
@@ -815,7 +847,7 @@ public class PatternService extends BaseService implements IPatternService {
             // Đẩy vào kafka để index lên ES
             kafkaTemplate.send(Constant.KafkaTopic.process_indexing_pattern_es, objectMapper.writeValueAsString(command));
         } catch (JsonProcessingException e) {
-            log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage())? e.getMessage(): ExceptionConstant.error_occur);
+            log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
         }
     }
 }

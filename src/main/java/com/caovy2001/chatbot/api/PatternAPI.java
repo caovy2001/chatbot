@@ -13,6 +13,7 @@ import com.caovy2001.chatbot.service.pattern.response.ResponsePattern;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePatternAdd;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -114,16 +116,29 @@ public class PatternAPI {
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @GetMapping("/get/{id}")
-    public ResponseEntity<ResponsePattern> getById(@PathVariable String id) {
+    public ResponseEntity<Document> getById(@PathVariable String id) {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
                 throw new Exception("auth_invalid");
 
-            ResponsePattern patterns = patternService.getById(id, userEntity.getId());
-            return ResponseEntity.ok(patterns);
+            List<PatternEntity> patterns = patternService.getList(CommandGetListPattern.builder()
+                    .hasEntities(true)
+                    .userId(userEntity.getId())
+                    .id(id)
+                    .build());
+            if (CollectionUtils.isEmpty(patterns)) {
+                throw new Exception("pattern_not_exist");
+            }
+
+            Document resMap = objectMapper.readValue(objectMapper.writeValueAsString(patterns.get(0)), Document.class);
+            resMap.put("http_status", "OK");
+            return ResponseEntity.ok(resMap);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponsePattern.class));
+            Document resMap = new Document();
+            resMap.put("http_status", "EXPECTATION_FAILED");
+            resMap.put("exception_code", StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
+            return ResponseEntity.ok(resMap);
         }
     }
 
@@ -136,6 +151,7 @@ public class PatternAPI {
                 throw new Exception("auth_invalid");
 
             command.setUserId(userEntity.getId());
+            command.setDoDeleteEntities(true);
             ResponsePattern responsePattern = patternService.delete(command);
             return ResponseEntity.ok(responsePattern);
         } catch (Exception e) {
@@ -171,6 +187,7 @@ public class PatternAPI {
                 throw new Exception("auth_invalid");
             }
             command.setUserId(userEntity.getId());
+            command.setHasIntentName(true);
             Paginated<PatternEntity> patterns = patternService.getPagination(command);
             return ResponseEntity.ok(patterns);
         } catch (Exception e) {

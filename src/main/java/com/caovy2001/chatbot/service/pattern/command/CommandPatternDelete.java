@@ -12,4 +12,6 @@ import lombok.NoArgsConstructor;
 public class CommandPatternDelete {
     private String id;
     private String userId;
+    @Builder.Default
+    private boolean doDeleteEntities = false;
 }
