@@ -12,6 +12,7 @@ import java.util.List;
 public interface IPatternService extends IBaseService {
     ResponsePatternAdd add(CommandPatternAdd command) throws Exception;
     ResponsePattern delete(CommandPatternDelete command);
+    boolean delete(CommandGetListPattern command);
     ResponsePattern getByIntentId(String intentId,String userId);
 
     List<PatternEntity> addMany(List<PatternEntity> patternsToAdd);
@@ -32,4 +33,6 @@ public interface IPatternService extends IBaseService {
     void importFromFile(CommandImportPatternsFromFile command) throws Exception;
 
     List<PatternEntity> getList(CommandGetListPattern command);
+
+    void exportExcel(CommandGetListPattern command, String sessionId) throws Exception;
 }

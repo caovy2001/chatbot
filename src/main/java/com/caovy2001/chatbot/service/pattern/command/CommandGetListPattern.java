@@ -27,4 +27,6 @@ public class CommandGetListPattern {
     private boolean hasIntentName = false;
     @Builder.Default
     private boolean hasEntityTypeOfEntities = false;
+    @Builder.Default
+    private Boolean checkPageAndSize = false;
 }

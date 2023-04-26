@@ -5,6 +5,7 @@ import com.caovy2001.chatbot.entity.IntentEntity;
 import com.caovy2001.chatbot.entity.es.IntentEntityES;
 import com.caovy2001.chatbot.repository.es.IntentRepositoryES;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.intent.command.CommandDeleteIntentES;
 import com.caovy2001.chatbot.service.intent.command.CommandIndexingIntentES;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,7 +27,7 @@ public class IntentServiceES extends BaseService implements IIntentServiceES {
     private IntentRepositoryES intentRepositoryES;
 
     @Override
-    public void processIndexing(CommandIndexingIntentES command) throws Exception {
+    public void index(CommandIndexingIntentES command) throws Exception {
         if (StringUtils.isBlank(command.getUserId()) || CollectionUtils.isEmpty(command.getIntents())) {
             throw new Exception(ExceptionConstant.missing_param);
         }
@@ -44,4 +45,15 @@ public class IntentServiceES extends BaseService implements IIntentServiceES {
 
         intentRepositoryES.saveAll(intentEntityESes);
     }
+
+    @Override
+    public void delete(CommandDeleteIntentES command) throws Exception {
+        if (CollectionUtils.isEmpty(command.getIds())) {
+            return;
+        }
+
+        intentRepositoryES.deleteAllById(command.getIds());
+    }
+
+
 }

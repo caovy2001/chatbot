@@ -12,6 +12,7 @@ import com.caovy2001.chatbot.repository.PatternRepository;
 import com.caovy2001.chatbot.repository.es.IntentRepositoryES;
 import com.caovy2001.chatbot.service.BaseService;
 import com.caovy2001.chatbot.service.intent.command.*;
+import com.caovy2001.chatbot.service.intent.es.IIntentServiceES;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntentAdd;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 import com.caovy2001.chatbot.service.pattern.IPatternService;
@@ -38,6 +39,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -67,6 +69,9 @@ public class IntentService extends BaseService implements IIntentService {
 
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
+
+    @Autowired
+    private IIntentServiceES intentServiceES;
 
     @Override
     public ResponseIntentAdd add(CommandIntent command) {
@@ -359,6 +364,9 @@ public class IntentService extends BaseService implements IIntentService {
             return null;
         }
 
+        if (BooleanUtils.isTrue(command.getCheckPageAndSize())) {
+            query.with(PageRequest.of(command.getPage() - 1, command.getSize()));
+        }
         List<IntentEntity> intents = mongoTemplate.find(query, IntentEntity.class);
         if (CollectionUtils.isEmpty(intents)) {
             return null;
@@ -448,7 +456,23 @@ public class IntentService extends BaseService implements IIntentService {
             return returnException(ExceptionConstant.missing_param, ResponseIntents.class);
         }
         intentRepository.deleteById(id);
-        patternRepository.deleteByIntentIdAndUserId(id, userId);
+        patternService.delete(CommandGetListPattern.builder()
+                .userId(userId)
+                .intentId(id)
+                .hasEntities(true)
+                .build());
+
+        // Remove ES
+        CompletableFuture.runAsync(() -> {
+            try {
+                intentServiceES.delete(CommandDeleteIntentES.builder()
+                        .ids(List.of(id))
+                        .build());
+            } catch (Exception e) {
+                log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage())? e.getMessage(): ExceptionConstant.error_occur);
+            }
+        });
+
         return ResponseIntents.builder().build();
     }
 
@@ -457,7 +481,7 @@ public class IntentService extends BaseService implements IIntentService {
             // Đẩy vào kafka để index lên ES
             kafkaTemplate.send(Constant.KafkaTopic.process_indexing_intent_es, objectMapper.writeValueAsString(command));
         } catch (JsonProcessingException e) {
-            log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage())? e.getMessage(): ExceptionConstant.error_occur);
+            log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
         }
     }
 }

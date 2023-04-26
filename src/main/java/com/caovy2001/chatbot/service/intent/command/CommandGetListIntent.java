@@ -22,6 +22,8 @@ public class CommandGetListIntent {
     private List<String> returnFields;
 
     @Builder.Default
+    private Boolean checkPageAndSize = false;
+    @Builder.Default
     private boolean hasPatterns = false;
     @Builder.Default
     private boolean hasEntitiesOfPatterns = false;

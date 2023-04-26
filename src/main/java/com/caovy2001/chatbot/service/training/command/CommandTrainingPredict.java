@@ -15,4 +15,6 @@ public class CommandTrainingPredict {
     private String currentNodeId;
     private String message;
     private String sessionId;
+    @Builder.Default
+    private Boolean isTrying = false;
 }

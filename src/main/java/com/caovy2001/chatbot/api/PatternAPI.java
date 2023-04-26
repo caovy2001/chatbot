@@ -12,11 +12,15 @@ import com.caovy2001.chatbot.service.pattern.command.*;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePattern;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePatternAdd;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.util.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,12 +28,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
@@ -310,6 +315,85 @@ public class PatternAPI {
         try {
             Document resMap = new Document();
             resMap.put("link", Constant.Pattern.importExcelTemplateDownloadLink);
+            resMap.put("http_status", "OK");
+            return ResponseEntity.ok(resMap);
+        } catch (Exception e) {
+            Document resMap = new Document();
+            resMap.put("http_status", "EXPECTATION_FAILED");
+            resMap.put("exception_code", StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
+            return ResponseEntity.ok(resMap);
+        }
+    }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @PostMapping("/export/excel")
+    public ResponseEntity<Document> exportExcel(@RequestBody CommandGetListPattern command) {
+        try {
+            Document resMap = new Document();
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))) {
+                throw new Exception("auth_invalid");
+            }
+            command.setUserId(userEntity.getId());
+            String sessionId = UUID.randomUUID().toString();
+            CompletableFuture.runAsync(() -> {
+                try {
+                    patternService.exportExcel(command, sessionId);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+            resMap.put("session_id", sessionId);
+            resMap.put("http_status", "OK");
+            return ResponseEntity.ok(resMap);
+        } catch (Exception e) {
+            Document resMap = new Document();
+            resMap.put("http_status", "EXPECTATION_FAILED");
+            resMap.put("exception_code", StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
+            return ResponseEntity.ok(resMap);
+        }
+    }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @GetMapping("/export/excel/get_file/{fileName}")
+    public ResponseEntity<Document> exportExcelGetFile(@PathVariable String fileName) {
+        try {
+            Document resMap = new Document();
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))) {
+                throw new Exception("auth_invalid");
+            }
+            String userId = userEntity.getId();
+            Path path = Paths.get("src/main/resources/file_data/" + userId + "/" + fileName);
+            byte[] data = Files.readAllBytes(path);
+
+            resMap.put("base64", Base64.getEncoder().encodeToString(data));
+            resMap.put("http_status", "OK");
+            return ResponseEntity.ok(resMap);
+        } catch (Exception e) {
+            Document resMap = new Document();
+            resMap.put("http_status", "EXPECTATION_FAILED");
+            resMap.put("exception_code", ExceptionConstant.error_occur);
+            return ResponseEntity.ok(resMap);
+        }
+    }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @GetMapping("/export/excel/status")
+    public ResponseEntity<Document> getStatusExportExcel(@RequestParam String sessionId) {
+        try {
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))) {
+                throw new Exception("auth_invalid");
+            }
+            String importExcelJedisKey = Constant.JedisPrefix.userIdPrefix_ + userEntity.getId() +
+                    Constant.JedisPrefix.COLON +
+                    Constant.JedisPrefix.Pattern.exportExcelSessionIdPrefix_ + sessionId;
+            String responseStatusStr = jedisService.get(importExcelJedisKey);
+            if (StringUtils.isBlank(responseStatusStr)) {
+                throw new Exception("status_null");
+            }
+            Document resMap = objectMapper.readValue(responseStatusStr, Document.class);
             resMap.put("http_status", "OK");
             return ResponseEntity.ok(resMap);
         } catch (Exception e) {

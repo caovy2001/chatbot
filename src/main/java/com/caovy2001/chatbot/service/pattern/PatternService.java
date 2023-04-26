@@ -22,6 +22,7 @@ import com.caovy2001.chatbot.service.intent.command.CommandIntentAddMany;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 import com.caovy2001.chatbot.service.jedis.IJedisService;
 import com.caovy2001.chatbot.service.pattern.command.*;
+import com.caovy2001.chatbot.service.pattern.response.ResponseExportExcelStatus;
 import com.caovy2001.chatbot.service.pattern.response.ResponseImportExcelStatus;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePattern;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePatternAdd;
@@ -34,9 +35,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -46,10 +48,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -107,7 +106,7 @@ public class PatternService extends BaseService implements IPatternService {
                 try {
                     this.addEntityForPattern(command.getEntities(), command.getUserId(), addedPattern.getId());
                 } catch (Exception e) {
-                    log.info(e.getMessage());
+                    log.error(e.getMessage());
                 }
             });
         }
@@ -161,6 +160,40 @@ public class PatternService extends BaseService implements IPatternService {
                         .userId(command.getUserId())
                         .build())
                 .build();
+    }
+
+    @Override
+    public boolean delete(CommandGetListPattern command) {
+        if (StringUtils.isBlank(command.getUserId())) {
+            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
+            return false;
+        }
+
+        // Quyết định những trường trả về
+        command.setReturnFields(List.of("id"));
+
+        List<PatternEntity> patterns = this.getList(command);
+        if (CollectionUtils.isEmpty(patterns)) {
+            return false;
+        }
+
+        List<String> patternIds = patterns.stream().map(PatternEntity::getId).toList();
+        if (CollectionUtils.isEmpty(patternIds)) {
+            return false;
+        }
+
+        boolean result = patternRepository.deleteAllByIdIn(patternIds) > 0;
+        if (BooleanUtils.isFalse(result)) {
+            return false;
+        }
+
+        if (BooleanUtils.isTrue(command.isHasEntities())) {
+            entityService.delete(CommandGetListEntity.builder()
+                    .userId(command.getUserId())
+                    .patternId(command.getId())
+                    .build());
+        }
+        return result;
     }
 
     @Override
@@ -487,10 +520,10 @@ public class PatternService extends BaseService implements IPatternService {
                         patternEntities,
                         entityTypeEntities,
                         entityEntities);
-
-                // Cập nhật trạng thái trên redis
-                jedisService.setWithExpired(importFileJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
             }
+            // Cập nhật trạng thái trên redis => DONE
+            response.setStatus(ResponseImportExcelStatus.EImportExcelStatus.DONE);
+            jedisService.setWithExpired(importFileJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
         } catch (Throwable e) {
             e.printStackTrace();
             log.error(e.getLocalizedMessage());
@@ -621,11 +654,11 @@ public class PatternService extends BaseService implements IPatternService {
                         patternEntities,
                         entityTypeEntities,
                         entityEntities);
-
-                // Cập nhật trạng thái trên redis
-                jedisService.setWithExpired(importFileJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
             }
 
+            // Cập nhật trạng thái trên redis => DONE
+            response.setStatus(ResponseImportExcelStatus.EImportExcelStatus.DONE);
+            jedisService.setWithExpired(importFileJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
         } catch (Throwable e) {
             e.printStackTrace();
             log.error(e.getLocalizedMessage());
@@ -651,9 +684,243 @@ public class PatternService extends BaseService implements IPatternService {
             return null;
         }
 
+        if (BooleanUtils.isTrue(command.getCheckPageAndSize())) {
+            query.with(PageRequest.of(command.getPage() - 1, command.getSize()));
+        }
         List<PatternEntity> patterns = mongoTemplate.find(query, PatternEntity.class);
         this.setViewForListPatterns(patterns, command);
         return patterns;
+    }
+
+    @Override
+    public void exportExcel(CommandGetListPattern command, String sessionId) throws Exception {
+        //region Set init status
+        ResponseExportExcelStatus response = ResponseExportExcelStatus.builder()
+                .sessionId(sessionId)
+                .userId(command.getUserId())
+                .numOfSuccess(0)
+                .numOfFailed(0)
+                .status(ResponseExportExcelStatus.EExportExcelStatus.PROCESSING)
+                .build();
+
+        String exportExcelJedisKey = Constant.JedisPrefix.userIdPrefix_ + command.getUserId() +
+                Constant.JedisPrefix.COLON +
+                Constant.JedisPrefix.Pattern.exportExcelSessionIdPrefix_ + sessionId;
+        jedisService.setWithExpired(exportExcelJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
+        //endregion
+
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet sheet = workbook.createSheet("Training_data");
+
+        //region Setup header style
+        CellStyle headerStyle = workbook.createCellStyle();
+        XSSFFont headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerFont.setFontHeight(11);
+        headerStyle.setFont(headerFont);
+        headerStyle.setAlignment(HorizontalAlignment.CENTER);
+        headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        //endregion
+
+        //region Set Header
+        Row row1 = sheet.createRow(0);
+        Row row2 = sheet.createRow(1);
+
+        // Pattern
+        Cell cellPatternHeader = row1.createCell(0);
+        cellPatternHeader.setCellStyle(headerStyle);
+        sheet.addMergedRegion(new CellRangeAddress(0, 1, 0, 0));
+        sheet.setColumnWidth(0, 25 * 256);
+        cellPatternHeader.setCellValue("Pattern");
+
+        // Intent
+        Cell cellIntentHeader = row1.createCell(1);
+        cellIntentHeader.setCellStyle(headerStyle);
+        sheet.addMergedRegion(new CellRangeAddress(0, 1, 1, 1));
+        sheet.setColumnWidth(1, 20 * 256);
+        cellIntentHeader.setCellValue("Intent");
+
+        // Entity
+        Cell cellEntityHeader = row1.createCell(2);
+        cellEntityHeader.setCellStyle(headerStyle);
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, 2, 9));
+        sheet.setColumnWidth(2, 20 * 256);
+        cellEntityHeader.setCellValue("Entity");
+
+        // Entity 1
+        Cell cellEntity1Header = row2.createCell(2);
+        cellEntity1Header.setCellStyle(headerStyle);
+        sheet.setColumnWidth(2, 20 * 256);
+        cellEntity1Header.setCellValue("Entity 1");
+
+        // Entity type 1
+        Cell cellEntityType1Header = row2.createCell(3);
+        cellEntityType1Header.setCellStyle(headerStyle);
+        sheet.setColumnWidth(3, 20 * 256);
+        cellEntityType1Header.setCellValue("Entity type 1");
+
+        // Entity 2
+        Cell cellEntity2Header = row2.createCell(4);
+        cellEntity2Header.setCellStyle(headerStyle);
+        sheet.setColumnWidth(4, 20 * 256);
+        cellEntity2Header.setCellValue("Entity 2");
+
+        // Entity type 2
+        Cell cellEntityType2Header = row2.createCell(5);
+        cellEntityType2Header.setCellStyle(headerStyle);
+        sheet.setColumnWidth(5, 20 * 256);
+        cellEntityType2Header.setCellValue("Entity type 2");
+
+        // Entity 3
+        Cell cellEntity3Header = row2.createCell(6);
+        cellEntity3Header.setCellStyle(headerStyle);
+        sheet.setColumnWidth(6, 20 * 256);
+        cellEntity3Header.setCellValue("Entity 3");
+
+        // Entity type 3
+        Cell cellEntityType3Header = row2.createCell(7);
+        cellEntityType3Header.setCellStyle(headerStyle);
+        sheet.setColumnWidth(7, 20 * 256);
+        cellEntityType3Header.setCellValue("Entity type 3");
+
+        // Entity 4
+        Cell cellEntity4Header = row2.createCell(8);
+        cellEntity4Header.setCellStyle(headerStyle);
+        sheet.setColumnWidth(8, 20 * 256);
+        cellEntity4Header.setCellValue("Entity 4");
+
+        // Entity type 4
+        Cell cellEntityType4Header = row2.createCell(9);
+        cellEntityType4Header.setCellStyle(headerStyle);
+        sheet.setColumnWidth(9, 20 * 256);
+        cellEntityType4Header.setCellValue("Entity type 4");
+        //endregion
+
+        //region Set data
+
+        //region Setup content style
+        CellStyle contentStyleForPattern = workbook.createCellStyle();
+        XSSFFont contentFont = workbook.createFont();
+        contentFont.setFontHeight(11);
+        contentStyleForPattern.setFont(contentFont);
+        contentStyleForPattern.setAlignment(HorizontalAlignment.LEFT);
+
+        CellStyle contentStyle = workbook.createCellStyle();
+        contentStyle.setFont(contentFont);
+        contentStyle.setAlignment(HorizontalAlignment.CENTER);
+        //endregion
+
+        int sizeOfIntentsPerTime = 10;
+        int sizeOfPatternsPerTime = 10;
+        for (int intentPage = 1; ; intentPage++) {
+            CommandGetListIntent commandGetListIntent = CommandGetListIntent.builder()
+                    .userId(command.getUserId())
+                    .returnFields(List.of("id", "name"))
+                    .page(intentPage)
+                    .size(sizeOfIntentsPerTime)
+                    .checkPageAndSize(true)
+                    .build();
+            List<IntentEntity> intents = intentService.getList(commandGetListIntent);
+            if (CollectionUtils.isEmpty(intents)) {
+                break;
+            }
+
+            int _rowCount = 2;
+            for (IntentEntity intent : intents) {
+                for (int patternPage = 1; ; patternPage++) {
+                    CommandGetListPattern commandNew = null;
+                    try {
+                        commandNew = objectMapper.readValue(objectMapper.writeValueAsString(command), CommandGetListPattern.class);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                    if (commandNew == null) {
+                        break;
+                    }
+
+                    commandNew.setIntentId(intent.getId());
+                    commandNew.setCheckPageAndSize(true);
+                    commandNew.setPage(patternPage);
+                    commandNew.setSize(10);
+                    commandNew.setHasEntities(true);
+                    commandNew.setHasEntityTypeOfEntities(true);
+                    List<PatternEntity> patterns = this.getList(commandNew);
+                    if (CollectionUtils.isEmpty(patterns)) {
+                        break;
+                    }
+
+                    for (int z = 0; z < patterns.size(); z++, _rowCount++) {
+                        PatternEntity pattern = patterns.get(z);
+                        Row contentRow = sheet.createRow(_rowCount);
+
+                        // Pattern
+                        Cell cellPattern = contentRow.createCell(0);
+                        cellPattern.setCellStyle(contentStyleForPattern);
+                        cellPattern.setCellValue(pattern.getContent());
+
+                        // Intent
+                        Cell cellIntent = contentRow.createCell(1);
+                        cellIntent.setCellStyle(contentStyle);
+                        cellIntent.setCellValue(intent.getName());
+
+                        // Entities
+                        if (CollectionUtils.isNotEmpty(pattern.getEntities())) {
+                            for (int k = 0; k < pattern.getEntities().size(); k++) {
+                                EntityEntity entity = pattern.getEntities().get(k);
+
+                                // Entity
+                                if (StringUtils.isNotBlank(entity.getValue())) {
+                                    Cell cellEntity = contentRow.createCell(k * 2 + 2);
+                                    cellEntity.setCellStyle(contentStyle);
+                                    cellEntity.setCellValue(entity.getValue());
+                                }
+
+                                // Entity type
+                                if (entity.getEntityType() != null &&
+                                        StringUtils.isNotBlank(entity.getEntityType().getName())) {
+                                    Cell cellEntityType = contentRow.createCell(k * 2 + 3);
+                                    cellEntityType.setCellStyle(contentStyle);
+                                    cellEntityType.setCellValue(entity.getEntityType().getName());
+                                }
+
+                            }
+                        }
+                    }
+
+                    response.setNumOfSuccess(response.getNumOfSuccess() + patterns.size());
+                    jedisService.setWithExpired(exportExcelJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
+                    if (patterns.size() != sizeOfPatternsPerTime) {
+                        break;
+                    }
+                }
+            }
+
+            if (intents.size() != sizeOfIntentsPerTime) {
+                break;
+            }
+        }
+
+        String fileName = "Training_data_" + sessionId + "_" + String.valueOf(System.currentTimeMillis()) + ".xlsx";
+        String filePath = "src/main/resources/file_data/" + command.getUserId() + "/";
+        response.setStatus(ResponseExportExcelStatus.EExportExcelStatus.DONE);
+        response.setFileName(fileName);
+        jedisService.setWithExpired(exportExcelJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
+        //endregion
+
+        try {
+            File file = new File(filePath);
+            if (!file.exists()) {
+                file.mkdir();
+            }
+            file = new File(filePath + fileName);
+            file.createNewFile();
+            FileOutputStream outputStream = new FileOutputStream(file, false);
+            workbook.write(outputStream);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void setViewForListPatterns(List<PatternEntity> patterns, CommandGetListPattern command) {

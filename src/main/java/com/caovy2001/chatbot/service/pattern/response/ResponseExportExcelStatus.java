@@ -9,15 +9,16 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ResponseImportExcelStatus {
+public class ResponseExportExcelStatus {
     private String sessionId;
     private String userId;
-    private int numOfSuccess;
-    private int numOfFailed;
+    private int numOfSuccess = 0;
+    private int numOfFailed = 0;
+    private String fileName;
     @Builder.Default
-    private EImportExcelStatus status = EImportExcelStatus.PROCESSING;
+    private EExportExcelStatus status = EExportExcelStatus.PROCESSING;
 
-    public enum EImportExcelStatus {
+    public enum EExportExcelStatus {
         PROCESSING,
         DONE
     }

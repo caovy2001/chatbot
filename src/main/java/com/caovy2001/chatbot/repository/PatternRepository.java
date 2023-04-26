@@ -22,4 +22,6 @@ public interface PatternRepository extends MongoRepository<PatternEntity, String
 
     List<PatternEntity> findByUserId(String userId, PageRequest pageRequest);
     List<PatternEntity> findByIntentId(String intentId, PageRequest pageRequest);
+
+    long deleteAllByIdIn(List<String> entityIds);
 }

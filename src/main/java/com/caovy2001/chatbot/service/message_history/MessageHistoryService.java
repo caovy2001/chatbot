@@ -3,14 +3,22 @@ package com.caovy2001.chatbot.service.message_history;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.EntityEntity;
 import com.caovy2001.chatbot.entity.MessageHistoryEntity;
+import com.caovy2001.chatbot.entity.MessageHistoryGroupEntity;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.MessageHistoryRepository;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.message_entity_history.IMessageEntityHistoryService;
+import com.caovy2001.chatbot.service.message_entity_history.command.CommandAppendValuesMessageEntityHistory;
+import com.caovy2001.chatbot.service.message_entity_history.command.CommandGetListMessageEntityHistory;
 import com.caovy2001.chatbot.service.message_history.command.CommandAddMessageHistory;
 import com.caovy2001.chatbot.service.message_history.command.CommandGetListMessageHistory;
+import com.caovy2001.chatbot.service.message_history_group.IMessageHistoryGroupService;
+import com.caovy2001.chatbot.service.message_history_group.command.CommandAddMessageHistoryGroup;
+import com.caovy2001.chatbot.service.message_history_group.command.CommandGetListMessageHistoryGroup;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +30,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
@@ -34,6 +43,12 @@ public class MessageHistoryService extends BaseService implements IMessageHistor
 
     @Autowired
     private MongoTemplate mongoTemplate;
+
+    @Autowired
+    private IMessageHistoryGroupService messageHistoryGroupService;
+
+    @Autowired
+    private IMessageEntityHistoryService messageEntityHistoryService;
 
     @Override
     public MessageHistoryEntity add(CommandAddMessageHistory command) {
@@ -48,13 +63,44 @@ public class MessageHistoryService extends BaseService implements IMessageHistor
         List<Document> entities = null;
         if (CollectionUtils.isNotEmpty(command.getEntities())) {
             entities = new ArrayList<>();
-            for (EntityEntity entity: command.getEntities()) {
+            for (EntityEntity entity : command.getEntities()) {
                 entity.getEntityType().setUuid(null);
                 entity.getEntityType().setUserId(null);
                 entity.getEntityType().setLowerCaseName(null);
                 entity.getEntityType().setSearchableName(null);
                 entities.add(objectMapper.convertValue(entity, Document.class));
             }
+        }
+
+        if (BooleanUtils.isTrue(command.isCheckAddMessageHistoryGroup())) {
+            CompletableFuture.runAsync(() -> {
+                try {
+                    this.checkAddMessageHistoryGroup(command);
+                } catch (Exception e) {
+                    log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
+                }
+            });
+        }
+
+        if (BooleanUtils.isTrue(command.isSaveMessageEntityHistory()) &&
+                CollectionUtils.isNotEmpty(command.getEntities())) {
+            CompletableFuture.runAsync(() -> {
+                try {
+                    for (EntityEntity entity : command.getEntities()) {
+                        messageEntityHistoryService.appendValues(CommandAppendValuesMessageEntityHistory.builder()
+                                .commandGet(CommandGetListMessageEntityHistory.builder()
+                                        .userId(command.getUserId())
+                                        .sessionId(command.getSessionId())
+                                        .entityTypeId(entity.getEntityTypeId())
+                                        .build())
+                                .values(List.of(entity.getValue()))
+                                .addWhenGetNull(true)
+                                .build());
+                    }
+                } catch (Exception e) {
+                    log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
+                }
+            });
         }
 
         return messageHistoryRepository.insert(MessageHistoryEntity.builder()
@@ -67,6 +113,34 @@ public class MessageHistoryService extends BaseService implements IMessageHistor
                 .entities(entities)
                 .createdDate(command.getCreatedDate())
                 .build());
+    }
+
+    private void checkAddMessageHistoryGroup(CommandAddMessageHistory command) {
+        // Validate
+        if (StringUtils.isAnyBlank(command.getScriptId(), command.getUserId(), command.getSessionId())) {
+            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
+            return;
+        }
+
+        if (BooleanUtils.isFalse(command.isCheckAddMessageHistoryGroup())) {
+            return;
+        }
+
+        // Check xem message history group theo session id này đã tồn tại hay chưa
+        List<MessageHistoryGroupEntity> messageHistoryGroups = messageHistoryGroupService.getList(CommandGetListMessageHistoryGroup.builder()
+                .userId(command.getUserId())
+                .sessionId(command.getSessionId())
+                .scriptId(command.getScriptId())
+                .build());
+
+        // Chưa tồn tại thì add
+        if (CollectionUtils.isEmpty(messageHistoryGroups)) {
+            messageHistoryGroupService.add(CommandAddMessageHistoryGroup.builder()
+                    .userId(command.getUserId())
+                    .scriptId(command.getScriptId())
+                    .sessionId(command.getSessionId())
+                    .build());
+        }
     }
 
     @Override

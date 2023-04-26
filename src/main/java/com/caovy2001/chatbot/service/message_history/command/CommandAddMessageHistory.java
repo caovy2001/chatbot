@@ -23,4 +23,8 @@ public class CommandAddMessageHistory {
     private List<EntityEntity> entities;
     @Builder.Default
     private Long createdDate = System.currentTimeMillis();
+    @Builder.Default
+    private boolean checkAddMessageHistoryGroup = false; // Check xem đã có lưu message history group theo session id này hay chưa
+    @Builder.Default
+    private boolean saveMessageEntityHistory= false;
 }

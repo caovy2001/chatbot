@@ -128,7 +128,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                     restTemplate.postForLocation(new URI(resourceBundle.getString("training.server") + "/train"), request);
 
                 } catch (Exception e) {
-                    log.info(e.getMessage());
+                    log.error(e.getMessage());
                 }
             });
         } catch (Throwable throwable) {
@@ -161,11 +161,15 @@ public class TrainingService extends BaseService implements ITrainingService {
         //endregion
 
         //region Lưu message đầu tiên mà người dùng gửi lên
-        kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
-                .nodeId(command.getCurrentNodeId())
-                .message(command.getMessage())
-                .from(EMessageHistoryFrom.CUSTOMER)
-                .build()));
+        if (BooleanUtils.isFalse(command.getIsTrying())) {
+            kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+                    .nodeId(command.getCurrentNodeId())
+                    .message(command.getMessage())
+                    .from(EMessageHistoryFrom.CUSTOMER)
+                    .checkAddMessageHistoryGroup(true)
+                    .saveMessageEntityHistory(true)
+                    .build()));
+        }
         //endregion
 
         //region Đổ node vào map => Phục vụ việc search
@@ -184,11 +188,15 @@ public class TrainingService extends BaseService implements ITrainingService {
         //region Nếu đây là câu bắt đầu thì trả về message của node đầu tiên
         if ("_BEGIN".equals(command.getCurrentNodeId())) {
             // Lưu message mà bot gửi đi
-            kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
-                    .nodeId(firstNode.getNodeId())
-                    .message(firstNode.getMessage())
-                    .from(EMessageHistoryFrom.BOT)
-                    .build()));
+            if (BooleanUtils.isFalse(command.getIsTrying())) {
+                kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+                        .nodeId(firstNode.getNodeId())
+                        .message(firstNode.getMessage())
+                        .from(EMessageHistoryFrom.BOT)
+                        .checkAddMessageHistoryGroup(true)
+                        .saveMessageEntityHistory(true)
+                        .build()));
+            }
 
             return ResponseTrainingPredict.builder()
                     .currentNodeId(firstNode.getNodeId())
@@ -216,13 +224,16 @@ public class TrainingService extends BaseService implements ITrainingService {
         // Không thỏa đk nào => Trả về wrongMessage
         if (StringUtils.isBlank(nextNodeId)) {
             //region Lưu message mà bot gửi đi
-            kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
-                    .nodeId(currNode.getNodeId())
-                    .message(wrongMessage)
-                    .from(EMessageHistoryFrom.BOT)
-                    .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
-                    .build()));
-
+            if (BooleanUtils.isFalse(command.getIsTrying())) {
+                kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+                        .nodeId(currNode.getNodeId())
+                        .message(wrongMessage)
+                        .from(EMessageHistoryFrom.BOT)
+                        .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
+                        .checkAddMessageHistoryGroup(true)
+                        .saveMessageEntityHistory(true)
+                        .build()));
+            }
             return ResponseTrainingPredict.builder()
                     .currentNodeId(currNode.getNodeId())
                     .message(wrongMessage)
@@ -233,12 +244,16 @@ public class TrainingService extends BaseService implements ITrainingService {
         // Node cuối
         if (nextNodeId.equals("_END")) {
             //region Lưu message mà bot gửi đi
-            kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
-                    .nodeId("_END")
-                    .message(endMessage)
-                    .from(EMessageHistoryFrom.BOT)
-                    .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
-                    .build()));
+            if (BooleanUtils.isFalse(command.getIsTrying())) {
+                kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+                        .nodeId("_END")
+                        .message(endMessage)
+                        .from(EMessageHistoryFrom.BOT)
+                        .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
+                        .checkAddMessageHistoryGroup(true)
+                        .saveMessageEntityHistory(true)
+                        .build()));
+            }
 
             return ResponseTrainingPredict.builder()
                     .currentNodeId("_END")
@@ -252,13 +267,16 @@ public class TrainingService extends BaseService implements ITrainingService {
         if (nextNode == null) {
             // Nếu không có node tiếp theo thì đây là node cuối cùng
             //region Lưu message mà bot gửi đi
-            kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
-                    .nodeId("_END")
-                    .message(endMessage)
-                    .from(EMessageHistoryFrom.BOT)
-                    .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
-                    .build()));
-
+            if (BooleanUtils.isFalse(command.getIsTrying())) {
+                kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+                        .nodeId("_END")
+                        .message(endMessage)
+                        .from(EMessageHistoryFrom.BOT)
+                        .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
+                        .checkAddMessageHistoryGroup(true)
+                        .saveMessageEntityHistory(true)
+                        .build()));
+            }
             return ResponseTrainingPredict.builder()
                     .currentNodeId("_END")
                     .message(endMessage)
@@ -271,13 +289,16 @@ public class TrainingService extends BaseService implements ITrainingService {
         String returnMessage = this.variableMapping(variableMap, nextNode.getMessage());
 
         // Lưu message mà bot gửi đi
-        kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
-                .nodeId(nextNodeId)
-                .message(returnMessage)
-                .from(EMessageHistoryFrom.BOT)
-                .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
-                .build()));
-
+        if (BooleanUtils.isFalse(command.getIsTrying())) {
+            kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+                    .nodeId(nextNodeId)
+                    .message(returnMessage)
+                    .from(EMessageHistoryFrom.BOT)
+                    .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
+                    .checkAddMessageHistoryGroup(true)
+                    .saveMessageEntityHistory(true)
+                    .build()));
+        }
         return ResponseTrainingPredict.builder()
                 .currentNodeId(nextNodeId)
                 .message(returnMessage)

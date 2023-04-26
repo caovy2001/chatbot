@@ -3,7 +3,6 @@ package com.caovy2001.chatbot.api;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.UserEntity;
 import com.caovy2001.chatbot.service.IBaseService;
-import com.caovy2001.chatbot.service.script.response.ResponseScriptAdd;
 import com.caovy2001.chatbot.service.training.ITrainingService;
 import com.caovy2001.chatbot.service.training.command.CommandTrainingPredict;
 import com.caovy2001.chatbot.service.training.command.CommandTrainingTrain;
@@ -33,7 +32,7 @@ public class TrainingAPI {
     public ResponseEntity<ResponseTrainingTrain> train() {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))) {
                 throw new Exception("auth_invalid");
             }
             CommandTrainingTrain command = CommandTrainingTrain.builder()
@@ -43,7 +42,7 @@ public class TrainingAPI {
 
             ResponseTrainingTrain response = trainingService.train(command);
             return ResponseEntity.ok(response);
-        } catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.ok(baseService.returnException(e.getMessage(), ResponseTrainingTrain.class));
         }
     }
@@ -53,13 +52,13 @@ public class TrainingAPI {
     public ResponseEntity<ResponseTrainingServerStatus> getServerStatus() {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))) {
                 throw new Exception("auth_invalid");
             }
 
             ResponseTrainingServerStatus response = trainingService.getServerStatus(userEntity.getId());
             return ResponseEntity.ok(response);
-        } catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.ok(baseService.returnException(e.getMessage(), ResponseTrainingServerStatus.class));
         }
     }
@@ -73,18 +72,20 @@ public class TrainingAPI {
 
             if (StringUtils.isAnyBlank(command.getScriptId(), command.getCurrentNodeId()) ||
                     (StringUtils.isBlank(command.getMessage()) && !"_BEGIN".equals(command.getCurrentNodeId())) ||
-            StringUtils.isBlank(command.getSessionId())) {
+                    StringUtils.isBlank(command.getSessionId())) {
                 throw new Exception(ExceptionConstant.missing_param);
             }
 
             ResponseTrainingPredict response = trainingService.predict(command);
             return ResponseEntity.ok(response);
-        } catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.ok(baseService.returnException(e.getMessage(), ResponseTrainingPredict.class));
         }
     }
 
-    /** API phía training server sẽ gọi khi nó thực hiện train xong */
+    /**
+     * API phía training server sẽ gọi khi nó thực hiện train xong
+     */
     @PostMapping("/train_done")
     public ResponseEntity<Boolean> trainDone(@RequestBody CommandTrainingTrain command) {
         log.info("[trainDone] Receive message: {}", command);
