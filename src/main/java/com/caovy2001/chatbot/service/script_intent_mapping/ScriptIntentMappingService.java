@@ -4,6 +4,7 @@ import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.ScriptIntentMappingEntity;
 import com.caovy2001.chatbot.repository.ScriptIntentMappingRepository;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
 import com.caovy2001.chatbot.service.script_intent_mapping.command.CommandGetListScriptIntentMapping;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -104,5 +105,15 @@ public class ScriptIntentMappingService extends BaseService implements IScriptIn
             query.fields().include(Arrays.copyOf(command.getReturnFields().toArray(), command.getReturnFields().size(), String[].class));
         }
         return query;
+    }
+
+    @Override
+    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+        return null;
+    }
+
+    @Override
+    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+
     }
 }

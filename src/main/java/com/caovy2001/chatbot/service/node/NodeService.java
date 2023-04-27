@@ -4,6 +4,7 @@ import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.NodeEntity;
 import com.caovy2001.chatbot.repository.NodeRepository;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
 import com.caovy2001.chatbot.service.node.command.CommandNodeAdd;
 import com.caovy2001.chatbot.service.node.command.CommandNodeAddConditionMapping;
 import com.caovy2001.chatbot.service.node.command.CommandUpdateMessage;
@@ -11,6 +12,7 @@ import com.caovy2001.chatbot.service.node.response.ResponseListNode;
 import com.caovy2001.chatbot.service.node.response.ResponseNode;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -149,4 +151,13 @@ public class NodeService extends BaseService implements INodeService{
         return ResponseNode.builder().nodes(nodeRepository.save(node)).build();
     }
 
+    @Override
+    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+        return null;
+    }
+
+    @Override
+    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+
+    }
 }

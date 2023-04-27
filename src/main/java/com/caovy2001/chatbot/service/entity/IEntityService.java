@@ -15,7 +15,5 @@ public interface IEntityService extends IBaseService {
 
     List<EntityEntity> addMany(CommandEntityAddMany command);
 
-    List<EntityEntity> getList(CommandGetListEntity command);
-
     boolean delete(CommandGetListEntity command);
 }

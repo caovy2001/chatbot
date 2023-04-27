@@ -10,6 +10,7 @@ import com.caovy2001.chatbot.model.DateFilter;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.ScriptRepository;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
 import com.caovy2001.chatbot.service.jedis.IJedisService;
 import com.caovy2001.chatbot.service.jedis.JedisService;
 import com.caovy2001.chatbot.service.node.INodeService;
@@ -342,5 +343,15 @@ public class ScriptService extends BaseService implements IScriptService {
             query.fields().include(Arrays.copyOf(returnFields.toArray(), returnFields.size(), String[].class));
         }
         return query;
+    }
+
+    @Override
+    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+        return null;
+    }
+
+    @Override
+    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+
     }
 }

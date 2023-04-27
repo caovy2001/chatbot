@@ -5,6 +5,7 @@ import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.*;
 import com.caovy2001.chatbot.enumeration.EMessageHistoryFrom;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
 import com.caovy2001.chatbot.service.entity_type.IEntityTypeService;
 import com.caovy2001.chatbot.service.entity_type.command.CommandGetListEntityType;
 import com.caovy2001.chatbot.service.intent.IIntentService;
@@ -35,6 +36,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -399,25 +401,20 @@ public class TrainingService extends BaseService implements ITrainingService {
         }
 
         // Từ entity type id có trong mỗi entity => get ra được list entity type
+        Map<String, EntityTypeEntity> entityTypeById = new HashMap<>();
         List<String> entityTypeIds = entities.stream().map(EntityEntity::getEntityTypeId).toList();
-        if (CollectionUtils.isEmpty(entityTypeIds)) {
-            return;
-        }
-
-        List<EntityTypeEntity> entityTypeEntities = entityTypeService.getList(CommandGetListEntityType.builder()
-                .userId(userId)
-                .ids(entityTypeIds)
-                .build());
-        if (CollectionUtils.isEmpty(entityTypeEntities)) {
-            return;
+        if (CollectionUtils.isNotEmpty(entityTypeIds)) {
+            List<EntityTypeEntity> entityTypeEntities = entityTypeService.getList(CommandGetListEntityType.builder()
+                    .userId(userId)
+                    .ids(entityTypeIds)
+                    .build());
+            if (CollectionUtils.isNotEmpty(entityTypeEntities)) {
+                entityTypeEntities.forEach(entityTypeEntity -> entityTypeById.put(entityTypeEntity.getId(), entityTypeEntity));
+            }
         }
 
         for (EntityEntity entity : entities) {
-            EntityTypeEntity entityType = entityTypeEntities.stream().filter(et -> et.getId().equals(entity.getEntityTypeId())).findFirst().orElse(null);
-            if (entityType == null)
-                continue;
-
-            entity.setEntityType(entityType);
+            entity.entityTypeMapping(entityTypeById);
         }
     }
 
@@ -603,5 +600,15 @@ public class TrainingService extends BaseService implements ITrainingService {
             log.error("[{}]: {}", e.getStackTrace()[0], e.getMessage());
             return null;
         }
+    }
+
+    @Override
+    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+        return null;
+    }
+
+    @Override
+    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+
     }
 }

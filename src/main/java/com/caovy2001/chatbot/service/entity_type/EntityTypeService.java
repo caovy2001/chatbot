@@ -7,6 +7,7 @@ import com.caovy2001.chatbot.model.DateFilter;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.EntityTypeRepository;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
 import com.caovy2001.chatbot.service.entity.IEntityService;
 import com.caovy2001.chatbot.service.entity.command.CommandGetListEntity;
 import com.caovy2001.chatbot.service.entity_type.command.CommandAddEntityType;
@@ -155,7 +156,7 @@ public class EntityTypeService extends BaseService implements IEntityTypeService
                     .userId(command.getUserId())
                     .entityTypeIds(entityTypes.stream().map(EntityTypeEntity::getId).toList())
                     .hasPattern(command.isHasPatternOfEntities())
-                    .build());
+                    .build(), EntityEntity.class);
 
             if (CollectionUtils.isNotEmpty(entities)) {
                 for (EntityEntity entity : entities) {
@@ -342,5 +343,15 @@ public class EntityTypeService extends BaseService implements IEntityTypeService
 
         this.setViewForListEntityType(entityTypes, command);
         return entityTypes;
+    }
+
+    @Override
+    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+        return null;
+    }
+
+    @Override
+    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+
     }
 }

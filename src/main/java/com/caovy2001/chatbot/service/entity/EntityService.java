@@ -3,11 +3,11 @@ package com.caovy2001.chatbot.service.entity;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.EntityEntity;
 import com.caovy2001.chatbot.entity.EntityTypeEntity;
-import com.caovy2001.chatbot.entity.MessageHistoryEntity;
 import com.caovy2001.chatbot.entity.PatternEntity;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.EntityRepository;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
 import com.caovy2001.chatbot.service.entity.command.CommandAddEntity;
 import com.caovy2001.chatbot.service.entity.command.CommandEntityAddMany;
 import com.caovy2001.chatbot.service.entity.command.CommandGetListEntity;
@@ -27,9 +27,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -45,6 +43,7 @@ public class EntityService extends BaseService implements IEntityServiceAPI, IEn
 
     @Autowired
     private IPatternService patternService;
+
     @Override
     @Deprecated
     public List<EntityEntity> add(List<CommandAddEntity> commandAddEntities) {
@@ -128,27 +127,6 @@ public class EntityService extends BaseService implements IEntityServiceAPI, IEn
     }
 
     @Override
-    public List<EntityEntity> getList(CommandGetListEntity command) {
-        if (StringUtils.isBlank(command.getUserId())) {
-            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
-            return null;
-        }
-
-        Query query = this.buildQueryGetList(command);
-        if (query == null) {
-            return null;
-        }
-
-        List<EntityEntity> entities = mongoTemplate.find(query, EntityEntity.class);
-        if (CollectionUtils.isEmpty(entities)) {
-            return null;
-        }
-
-        this.setViewForListEntities(entities, command);
-        return entities;
-    }
-
-    @Override
     public boolean delete(CommandGetListEntity command) {
         if (StringUtils.isBlank(command.getUserId())) {
             log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
@@ -158,7 +136,7 @@ public class EntityService extends BaseService implements IEntityServiceAPI, IEn
         // Quyết định những trường trả về
         command.setReturnFields(List.of("id"));
 
-        List<EntityEntity> entities = this.getList(command);
+        List<EntityEntity> entities = this.getList(command, EntityEntity.class);
         if (CollectionUtils.isEmpty(entities)) {
             return false;
         }
@@ -171,7 +149,9 @@ public class EntityService extends BaseService implements IEntityServiceAPI, IEn
         return entityRepository.deleteAllByIdIn(entityIds) > 0;
     }
 
-    private Query buildQueryGetList(CommandGetListEntity command) {
+    @Override
+    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+        CommandGetListEntity command = (CommandGetListEntity) commandGetListBase;
         Query query = new Query();
         Criteria criteria = new Criteria();
         List<Criteria> orCriteriaList = new ArrayList<>();
@@ -209,63 +189,53 @@ public class EntityService extends BaseService implements IEntityServiceAPI, IEn
         return query;
     }
 
-    private void setViewForListEntities(List<EntityEntity> entities, CommandGetListEntity command) {
+    @Override
+    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+        List<EntityEntity> entities = (List<EntityEntity>) entitiesBase;
+        CommandGetListEntity command = (CommandGetListEntity) commandGetListBase;
+
         if (BooleanUtils.isFalse(command.isHasEntityType()) && BooleanUtils.isFalse(command.isHasPattern())) {
             return;
         }
 
-        for (EntityEntity entity : entities) {
-            if (BooleanUtils.isTrue(command.isHasEntityType())) {
+        // Map pattern
+        Map<String, PatternEntity> patternsById = new HashMap<>();
+        if (BooleanUtils.isTrue(command.isHasPattern())) {
+            List<String> patternIds = entities.stream().map(EntityEntity::getPatternId).filter(StringUtils::isNotBlank).toList();
+            if (CollectionUtils.isNotEmpty(patternIds)) {
+                List<PatternEntity> patterns = patternService.getList(CommandGetListPattern.builder()
+                        .ids(patternIds)
+                        .userId(command.getUserId())
+                        .build(), PatternEntity.class);
+                if (CollectionUtils.isNotEmpty(patterns)) {
+                    patterns.forEach(p -> patternsById.put(p.getId(), p));
+                }
+            }
+        }
+
+        // Map entity type
+        Map<String, EntityTypeEntity> entityTypeById = new HashMap<>();
+        if (BooleanUtils.isTrue(command.isHasEntityType())) {
+            List<String> entityTypeIds = entities.stream().map(EntityEntity::getEntityTypeId).filter(StringUtils::isNotBlank).toList();
+            if (CollectionUtils.isNotEmpty(entityTypeIds)) {
                 List<EntityTypeEntity> entityTypes = entityTypeService.getList(CommandGetListEntityType.builder()
                         .userId(command.getUserId())
-                        .ids(List.of(entity.getEntityTypeId()))
+                        .ids(entityTypeIds)
                         .build());
                 if (CollectionUtils.isNotEmpty(entityTypes)) {
-                    entity.setEntityType(entityTypes.get(0));
+                    entityTypes.forEach(et -> entityTypeById.put(et.getId(), et));
                 }
+            }
+        }
+
+        for (EntityEntity entity : entities) {
+            if (BooleanUtils.isTrue(command.isHasEntityType())) {
+                entity.entityTypeMapping(entityTypeById);
             }
 
             if (BooleanUtils.isTrue(command.isHasPattern())) {
-                List<PatternEntity> patterns = patternService.getList(CommandGetListPattern.builder()
-                        .id(entity.getPatternId())
-                        .userId(command.getUserId())
-                        .returnFields(List.of("content"))
-                        .build());
-                if (CollectionUtils.isNotEmpty(patterns)) {
-                    entity.setPattern(patterns.get(0));
-                }
+                entity.patternMapping(patternsById);
             }
         }
-    }
-
-    @Override
-    public Paginated<EntityEntity> getPaginatedList(CommandGetListEntity command) throws Exception {
-        if (StringUtils.isBlank(command.getUserId())) {
-            throw new Exception(ExceptionConstant.missing_param);
-        }
-
-        if (command.getPage() <= 0) {
-            throw new Exception("invalid_page_or_size");
-        }
-
-        if (command.getSize() <= 0) {
-            return new Paginated<>(new ArrayList<>(), command.getPage(), command.getSize(), 0);
-        }
-
-        Query query = this.buildQueryGetList(command);
-        if (query == null) {
-            return new Paginated<>(new ArrayList<>(), command.getPage(), command.getSize(), 0);
-        }
-
-        long total = mongoTemplate.count(query, EntityEntity.class);
-        if (total == 0L) {
-            return new Paginated<>(new ArrayList<>(), command.getPage(), command.getSize(), 0);
-        }
-
-        PageRequest pageRequest = PageRequest.of(command.getPage() - 1, command.getSize());
-        query.with(pageRequest);
-        List<EntityEntity> entities = mongoTemplate.find(query, EntityEntity.class);
-        this.setViewForListEntities(entities, command);
-        return new Paginated<>(entities, command.getPage(), command.getSize(), total);
     }
 }

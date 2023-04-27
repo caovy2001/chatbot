@@ -7,6 +7,7 @@ import com.caovy2001.chatbot.entity.es.IntentEntityES;
 import com.caovy2001.chatbot.entity.es.PatternEntityES;
 import com.caovy2001.chatbot.repository.es.PatternRepositoryES;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
 import com.caovy2001.chatbot.service.pattern.command.CommandIndexingPatternES;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +15,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -43,5 +45,15 @@ public class PatternServiceES extends BaseService implements IPatternServiceES {
         List<PatternEntityES> patternESes = objectMapper.readValue(objectMapper.writeValueAsString(command.getPatterns()), new TypeReference<List<PatternEntityES>>() {
         });
         patternRepositoryES.saveAll(patternESes);
+    }
+
+    @Override
+    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+        return null;
+    }
+
+    @Override
+    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+
     }
 }

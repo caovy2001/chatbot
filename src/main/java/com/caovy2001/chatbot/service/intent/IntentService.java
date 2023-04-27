@@ -11,6 +11,7 @@ import com.caovy2001.chatbot.repository.IntentRepository;
 import com.caovy2001.chatbot.repository.PatternRepository;
 import com.caovy2001.chatbot.repository.es.IntentRepositoryES;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
 import com.caovy2001.chatbot.service.intent.command.*;
 import com.caovy2001.chatbot.service.intent.es.IIntentServiceES;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntentAdd;
@@ -388,7 +389,7 @@ public class IntentService extends BaseService implements IIntentService {
                         .intentId(intent.getId())
                         .hasEntities(command.isHasEntitiesOfPatterns())
                         .hasEntityTypeOfEntities(command.isHasEntityTypesOfEntitiesOfPatterns())
-                        .build());
+                        .build(), PatternEntity.class);
                 intent.setPatterns(patterns);
             }
         }
@@ -483,5 +484,15 @@ public class IntentService extends BaseService implements IIntentService {
         } catch (JsonProcessingException e) {
             log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
         }
+    }
+
+    @Override
+    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+        return null;
+    }
+
+    @Override
+    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+
     }
 }

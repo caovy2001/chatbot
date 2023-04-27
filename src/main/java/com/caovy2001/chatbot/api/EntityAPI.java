@@ -1,6 +1,7 @@
 package com.caovy2001.chatbot.api;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
+import com.caovy2001.chatbot.entity.EntityEntity;
 import com.caovy2001.chatbot.entity.UserEntity;
 import com.caovy2001.chatbot.service.entity.IEntityServiceAPI;
 import com.caovy2001.chatbot.service.entity.command.CommandGetListEntity;
@@ -35,7 +36,8 @@ public class EntityAPI {
             }
 
             command.setUserId(userEntity.getId());
-            Document resMap = objectMapper.convertValue(entityServiceAPI.getPaginatedList(command), Document.class);
+//            Document resMap = objectMapper.convertValue(entityServiceAPI.getPaginatedList(command), Document.class);
+            Document resMap = objectMapper.convertValue(entityServiceAPI.getPaginatedList(command, EntityEntity.class, CommandGetListEntity.class), Document.class);
             if (resMap == null) {
                 throw new Exception("cannot_parse_result");
             }

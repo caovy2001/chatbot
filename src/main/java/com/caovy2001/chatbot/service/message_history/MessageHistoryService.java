@@ -7,6 +7,7 @@ import com.caovy2001.chatbot.entity.MessageHistoryGroupEntity;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.MessageHistoryRepository;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
 import com.caovy2001.chatbot.service.message_entity_history.IMessageEntityHistoryService;
 import com.caovy2001.chatbot.service.message_entity_history.command.CommandAppendValuesMessageEntityHistory;
 import com.caovy2001.chatbot.service.message_entity_history.command.CommandGetListMessageEntityHistory;
@@ -248,5 +249,15 @@ public class MessageHistoryService extends BaseService implements IMessageHistor
 
         query.addCriteria(criteria);
         return query;
+    }
+
+    @Override
+    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+        return null;
+    }
+
+    @Override
+    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+
     }
 }

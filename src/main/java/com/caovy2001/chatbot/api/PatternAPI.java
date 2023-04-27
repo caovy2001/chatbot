@@ -5,22 +5,17 @@ import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.PatternEntity;
 import com.caovy2001.chatbot.entity.UserEntity;
 import com.caovy2001.chatbot.model.Paginated;
-import com.caovy2001.chatbot.service.BaseService;
 import com.caovy2001.chatbot.service.jedis.IJedisService;
 import com.caovy2001.chatbot.service.pattern.IPatternService;
 import com.caovy2001.chatbot.service.pattern.command.*;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePattern;
 import com.caovy2001.chatbot.service.pattern.response.ResponsePatternAdd;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.util.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,7 +23,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -41,9 +35,6 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 @RequestMapping("/pattern")
 public class PatternAPI {
-    @Autowired
-    private BaseService baseService;
-
     @Autowired
     private IPatternService patternService;
 
@@ -65,7 +56,7 @@ public class PatternAPI {
             ResponsePatternAdd responsePatternAdd = patternService.add(command);
             return ResponseEntity.ok(responsePatternAdd);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponsePatternAdd.class));
+            return ResponseEntity.ok(patternService.returnException(e.toString(), ResponsePatternAdd.class));
         }
     }
 
@@ -85,7 +76,7 @@ public class PatternAPI {
             ResponsePattern responsePattern = patternService.update(command);
             return ResponseEntity.ok(responsePattern);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponsePattern.class));
+            return ResponseEntity.ok(patternService.returnException(e.toString(), ResponsePattern.class));
         }
     }
 
@@ -100,7 +91,7 @@ public class PatternAPI {
             ResponsePattern patterns = patternService.getByIntentId(intentId, userEntity.getId());
             return ResponseEntity.ok(patterns);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponsePattern.class));
+            return ResponseEntity.ok(patternService.returnException(e.toString(), ResponsePattern.class));
         }
     }
 
@@ -115,7 +106,7 @@ public class PatternAPI {
             ResponsePattern patterns = patternService.getByUserId(userEntity.getId());
             return ResponseEntity.ok(patterns);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponsePattern.class));
+            return ResponseEntity.ok(patternService.returnException(e.toString(), ResponsePattern.class));
         }
     }
 
@@ -131,7 +122,7 @@ public class PatternAPI {
                     .hasEntities(true)
                     .userId(userEntity.getId())
                     .id(id)
-                    .build());
+                    .build(), PatternEntity.class);
             if (CollectionUtils.isEmpty(patterns)) {
                 throw new Exception("pattern_not_exist");
             }
@@ -160,7 +151,7 @@ public class PatternAPI {
             ResponsePattern responsePattern = patternService.delete(command);
             return ResponseEntity.ok(responsePattern);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponsePattern.class));
+            return ResponseEntity.ok(patternService.returnException(e.toString(), ResponsePattern.class));
         }
     }
 
@@ -193,7 +184,7 @@ public class PatternAPI {
             }
             command.setUserId(userEntity.getId());
             command.setHasIntentName(true);
-            Paginated<PatternEntity> patterns = patternService.getPagination(command);
+            Paginated<PatternEntity> patterns = patternService.getPaginatedList(command, PatternEntity.class, CommandGetListPattern.class);
             return ResponseEntity.ok(patterns);
         } catch (Exception e) {
             e.printStackTrace();

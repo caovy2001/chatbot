@@ -2,7 +2,6 @@ package com.caovy2001.chatbot.api;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.UserEntity;
-import com.caovy2001.chatbot.service.IBaseService;
 import com.caovy2001.chatbot.service.ResponseBase;
 import com.caovy2001.chatbot.service.user.IUserService;
 import com.caovy2001.chatbot.service.user.command.CommandUserLogin;
@@ -23,9 +22,6 @@ public class UserAPI {
     @Autowired
     private IUserService userService;
 
-    @Autowired
-    private IBaseService baseService;
-
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @GetMapping("/{id}")
     public ResponseEntity<UserEntity> getById(@PathVariable String id) {
@@ -39,7 +35,7 @@ public class UserAPI {
             ResponseUserLogin responseUserLogin = userService.login(command);
             return ResponseEntity.ok(responseUserLogin);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(ExceptionConstant.error_occur, ResponseUserLogin.class));
+            return ResponseEntity.ok(userService.returnException(ExceptionConstant.error_occur, ResponseUserLogin.class));
         }
     }
 
@@ -49,7 +45,7 @@ public class UserAPI {
             ResponseUserSignUp responseUserSignUp = userService.signUp(commandUserSignUp);
             return ResponseEntity.ok(responseUserSignUp);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(ExceptionConstant.error_occur, ResponseUserSignUp.class));
+            return ResponseEntity.ok(userService.returnException(ExceptionConstant.error_occur, ResponseUserSignUp.class));
         }
     }
 
@@ -66,7 +62,7 @@ public class UserAPI {
                             .secretKey(userEntity.getSecretKey())
                     .build());
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(ExceptionConstant.error_occur, ResponseUserGetSecretKey.class));
+            return ResponseEntity.ok(userService.returnException(ExceptionConstant.error_occur, ResponseUserGetSecretKey.class));
         }
     }
 
@@ -76,7 +72,7 @@ public class UserAPI {
             ResponseBase responseBase = userService.loginFromDataEverywhere(command);
             return ResponseEntity.ok(responseBase);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(ExceptionConstant.error_occur, ResponseUserLogin.class));
+            return ResponseEntity.ok(userService.returnException(ExceptionConstant.error_occur, ResponseUserLogin.class));
         }
     }
 }

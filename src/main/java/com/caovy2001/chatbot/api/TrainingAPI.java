@@ -2,7 +2,6 @@ package com.caovy2001.chatbot.api;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.UserEntity;
-import com.caovy2001.chatbot.service.IBaseService;
 import com.caovy2001.chatbot.service.training.ITrainingService;
 import com.caovy2001.chatbot.service.training.command.CommandTrainingPredict;
 import com.caovy2001.chatbot.service.training.command.CommandTrainingTrain;
@@ -24,9 +23,6 @@ public class TrainingAPI {
     @Autowired
     private ITrainingService trainingService;
 
-    @Autowired
-    private IBaseService baseService;
-
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @PostMapping("/train")
     public ResponseEntity<ResponseTrainingTrain> train() {
@@ -43,7 +39,7 @@ public class TrainingAPI {
             ResponseTrainingTrain response = trainingService.train(command);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(e.getMessage(), ResponseTrainingTrain.class));
+            return ResponseEntity.ok(trainingService.returnException(e.getMessage(), ResponseTrainingTrain.class));
         }
     }
 
@@ -59,7 +55,7 @@ public class TrainingAPI {
             ResponseTrainingServerStatus response = trainingService.getServerStatus(userEntity.getId());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(e.getMessage(), ResponseTrainingServerStatus.class));
+            return ResponseEntity.ok(trainingService.returnException(e.getMessage(), ResponseTrainingServerStatus.class));
         }
     }
 
@@ -79,7 +75,7 @@ public class TrainingAPI {
             ResponseTrainingPredict response = trainingService.predict(command);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(e.getMessage(), ResponseTrainingPredict.class));
+            return ResponseEntity.ok(trainingService.returnException(e.getMessage(), ResponseTrainingPredict.class));
         }
     }
 

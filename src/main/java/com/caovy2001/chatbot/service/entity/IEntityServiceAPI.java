@@ -8,5 +8,5 @@ import com.caovy2001.chatbot.service.entity.command.CommandGetListEntity;
 
 public interface IEntityServiceAPI extends IBaseService {
 
-    Paginated<EntityEntity> getPaginatedList(CommandGetListEntity command) throws Exception;
+//    Paginated<EntityEntity> getPaginatedList(CommandGetListEntity command) throws Exception;
 }

@@ -7,6 +7,7 @@ import com.caovy2001.chatbot.repository.UserRepository;
 import com.caovy2001.chatbot.repository.es.UserRepositoryES;
 import com.caovy2001.chatbot.service.BaseService;
 import com.caovy2001.chatbot.service.ResponseBase;
+import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
 import com.caovy2001.chatbot.service.user.command.CommandGetListUser;
 import com.caovy2001.chatbot.service.user.command.CommandUserLogin;
 import com.caovy2001.chatbot.service.user.command.CommandUserSignUp;
@@ -204,4 +205,13 @@ public class UserService extends BaseService implements IUserService {
         return query;
     }
 
+    @Override
+    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+        return null;
+    }
+
+    @Override
+    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+
+    }
 }

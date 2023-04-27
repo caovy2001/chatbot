@@ -4,7 +4,6 @@ import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.ScriptEntity;
 import com.caovy2001.chatbot.entity.UserEntity;
 import com.caovy2001.chatbot.model.Paginated;
-import com.caovy2001.chatbot.service.BaseService;
 import com.caovy2001.chatbot.service.ResponseBase;
 import com.caovy2001.chatbot.service.script.IScriptService;
 import com.caovy2001.chatbot.service.script.command.CommandGetListScript;
@@ -27,9 +26,6 @@ import java.util.ArrayList;
 @RequestMapping("/script")
 public class ScriptAPI {
     @Autowired
-    private BaseService baseService;
-
-    @Autowired
     private IScriptService scriptService;
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
@@ -45,7 +41,7 @@ public class ScriptAPI {
             return ResponseEntity.ok(responseScriptAdd);
         }
         catch (Exception e){
-            return ResponseEntity.ok(baseService.returnException(e.getMessage(),ResponseScriptAdd.class));
+            return ResponseEntity.ok(scriptService.returnException(e.getMessage(),ResponseScriptAdd.class));
         }
     }
 
@@ -65,7 +61,7 @@ public class ScriptAPI {
             return ResponseEntity.ok(script);
         }
         catch (Exception e){
-            return ResponseEntity.ok(baseService.returnException(e.getMessage(), ResponseScriptGetByUserId.class));
+            return ResponseEntity.ok(scriptService.returnException(e.getMessage(), ResponseScriptGetByUserId.class));
         }
     }
 
@@ -81,7 +77,7 @@ public class ScriptAPI {
             return ResponseEntity.ok(scripts);
         }
         catch (Exception e){
-            return ResponseEntity.ok(baseService.returnException(e.getMessage(), ResponseScriptGetByUserId.class));
+            return ResponseEntity.ok(scriptService.returnException(e.getMessage(), ResponseScriptGetByUserId.class));
         }
     }
 
@@ -135,7 +131,7 @@ public class ScriptAPI {
             return ResponseEntity.ok(script);
         }
         catch (Exception e){
-            return ResponseEntity.ok(baseService.returnException(e.getMessage(), ResponseBase.class));
+            return ResponseEntity.ok(scriptService.returnException(e.getMessage(), ResponseBase.class));
         }
     }
 
@@ -151,7 +147,7 @@ public class ScriptAPI {
             return   ResponseEntity.ok(script);
         }
         catch (Exception e){
-            return ResponseEntity.ok(baseService.returnException(e.getMessage(), ResponseBase.class));
+            return ResponseEntity.ok(scriptService.returnException(e.getMessage(), ResponseBase.class));
         }
     }
 

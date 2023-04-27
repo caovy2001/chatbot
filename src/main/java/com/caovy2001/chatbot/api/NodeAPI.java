@@ -1,9 +1,6 @@
 package com.caovy2001.chatbot.api;
 
-import com.caovy2001.chatbot.entity.NodeEntity;
 import com.caovy2001.chatbot.entity.UserEntity;
-import com.caovy2001.chatbot.service.BaseService;
-import com.caovy2001.chatbot.service.ResponseBase;
 import com.caovy2001.chatbot.service.node.INodeService;
 import com.caovy2001.chatbot.service.node.command.CommandNodeAdd;
 import com.caovy2001.chatbot.service.node.command.CommandNodeAddConditionMapping;
@@ -13,7 +10,6 @@ import com.caovy2001.chatbot.service.node.response.ResponseListNode;
 import com.caovy2001.chatbot.service.node.response.ResponseNode;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,8 +18,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/node")
 public class NodeAPI {
-    @Autowired
-    private BaseService baseService;
     @Autowired
     private INodeService nodeService;
 
@@ -40,7 +34,7 @@ public class NodeAPI {
             return ResponseEntity.ok(nodes);
         }
         catch (Exception e){
-            return ResponseEntity.ok(baseService.returnException(e.getMessage(),ResponseNode.class));
+            return ResponseEntity.ok(nodeService.returnException(e.getMessage(),ResponseNode.class));
         }
     }
 
@@ -56,7 +50,7 @@ public class NodeAPI {
             return ResponseEntity.ok(responseNode);
         }
         catch (Exception e){
-            return ResponseEntity.ok(baseService.returnException(e.getMessage(),ResponseNode.class));
+            return ResponseEntity.ok(nodeService.returnException(e.getMessage(),ResponseNode.class));
         }
     }
 
@@ -72,7 +66,7 @@ public class NodeAPI {
             return ResponseEntity.ok(responseNode);
         }
         catch (Exception e){
-            return ResponseEntity.ok(baseService.returnException(e.getMessage(),ResponseNode.class));
+            return ResponseEntity.ok(nodeService.returnException(e.getMessage(),ResponseNode.class));
         }
     }
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
@@ -87,7 +81,7 @@ public class NodeAPI {
             return ResponseEntity.ok(responseNode);
         }
         catch (Exception e){
-            return ResponseEntity.ok(baseService.returnException(e.getMessage(),ResponseNode.class));
+            return ResponseEntity.ok(nodeService.returnException(e.getMessage(),ResponseNode.class));
         }
     }
 
@@ -103,7 +97,7 @@ public class NodeAPI {
             return ResponseEntity.ok(node);
         }
         catch (Exception e){
-            return ResponseEntity.ok(baseService.returnException(e.getMessage(),ResponseNode.class));
+            return ResponseEntity.ok(nodeService.returnException(e.getMessage(),ResponseNode.class));
         }
     }
 
@@ -119,7 +113,7 @@ public class NodeAPI {
             return ResponseEntity.ok(node);
         }
         catch (Exception e){
-            return ResponseEntity.ok(baseService.returnException(e.getMessage(),ResponseNode.class));
+            return ResponseEntity.ok(nodeService.returnException(e.getMessage(),ResponseNode.class));
         }
     }
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
@@ -134,7 +128,7 @@ public class NodeAPI {
             return ResponseEntity.ok(node);
         }
         catch (Exception e){
-            return ResponseEntity.ok(baseService.returnException(e.getMessage(),ResponseNode.class));
+            return ResponseEntity.ok(nodeService.returnException(e.getMessage(),ResponseNode.class));
         }
     }
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
@@ -149,7 +143,7 @@ public class NodeAPI {
             return ResponseEntity.ok(node);
         }
         catch (Exception e){
-            return ResponseEntity.ok(baseService.returnException(e.getMessage(),ResponseNode.class));
+            return ResponseEntity.ok(nodeService.returnException(e.getMessage(),ResponseNode.class));
         }
     }
 

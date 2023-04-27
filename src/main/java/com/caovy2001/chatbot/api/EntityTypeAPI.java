@@ -30,9 +30,6 @@ public class EntityTypeAPI {
     private IEntityTypeServiceAPI entityTypeServiceAPI;
 
     @Autowired
-    private IBaseService baseService;
-
-    @Autowired
     private ObjectMapper objectMapper;
 
     @PostMapping("/add")

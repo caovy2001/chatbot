@@ -25,14 +25,15 @@ public interface IPatternService extends IBaseService {
 
     ResponsePattern update(CommandPatternUpdate command) throws Exception;
 
+    @Deprecated
     Paginated<PatternEntity> getPagination(String userId, int page, int size);
-    Paginated<PatternEntity> getPagination(CommandGetListPattern command);
 
+    @Deprecated
     Paginated<PatternEntity> getPaginationByIntentId(String intentId, int page, int size);
 
     void importFromFile(CommandImportPatternsFromFile command) throws Exception;
 
-    List<PatternEntity> getList(CommandGetListPattern command);
+//    List<PatternEntity> getList(CommandGetListPattern command);
 
     void exportExcel(CommandGetListPattern command, String sessionId) throws Exception;
 }

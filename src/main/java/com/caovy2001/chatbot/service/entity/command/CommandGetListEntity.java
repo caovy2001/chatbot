@@ -1,5 +1,6 @@
 package com.caovy2001.chatbot.service.entity.command;
 
+import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,7 +12,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CommandGetListEntity {
+public class CommandGetListEntity extends CommandGetListBase {
     private int page;
     private int size;
     private String userId;

@@ -1,22 +1,30 @@
 package com.caovy2001.chatbot.entity;
 
+import com.caovy2001.chatbot.service.entity_type.IEntityTypeService;
+import com.caovy2001.chatbot.service.entity_type.command.CommandGetListEntityType;
+import com.caovy2001.chatbot.service.pattern.IPatternService;
+import com.caovy2001.chatbot.service.pattern.command.CommandGetListPattern;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
+
+import java.util.List;
+import java.util.Map;
 
 @Builder
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Slf4j
 @Document("entity")
-public class EntityEntity {
+public class EntityEntity extends BaseEntity{
     @Id
     private String id;
 
@@ -33,6 +41,7 @@ public class EntityEntity {
     private String patternUuid;
 
     @Transient
+    @Setter(AccessLevel.PRIVATE)
     private PatternEntity pattern;
 
     @Field("entity_type_id")
@@ -42,6 +51,7 @@ public class EntityEntity {
     private String entityTypeUuid;
 
     @Transient
+    @Setter(AccessLevel.PRIVATE)
     private EntityTypeEntity entityType;
 
     @Field("start_position")
@@ -57,4 +67,69 @@ public class EntityEntity {
     @Field("last_updated_date")
     @Builder.Default
     private long lastUpdatedDate = System.currentTimeMillis();
+
+
+    //region Behavior
+    public PatternEntity patternMapping(@NonNull IPatternService patternService) {
+        if (StringUtils.isAnyBlank(this.patternId, this.userId)) {
+            log.error("[{}]: {}", new Exception().getStackTrace()[0], "patternId or userId is null");
+            return null;
+        }
+
+        List<PatternEntity> patterns = patternService.getList(CommandGetListPattern.builder()
+                .id(this.patternId)
+                .userId(this.userId)
+                .build(), PatternEntity.class);
+        if (CollectionUtils.isNotEmpty(patterns)) {
+            this.pattern = patterns.get(0);
+        }
+
+        return this.pattern;
+    }
+
+    public PatternEntity patternMapping(@NonNull Map<String, PatternEntity> patternById) {
+        if (StringUtils.isBlank(this.patternId)) {
+            log.error("[{}]: {}", new Exception().getStackTrace()[0], "patternId null");
+            return null;
+        }
+        if (patternById.isEmpty()) {
+            log.error("[{}]: {}", new Exception().getStackTrace()[0], "patternById map is empty");
+            return null;
+        }
+
+        this.pattern = patternById.get(this.patternId);
+        return this.pattern;
+    }
+
+    public EntityTypeEntity entityTypeMapping(@NonNull IEntityTypeService entityTypeService) {
+        if (StringUtils.isAnyBlank(this.entityTypeId, this.userId)) {
+            log.error("[{}]: {}", new Exception().getStackTrace()[0], "entityTypeId or userId is null");
+            return null;
+        }
+
+        List<EntityTypeEntity> entityTypes = entityTypeService.getList(CommandGetListEntityType.builder()
+                .userId(this.userId)
+                .id(this.entityTypeId)
+                .build());
+        if (CollectionUtils.isNotEmpty(entityTypes)) {
+            this.entityType = entityTypes.get(0);
+        }
+
+        return this.entityType;
+    }
+
+    public EntityTypeEntity entityTypeMapping(@NonNull Map<String, EntityTypeEntity> entityTypeById) {
+        if (StringUtils.isBlank(this.entityTypeId)) {
+            log.error("[{}]: {}", new Exception().getStackTrace()[0], "entityTypeId null");
+            return null;
+        }
+        if (entityTypeById.isEmpty()) {
+            log.error("[{}]: {}", new Exception().getStackTrace()[0], "entityTypeById map is empty");
+            return null;
+        }
+
+        this.entityType = entityTypeById.get(this.entityTypeId);
+        return this.entityType;
+    }
+    //endregion
 }

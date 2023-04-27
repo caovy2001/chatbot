@@ -10,6 +10,7 @@ import com.caovy2001.chatbot.model.DateFilter;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.PatternRepository;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
 import com.caovy2001.chatbot.service.entity.IEntityService;
 import com.caovy2001.chatbot.service.entity.command.CommandAddEntity;
 import com.caovy2001.chatbot.service.entity.command.CommandEntityAddMany;
@@ -172,7 +173,7 @@ public class PatternService extends BaseService implements IPatternService {
         // Quyết định những trường trả về
         command.setReturnFields(List.of("id"));
 
-        List<PatternEntity> patterns = this.getList(command);
+        List<PatternEntity> patterns = this.getList(command, PatternEntity.class);
         if (CollectionUtils.isEmpty(patterns)) {
             return false;
         }
@@ -266,7 +267,7 @@ public class PatternService extends BaseService implements IPatternService {
                 .id(command.getId())
                 .userId(command.getUserId())
                 .hasEntities(true)
-                .build());
+                .build(), PatternEntity.class);
         if (CollectionUtils.isEmpty(patterns)) {
             return returnException("pattern_not_exist", ResponsePattern.class);
         }
@@ -298,6 +299,7 @@ public class PatternService extends BaseService implements IPatternService {
     }
 
     @Override
+    @Deprecated
     public Paginated<PatternEntity> getPagination(String userId, int page, int size) {
         if (StringUtils.isBlank(userId)) {
             return new Paginated<>(new ArrayList<>(), 0, 0, 0);
@@ -323,33 +325,7 @@ public class PatternService extends BaseService implements IPatternService {
     }
 
     @Override
-    public Paginated<PatternEntity> getPagination(CommandGetListPattern command) {
-        if (StringUtils.isBlank(command.getUserId())) {
-            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
-        }
-
-        if (command.getPage() <= 0 || command.getSize() <= 0) {
-            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
-        }
-
-        Query query = this.buildQueryGetList(command);
-        if (query == null) {
-            return new Paginated<>(new ArrayList<>(), command.getPage(), command.getSize(), 0);
-        }
-
-        long total = mongoTemplate.count(query, PatternEntity.class);
-        if (total == 0L) {
-            return new Paginated<>(new ArrayList<>(), command.getPage(), command.getSize(), 0);
-        }
-
-        PageRequest pageRequest = PageRequest.of(command.getPage() - 1, command.getSize());
-        query.with(pageRequest);
-        List<PatternEntity> patternEntities = mongoTemplate.find(query, PatternEntity.class);
-        this.setViewForListPatterns(patternEntities, command);
-        return new Paginated<>(patternEntities, command.getPage(), command.getSize(), total);
-    }
-
-    @Override
+    @Deprecated
     public Paginated<PatternEntity> getPaginationByIntentId(String intentId, int page, int size) {
         if (StringUtils.isBlank(intentId)) {
             return new Paginated<>(new ArrayList<>(), 0, 0, 0);
@@ -673,26 +649,6 @@ public class PatternService extends BaseService implements IPatternService {
     }
 
     @Override
-    public List<PatternEntity> getList(CommandGetListPattern command) {
-        if (StringUtils.isBlank(command.getUserId())) {
-            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
-            return null;
-        }
-
-        Query query = this.buildQueryGetList(command);
-        if (query == null) {
-            return null;
-        }
-
-        if (BooleanUtils.isTrue(command.getCheckPageAndSize())) {
-            query.with(PageRequest.of(command.getPage() - 1, command.getSize()));
-        }
-        List<PatternEntity> patterns = mongoTemplate.find(query, PatternEntity.class);
-        this.setViewForListPatterns(patterns, command);
-        return patterns;
-    }
-
-    @Override
     public void exportExcel(CommandGetListPattern command, String sessionId) throws Exception {
         //region Set init status
         ResponseExportExcelStatus response = ResponseExportExcelStatus.builder()
@@ -846,7 +802,7 @@ public class PatternService extends BaseService implements IPatternService {
                     commandNew.setSize(10);
                     commandNew.setHasEntities(true);
                     commandNew.setHasEntityTypeOfEntities(true);
-                    List<PatternEntity> patterns = this.getList(commandNew);
+                    List<PatternEntity> patterns = this.getList(commandNew, PatternEntity.class);
                     if (CollectionUtils.isEmpty(patterns)) {
                         break;
                     }
@@ -921,93 +877,6 @@ public class PatternService extends BaseService implements IPatternService {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    private void setViewForListPatterns(List<PatternEntity> patterns, CommandGetListPattern command) {
-        if (BooleanUtils.isFalse(command.isHasEntities()) &&
-                BooleanUtils.isFalse(command.isHasIntentName())) {
-            return;
-        }
-
-        Map<String, IntentEntity> intentsById = new HashMap<>();
-        if (BooleanUtils.isTrue(command.isHasIntentName())) {
-            Set<String> intentIds = patterns.stream().map(PatternEntity::getIntentId).filter(StringUtils::isNotBlank).collect(Collectors.toSet());
-            List<IntentEntity> intents = intentService.getList(CommandGetListIntent.builder()
-                    .userId(command.getUserId())
-                    .ids(intentIds.stream().toList())
-                    .build());
-            if (CollectionUtils.isNotEmpty(intents)) {
-                intents.forEach(i -> {
-                    intentsById.put(i.getId(), i);
-                });
-            }
-        }
-
-        for (PatternEntity pattern : patterns) {
-            if (BooleanUtils.isTrue(command.isHasEntities())) {
-                List<EntityEntity> entities = entityService.getList(CommandGetListEntity.builder()
-                        .userId(command.getUserId())
-                        .patternId(pattern.getId())
-                        .hasEntityType(command.isHasEntityTypeOfEntities())
-                        .build());
-                pattern.setEntities(entities);
-            }
-
-            if (BooleanUtils.isTrue(command.isHasIntentName())) {
-                IntentEntity intent = intentsById.get(pattern.getIntentId());
-                if (intent != null) {
-                    pattern.setIntentName(intent.getName());
-                }
-            }
-        }
-    }
-
-    private Query buildQueryGetList(CommandGetListPattern command) {
-        Query query = new Query();
-        Criteria criteria = new Criteria();
-        List<Criteria> orCriteriaList = new ArrayList<>();
-        List<Criteria> andCriteriaList = new ArrayList<>();
-
-        andCriteriaList.add(Criteria.where("user_id").is(command.getUserId()));
-
-        if (StringUtils.isNotBlank(command.getKeyword())) {
-            orCriteriaList.add(Criteria.where("content").regex(command.getKeyword().trim(), "i"));
-        }
-
-        if (StringUtils.isNotBlank(command.getId())) {
-            andCriteriaList.add(Criteria.where("id").is(command.getId()));
-        }
-
-        if (StringUtils.isNotBlank(command.getIntentId())) {
-            andCriteriaList.add(Criteria.where("intent_id").is(command.getIntentId()));
-        }
-
-        if (CollectionUtils.isNotEmpty(command.getDateFilters())) {
-            for (DateFilter dateFilter : command.getDateFilters()) {
-                if (dateFilter.getFromDate() != null &&
-                        dateFilter.getToDate() != null &&
-                        StringUtils.isNotBlank(dateFilter.getFieldName())) {
-                    andCriteriaList.add(Criteria.where(dateFilter.getFieldName()).gte(dateFilter.getFromDate()).lte(dateFilter.getToDate()));
-                }
-            }
-        }
-
-        if (CollectionUtils.isNotEmpty(orCriteriaList)) {
-            criteria.orOperator(orCriteriaList);
-        }
-        if (CollectionUtils.isNotEmpty(andCriteriaList)) {
-            criteria.andOperator(andCriteriaList);
-        }
-
-        query.addCriteria(criteria);
-        if (CollectionUtils.isNotEmpty(command.getReturnFields())) {
-            List<String> returnFields = new ArrayList<>(command.getReturnFields());
-            returnFields.removeAll(Collections.singletonList("entities"));
-            returnFields.addAll(List.of("created_date", "last_updated_date"));
-            query.fields().include(Arrays.copyOf(returnFields.toArray(), returnFields.size(), String[].class));
-        }
-
-        return query;
     }
 
     /**
@@ -1115,6 +984,105 @@ public class PatternService extends BaseService implements IPatternService {
             kafkaTemplate.send(Constant.KafkaTopic.process_indexing_pattern_es, objectMapper.writeValueAsString(command));
         } catch (JsonProcessingException e) {
             log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
+        }
+    }
+
+    @Override
+    protected <T extends CommandGetListBase> Query buildQueryGetList(@NonNull T commandGetListBase) {
+        CommandGetListPattern command = (CommandGetListPattern) commandGetListBase;
+
+        Query query = new Query();
+        Criteria criteria = new Criteria();
+        List<Criteria> orCriteriaList = new ArrayList<>();
+        List<Criteria> andCriteriaList = new ArrayList<>();
+
+        andCriteriaList.add(Criteria.where("user_id").is(command.getUserId()));
+
+        if (StringUtils.isNotBlank(command.getKeyword())) {
+            orCriteriaList.add(Criteria.where("content").regex(command.getKeyword().trim(), "i"));
+        }
+
+        if (StringUtils.isNotBlank(command.getId())) {
+            andCriteriaList.add(Criteria.where("id").is(command.getId()));
+        }
+
+        if (CollectionUtils.isNotEmpty(command.getIds())) {
+            andCriteriaList.add(Criteria.where("id").in(command.getIds()));
+        }
+
+        if (StringUtils.isNotBlank(command.getIntentId())) {
+            andCriteriaList.add(Criteria.where("intent_id").is(command.getIntentId()));
+        }
+
+        if (CollectionUtils.isNotEmpty(command.getDateFilters())) {
+            for (DateFilter dateFilter : command.getDateFilters()) {
+                if (dateFilter.getFromDate() != null &&
+                        dateFilter.getToDate() != null &&
+                        StringUtils.isNotBlank(dateFilter.getFieldName())) {
+                    andCriteriaList.add(Criteria.where(dateFilter.getFieldName()).gte(dateFilter.getFromDate()).lte(dateFilter.getToDate()));
+                }
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(orCriteriaList)) {
+            criteria.orOperator(orCriteriaList);
+        }
+        if (CollectionUtils.isNotEmpty(andCriteriaList)) {
+            criteria.andOperator(andCriteriaList);
+        }
+
+        query.addCriteria(criteria);
+        if (CollectionUtils.isNotEmpty(command.getReturnFields())) {
+            List<String> returnFields = new ArrayList<>(command.getReturnFields());
+            returnFields.removeAll(Collections.singletonList("entities"));
+            returnFields.addAll(List.of("created_date", "last_updated_date"));
+            query.fields().include(Arrays.copyOf(returnFields.toArray(), returnFields.size(), String[].class));
+        }
+
+        return query;
+    }
+
+    @Override
+    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+        if (CollectionUtils.isEmpty(entitiesBase)) return;
+        List<PatternEntity> patterns = (List<PatternEntity>) entitiesBase;
+        CommandGetListPattern command = (CommandGetListPattern) commandGetListBase;
+
+        if (BooleanUtils.isFalse(command.isHasEntities()) &&
+                BooleanUtils.isFalse(command.isHasIntentName())) {
+            return;
+        }
+
+        Map<String, IntentEntity> intentsById = new HashMap<>();
+        if (BooleanUtils.isTrue(command.isHasIntentName())) {
+            Set<String> intentIds = patterns.stream().map(PatternEntity::getIntentId).filter(StringUtils::isNotBlank).collect(Collectors.toSet());
+            List<IntentEntity> intents = intentService.getList(CommandGetListIntent.builder()
+                    .userId(command.getUserId())
+                    .ids(intentIds.stream().toList())
+                    .build());
+            if (CollectionUtils.isNotEmpty(intents)) {
+                intents.forEach(i -> {
+                    intentsById.put(i.getId(), i);
+                });
+            }
+        }
+
+        for (PatternEntity pattern : patterns) {
+            if (BooleanUtils.isTrue(command.isHasEntities())) {
+                List<EntityEntity> entities = entityService.getList(CommandGetListEntity.builder()
+                        .userId(command.getUserId())
+                        .patternId(pattern.getId())
+                        .hasEntityType(command.isHasEntityTypeOfEntities())
+                        .build(), EntityEntity.class);
+                pattern.setEntities(entities);
+            }
+
+            if (BooleanUtils.isTrue(command.isHasIntentName())) {
+                IntentEntity intent = intentsById.get(pattern.getIntentId());
+                if (intent != null) {
+                    pattern.setIntentName(intent.getName());
+                }
+            }
         }
     }
 }

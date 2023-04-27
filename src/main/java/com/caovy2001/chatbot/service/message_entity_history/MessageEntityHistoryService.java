@@ -6,6 +6,7 @@ import com.caovy2001.chatbot.entity.MessageEntityHistoryEntity;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.MessageEntityHistoryRepository;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
 import com.caovy2001.chatbot.service.entity_type.IEntityTypeService;
 import com.caovy2001.chatbot.service.entity_type.command.CommandGetListEntityType;
 import com.caovy2001.chatbot.service.message_entity_history.command.CommandAddMessageEntityHistory;
@@ -238,5 +239,15 @@ public class MessageEntityHistoryService extends BaseService implements IMessage
         List<MessageEntityHistoryEntity> messageEntityHistories = mongoTemplate.find(query, MessageEntityHistoryEntity.class);
         this.setViewForListMessageEntityHistories(messageEntityHistories, command);
         return new Paginated<>(messageEntityHistories, command.getPage(), command.getSize(), total);
+    }
+
+    @Override
+    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+        return null;
+    }
+
+    @Override
+    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+
     }
 }

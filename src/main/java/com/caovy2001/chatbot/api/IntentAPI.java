@@ -4,7 +4,6 @@ import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.IntentEntity;
 import com.caovy2001.chatbot.entity.UserEntity;
 import com.caovy2001.chatbot.model.Paginated;
-import com.caovy2001.chatbot.service.IBaseService;
 import com.caovy2001.chatbot.service.intent.IIntentService;
 import com.caovy2001.chatbot.service.intent.command.*;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntentAdd;
@@ -22,9 +21,6 @@ import java.util.ArrayList;
 @RequestMapping("/intent")
 public class IntentAPI {
     @Autowired
-    private IBaseService baseService;
-
-    @Autowired
     private IIntentService intentService;
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
@@ -39,7 +35,7 @@ public class IntentAPI {
             ResponseIntentAdd responseIntentAdd = intentService.add(command);
             return ResponseEntity.ok(responseIntentAdd);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponseIntentAdd.class));
+            return ResponseEntity.ok(intentService.returnException(e.toString(), ResponseIntentAdd.class));
         }
     }
 
@@ -55,7 +51,7 @@ public class IntentAPI {
             ResponseIntentAdd responseIntentAdd = intentService.addMany(command);
             return ResponseEntity.ok(responseIntentAdd);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponseIntentAdd.class));
+            return ResponseEntity.ok(intentService.returnException(e.toString(), ResponseIntentAdd.class));
         }
     }
 
@@ -70,7 +66,7 @@ public class IntentAPI {
             ResponseIntents responseIntents = intentService.getByUserId(userEntity.getId());
             return ResponseEntity.ok(responseIntents);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponseIntents.class));
+            return ResponseEntity.ok(intentService.returnException(e.toString(), ResponseIntents.class));
         }
     }
 
@@ -117,7 +113,7 @@ public class IntentAPI {
             ResponseIntents responseIntents = intentService.getById(id, userEntity.getId());
             return ResponseEntity.ok(responseIntents);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponseIntents.class));
+            return ResponseEntity.ok(intentService.returnException(e.toString(), ResponseIntents.class));
         }
     }
 
@@ -133,7 +129,7 @@ public class IntentAPI {
             ResponseIntents responseIntents = intentService.update(command);
             return ResponseEntity.ok(responseIntents);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponseIntents.class));
+            return ResponseEntity.ok(intentService.returnException(e.toString(), ResponseIntents.class));
         }
     }
 
@@ -148,7 +144,7 @@ public class IntentAPI {
             ResponseIntents responseIntents = intentService.deleteIntent(command.getId(), userEntity.getId());
             return ResponseEntity.ok(responseIntents);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponseIntents.class));
+            return ResponseEntity.ok(intentService.returnException(e.toString(), ResponseIntents.class));
         }
     }
 
@@ -167,7 +163,7 @@ public class IntentAPI {
             ResponseIntents responseIntents = intentService.addPatterns(command);
             return ResponseEntity.ok(responseIntents);
         } catch (Exception e) {
-            return ResponseEntity.ok(baseService.returnException(e.toString(), ResponseIntents.class));
+            return ResponseEntity.ok(intentService.returnException(e.toString(), ResponseIntents.class));
         }
     }
 
