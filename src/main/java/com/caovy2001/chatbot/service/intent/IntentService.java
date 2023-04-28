@@ -19,6 +19,7 @@ import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 import com.caovy2001.chatbot.service.pattern.IPatternService;
 import com.caovy2001.chatbot.service.pattern.command.CommandGetListPattern;
 import com.caovy2001.chatbot.service.pattern.command.CommandPatternAdd;
+import com.caovy2001.chatbot.service.pattern.command.CommandPatternAddMany;
 import com.caovy2001.chatbot.service.script_intent_mapping.IScriptIntentMappingService;
 import com.caovy2001.chatbot.service.script_intent_mapping.command.CommandGetListScriptIntentMapping;
 import com.caovy2001.chatbot.utils.ChatbotStringUtils;
@@ -37,9 +38,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -74,93 +73,195 @@ public class IntentService extends BaseService implements IIntentService {
     @Autowired
     private IIntentServiceES intentServiceES;
 
+//    @Override
+//    public ResponseIntentAdd add(CommandIntent command) {
+//        if (StringUtils.isAnyBlank(command.getCode(), command.getName(), command.getUserId())) {
+//            return returnException(ExceptionConstant.missing_param, ResponseIntentAdd.class);
+//        }
+//
+//        IntentEntity existIntent = intentRepository.findByCodeAndUserId(command.getCode(), command.getUserId()).orElse(null);
+//        if (existIntent != null) {
+//            return returnException("intent_code_exist", ResponseIntentAdd.class);
+//        }
+//
+//        IntentEntity intent = IntentEntity.builder()
+//                .code(command.getCode())
+//                .name(command.getName())
+//                .userId(command.getUserId())
+//                .createdDate(System.currentTimeMillis())
+//                .lastUpdatedDate(System.currentTimeMillis())
+//                .build();
+//
+//        IntentEntity addedIntent = intentRepository.insert(intent);
+//
+//        // Index ES
+//        this.indexES(CommandIndexingIntentES.builder()
+//                .userId(command.getUserId())
+//                .intents(List.of(intent))
+//                .doSetUserId(false)
+//                .build());
+//
+//        return ResponseIntentAdd.builder()
+//                .id(addedIntent.getId())
+//                .build();
+//    }
+
     @Override
-    public ResponseIntentAdd add(CommandIntent command) {
+    public IntentEntity add(CommandIntentAdd command) throws Exception {
         if (StringUtils.isAnyBlank(command.getCode(), command.getName(), command.getUserId())) {
-            return returnException(ExceptionConstant.missing_param, ResponseIntentAdd.class);
+            throw new Exception(ExceptionConstant.missing_param);
         }
 
-        IntentEntity existIntent = intentRepository.findByCodeAndUserId(command.getCode(), command.getUserId()).orElse(null);
-        if (existIntent != null) {
-            return returnException("intent_code_exist", ResponseIntentAdd.class);
-        }
-
-        IntentEntity intent = IntentEntity.builder()
+        if (CollectionUtils.isNotEmpty(this.getList(CommandGetListIntent.builder()
+                .userId(command.getUserId())
                 .code(command.getCode())
-                .name(command.getName())
-                .userId(command.getUserId())
-                .createdDate(System.currentTimeMillis())
-                .lastUpdatedDate(System.currentTimeMillis())
-                .build();
+                .build()))) {
+            throw new Exception("intent_code_exist");
+        }
 
-        IntentEntity addedIntent = intentRepository.insert(intent);
-
-        // Index ES
-        this.indexES(CommandIndexingIntentES.builder()
+        List<IntentEntity> addedIntents = this.add(CommandIntentAddMany.builder()
                 .userId(command.getUserId())
-                .intents(List.of(intent))
-                .doSetUserId(false)
+                .intents(List.of(IntentEntity.builder()
+                        .userId(command.getUserId())
+                        .code(command.getCode())
+                        .name(command.getName())
+                        .build()))
                 .build());
 
-        return ResponseIntentAdd.builder()
-                .id(addedIntent.getId())
-                .build();
+        if (CollectionUtils.isEmpty(addedIntents)) {
+            throw new Exception(ExceptionConstant.error_occur);
+        }
+
+        return addedIntents.get(0);
     }
 
+//    @Override
+//    public ResponseIntentAdd addMany(CommandIntentAddMany command) {
+//        if (CollectionUtils.isEmpty(command.getIntents()) || StringUtils.isBlank(command.getUserId())) {
+//            return this.returnException(ExceptionConstant.missing_param, ResponseIntentAdd.class);
+//        }
+//        ResponseIntentAdd responseIntentAdd = ResponseIntentAdd.builder()
+//                .ids(new ArrayList<>())
+//                .intents(new ArrayList<>())
+//                .build();
+//        List<IntentEntity> savedIntents = new ArrayList<>();
+//        for (IntentEntity intent : command.getIntents()) {
+//            IntentEntity existIntent = intentRepository.findByCodeAndUserId(intent.getCode(), command.getUserId()).orElse(null);
+//            if (existIntent != null) {
+//                intent.setId(existIntent.getId());
+//            } else {
+//                intent.setId(null);
+//            }
+//
+//            intent.setUserId(command.getUserId());
+//            intent.setCreatedDate(System.currentTimeMillis());
+//            intent.setLastUpdatedDate(System.currentTimeMillis());
+//            IntentEntity savedIntent = intentRepository.save(intent);
+//            responseIntentAdd.getIds().add(savedIntent.getId());
+//            savedIntents.add(savedIntent);
+//
+//            if (!CollectionUtils.isEmpty(intent.getPatterns())) {
+//                for (PatternEntity pattern : intent.getPatterns()) {
+//                    CommandPatternAdd commandPatternAdd = CommandPatternAdd.builder()
+//                            .userId(command.getUserId())
+//                            .content(pattern.getContent())
+//                            .intentId(savedIntent.getId())
+//                            .build();
+//
+//                    try {
+//                        patternService.add(commandPatternAdd);
+//                    } catch (Exception e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                }
+//            }
+//        }
+//
+//        if (BooleanUtils.isTrue(command.isReturnListDetails())) {
+//            responseIntentAdd.setIntents(savedIntents);
+//        }
+//
+//        // Index ES
+//        this.indexES(CommandIndexingIntentES.builder()
+//                .userId(command.getUserId())
+//                .intents(savedIntents)
+//                .doSetUserId(false)
+//                .build());
+//
+//        return responseIntentAdd;
+//    }
+
     @Override
-    public ResponseIntentAdd addMany(CommandIntentAddMany command) {
+    public List<IntentEntity> add(CommandIntentAddMany command) throws Exception {
         if (CollectionUtils.isEmpty(command.getIntents()) || StringUtils.isBlank(command.getUserId())) {
-            return this.returnException(ExceptionConstant.missing_param, ResponseIntentAdd.class);
+            throw new Exception(ExceptionConstant.missing_param);
         }
-        ResponseIntentAdd responseIntentAdd = ResponseIntentAdd.builder()
-                .ids(new ArrayList<>())
-                .intents(new ArrayList<>())
-                .build();
-        List<IntentEntity> savedIntents = new ArrayList<>();
+
+        List<IntentEntity> intentsToSave = new ArrayList<>();
+        List<PatternEntity> patternsToAdd = new ArrayList<>();
+        List<String> intentCodes = command.getIntents().stream().map(IntentEntity::getCode).filter(StringUtils::isNotBlank).toList();
+        if (CollectionUtils.isEmpty(intentCodes)) {
+            throw new Exception(ExceptionConstant.missing_param);
+        }
+
+        Map<String, IntentEntity> existIntentByCode = new HashMap<>();
+        List<IntentEntity> listExistIntentsByCode = this.getList(CommandGetListIntent.builder()
+                .userId(command.getUserId())
+                .codes(intentCodes)
+                .build());
+        if (CollectionUtils.isNotEmpty(listExistIntentsByCode)) {
+            listExistIntentsByCode.forEach(i -> existIntentByCode.put(i.getCode(), i));
+        }
+
         for (IntentEntity intent : command.getIntents()) {
-            IntentEntity existIntent = intentRepository.findByCodeAndUserId(intent.getCode(), command.getUserId()).orElse(null);
-            if (existIntent != null) {
-                intent.setId(existIntent.getId());
-            } else {
-                intent.setId(null);
+            if (StringUtils.isAnyBlank(intent.getName(), intent.getCode()) ||
+                    existIntentByCode.get(intent.getCode()) != null) { // Check trùng code
+                continue;
             }
 
             intent.setUserId(command.getUserId());
             intent.setCreatedDate(System.currentTimeMillis());
             intent.setLastUpdatedDate(System.currentTimeMillis());
-            IntentEntity savedIntent = intentRepository.save(intent);
-            responseIntentAdd.getIds().add(savedIntent.getId());
-            savedIntents.add(savedIntent);
+            intentsToSave.add(intent);
 
-            if (!CollectionUtils.isEmpty(intent.getPatterns())) {
+            if (CollectionUtils.isNotEmpty(intent.getPatterns())) {
                 for (PatternEntity pattern : intent.getPatterns()) {
-                    CommandPatternAdd commandPatternAdd = CommandPatternAdd.builder()
-                            .userId(command.getUserId())
-                            .content(pattern.getContent())
-                            .intentId(savedIntent.getId())
-                            .build();
-
-                    try {
-                        patternService.add(commandPatternAdd);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
+                    pattern.setIntentCode(intent.getCode());
+                    patternsToAdd.add(pattern);
                 }
             }
         }
 
-        if (BooleanUtils.isTrue(command.isReturnListDetails())) {
-            responseIntentAdd.setIntents(savedIntents);
+        intentsToSave = intentRepository.insert(intentsToSave);
+        if (CollectionUtils.isEmpty(intentsToSave)) {
+            throw new Exception(ExceptionConstant.error_occur);
+        }
+
+        // Save patterns
+        if (CollectionUtils.isNotEmpty(patternsToAdd)) {
+            Map<String, IntentEntity> intentByCode = new HashMap<>();
+            intentsToSave.forEach(intentToSave -> {
+                intentByCode.put(intentToSave.getCode(), intentToSave);
+            });
+
+            patternsToAdd.forEach(patternToAdd -> {
+                patternToAdd.setIntentId(intentByCode.get(patternToAdd.getIntentCode()).getId());
+            });
+
+            patternService.add(CommandPatternAddMany.builder()
+                    .userId(command.getUserId())
+                    .patterns(patternsToAdd)
+                    .build());
         }
 
         // Index ES
         this.indexES(CommandIndexingIntentES.builder()
                 .userId(command.getUserId())
-                .intents(savedIntents)
+                .intents(intentsToSave)
                 .doSetUserId(false)
                 .build());
 
-        return responseIntentAdd;
+        return intentsToSave;
     }
 
     @Override
@@ -337,21 +438,15 @@ public class IntentService extends BaseService implements IIntentService {
         return new Paginated<>(intentEntities, command.getPage(), command.getSize(), total);
     }
 
-    @Override
-    public List<IntentEntity> addManyReturnList(@NonNull CommandIntentAddMany command) {
-        if (StringUtils.isBlank(command.getUserId()) || CollectionUtils.isEmpty(command.getIntents())) {
-            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
-            return null;
-        }
-
-        command.setReturnListDetails(true);
-        ResponseIntentAdd responseIntentAdd = this.addMany(command);
-        if (responseIntentAdd == null || CollectionUtils.isEmpty(responseIntentAdd.getIntents())) {
-            log.error("[{}]: {}", new Exception().getStackTrace()[0], "cannot_add_many_intents");
-            return null;
-        }
-        return responseIntentAdd.getIntents();
-    }
+//    @Override
+//    public List<IntentEntity> addManyReturnList(@NonNull CommandIntentAddMany command) throws Exception {
+//        if (StringUtils.isBlank(command.getUserId()) || CollectionUtils.isEmpty(command.getIntents())) {
+//            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
+//            return null;
+//        }
+//
+//        return this.add(command);
+//    }
 
     @Override
     public List<IntentEntity> getList(CommandGetListIntent command) {
@@ -412,6 +507,14 @@ public class IntentService extends BaseService implements IIntentService {
             andCriteriaList.add(Criteria.where("id").in(command.getIds()));
         }
 
+        if (StringUtils.isNotBlank(command.getCode())) {
+            andCriteriaList.add(Criteria.where("code").is(command.getCode()));
+        }
+
+        if (CollectionUtils.isNotEmpty(command.getCodes())) {
+            andCriteriaList.add(Criteria.where("code").in(command.getCodes()));
+        }
+
         if (CollectionUtils.isNotEmpty(command.getScriptIds())) {
             List<ScriptIntentMappingEntity> scriptIntentMappingEntities = scriptIntentMappingService.getList(CommandGetListScriptIntentMapping.builder()
                     .userId(command.getUserId())
@@ -470,7 +573,7 @@ public class IntentService extends BaseService implements IIntentService {
                         .ids(List.of(id))
                         .build());
             } catch (Exception e) {
-                log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage())? e.getMessage(): ExceptionConstant.error_occur);
+                log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
             }
         });
 

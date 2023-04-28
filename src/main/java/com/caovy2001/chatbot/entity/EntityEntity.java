@@ -9,6 +9,7 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -70,7 +71,22 @@ public class EntityEntity extends BaseEntity{
 
 
     //region Behavior
+
+    //region Pattern
+    @Deprecated
+    public PatternEntity getPattern() {
+        return this.pattern;
+    }
+
+    public PatternEntity getPattern(@NonNull IPatternService patternService) {
+        return this.patternMapping(patternService);
+    }
+
     public PatternEntity patternMapping(@NonNull IPatternService patternService) {
+        if (this.pattern != null) {
+            return this.pattern;
+        }
+
         if (StringUtils.isAnyBlank(this.patternId, this.userId)) {
             log.error("[{}]: {}", new Exception().getStackTrace()[0], "patternId or userId is null");
             return null;
@@ -88,6 +104,10 @@ public class EntityEntity extends BaseEntity{
     }
 
     public PatternEntity patternMapping(@NonNull Map<String, PatternEntity> patternById) {
+        if (this.pattern != null) {
+            return this.pattern;
+        }
+
         if (StringUtils.isBlank(this.patternId)) {
             log.error("[{}]: {}", new Exception().getStackTrace()[0], "patternId null");
             return null;
@@ -100,8 +120,23 @@ public class EntityEntity extends BaseEntity{
         this.pattern = patternById.get(this.patternId);
         return this.pattern;
     }
+    //endregion
+
+    //region Entity type
+    @Deprecated
+    public EntityTypeEntity getEntityType() {
+        return this.entityType;
+    }
+
+    public EntityTypeEntity getEntityType(IEntityTypeService entityTypeService) {
+        return this.entityTypeMapping(entityTypeService);
+    }
 
     public EntityTypeEntity entityTypeMapping(@NonNull IEntityTypeService entityTypeService) {
+        if (this.entityType != null) {
+            return this.entityType;
+        }
+
         if (StringUtils.isAnyBlank(this.entityTypeId, this.userId)) {
             log.error("[{}]: {}", new Exception().getStackTrace()[0], "entityTypeId or userId is null");
             return null;
@@ -131,5 +166,7 @@ public class EntityEntity extends BaseEntity{
         this.entityType = entityTypeById.get(this.entityTypeId);
         return this.entityType;
     }
+    //endregion
+
     //endregion
 }

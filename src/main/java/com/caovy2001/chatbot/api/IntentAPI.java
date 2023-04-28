@@ -8,6 +8,7 @@ import com.caovy2001.chatbot.service.intent.IIntentService;
 import com.caovy2001.chatbot.service.intent.command.*;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntentAdd;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequestMapping("/intent")
@@ -25,15 +27,21 @@ public class IntentAPI {
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @PostMapping("/add")
-    public ResponseEntity<ResponseIntentAdd> add(@RequestBody CommandIntent command) {
+    public ResponseEntity<ResponseIntentAdd> add(@RequestBody CommandIntentAdd command) {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
                 throw new Exception("auth_invalid");
 
             command.setUserId(userEntity.getId());
-            ResponseIntentAdd responseIntentAdd = intentService.add(command);
-            return ResponseEntity.ok(responseIntentAdd);
+            IntentEntity intent = intentService.add(command);
+            if (intent == null) {
+                throw new Exception(ExceptionConstant.error_occur);
+            }
+
+            return ResponseEntity.ok(ResponseIntentAdd.builder()
+                    .id(intent.getId())
+                    .build());
         } catch (Exception e) {
             return ResponseEntity.ok(intentService.returnException(e.toString(), ResponseIntentAdd.class));
         }
@@ -48,10 +56,16 @@ public class IntentAPI {
                 throw new Exception("auth_invalid");
 
             command.setUserId(userEntity.getId());
-            ResponseIntentAdd responseIntentAdd = intentService.addMany(command);
-            return ResponseEntity.ok(responseIntentAdd);
+            List<IntentEntity> intents = intentService.add(command);
+            if (CollectionUtils.isEmpty(intents)) {
+                throw new Exception(ExceptionConstant.error_occur);
+            }
+
+            return ResponseEntity.ok(ResponseIntentAdd.builder()
+                    .ids(intents.stream().map(IntentEntity::getId).toList())
+                    .build());
         } catch (Exception e) {
-            return ResponseEntity.ok(intentService.returnException(e.toString(), ResponseIntentAdd.class));
+            return ResponseEntity.ok(intentService.returnException(e.getMessage(), ResponseIntentAdd.class));
         }
     }
 
@@ -119,7 +133,7 @@ public class IntentAPI {
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @PostMapping("/update")
-    public  ResponseEntity<?> update(@RequestBody CommandIntent command){
+    public ResponseEntity<?> update(@RequestBody CommandIntent command) {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (userEntity == null || StringUtils.isBlank(userEntity.getId()))

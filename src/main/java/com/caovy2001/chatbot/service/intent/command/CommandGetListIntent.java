@@ -17,6 +17,8 @@ public class CommandGetListIntent {
     private int size;
     private List<String> ids;
     private String userId;
+    private String code;
+    private List<String> codes;
     private List<String> scriptIds;
     private String keyword;
     private List<String> returnFields;

@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -21,6 +22,7 @@ import java.util.List;
 public class PatternEntity extends BaseEntity {
     @Id
     private String id;
+
     @Field("user_id")
     private String userId;
 
@@ -41,7 +43,7 @@ public class PatternEntity extends BaseEntity {
     private long createdDate = System.currentTimeMillis();
 
     @Field("last_updated_date")
-    @Builder.Default    
+    @Builder.Default
     private long lastCreatedDate = System.currentTimeMillis();
 
     @Transient
@@ -49,4 +51,14 @@ public class PatternEntity extends BaseEntity {
 
     @Transient
     private List<EntityEntity> entities;
+
+    public boolean isValid() {
+        if (StringUtils.isAnyBlank(this.userId, this.content, this.intentId, this.intentCode) ||
+                this.createdDate == 0 ||
+                this.lastCreatedDate == 0) {
+            return false;
+        }
+
+        return true;
+    }
 }

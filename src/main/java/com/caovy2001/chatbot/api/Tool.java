@@ -156,7 +156,7 @@ public class Tool {
                     .userId("6390ca177c627e7e8442e237")
                     .intents(intentEntities)
                     .build();
-            intentService.addMany(commandIntentAddMany);
+            intentService.add(commandIntentAddMany);
 
             return ResponseEntity.ok(true);
         } catch (Exception e) {

@@ -858,8 +858,8 @@ public class PatternService extends BaseService implements IPatternService {
             }
         }
 
-        String fileName = "Training_data_" + sessionId + "_" + String.valueOf(System.currentTimeMillis()) + ".xlsx";
-        String filePath = "src/main/resources/file_data/" + command.getUserId() + "/";
+        String fileName = Constant.Pattern.exportExcelFileNamePrefix + sessionId + "_" + System.currentTimeMillis() + ".xlsx";
+        String filePath = Constant.fileDataPath + command.getUserId() + "/";
         response.setStatus(ResponseExportExcelStatus.EExportExcelStatus.DONE);
         response.setFileName(fileName);
         jedisService.setWithExpired(exportExcelJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
@@ -879,6 +879,25 @@ public class PatternService extends BaseService implements IPatternService {
         }
     }
 
+    @Override
+    public List<PatternEntity> add(CommandPatternAddMany command) {
+        if (StringUtils.isBlank(command.getUserId()) || CollectionUtils.isEmpty(command.getPatterns())) {
+            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
+            return null;
+        }
+
+        List<PatternEntity> patternsToAdd = new ArrayList<>();
+        for (PatternEntity pattern: command.getPatterns()) {
+            pattern.setUserId(command.getUserId());
+            pattern.setCreatedDate(System.currentTimeMillis());
+            pattern.setLastCreatedDate(System.currentTimeMillis());
+            if (pattern.isValid()) {
+                patternsToAdd.add(pattern);
+            }
+        }
+        return patternRepository.saveAll(patternsToAdd);
+    }
+
     /**
      * Hàm này chỉ được dùng cho hàm importFromFile, không được dùng hàm này ở những hàm khác
      */
@@ -894,7 +913,12 @@ public class PatternService extends BaseService implements IPatternService {
                 .userId(userId)
                 .intents(intentEntities)
                 .build();
-        List<IntentEntity> savedIntents = intentService.addManyReturnList(commandIntentAddMany);
+        List<IntentEntity> savedIntents = null;
+        try {
+            savedIntents = intentService.add(commandIntentAddMany);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         if (CollectionUtils.isEmpty(savedIntents)) {
             response.setNumOfFailed(response.getNumOfFailed() + patternEntities.size());
             return;

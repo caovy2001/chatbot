@@ -1,6 +1,7 @@
 package com.caovy2001.chatbot.constant;
 
 public class Constant {
+    public static final String fileDataPath = "src/main/resources/file_data/";
     public static class JedisPrefix {
         public static final String COLON = ":";
         public static final String userIdPrefix_ = "userIdPrefix_";
@@ -15,6 +16,7 @@ public class Constant {
     }
     public static class Pattern {
         public static final String importExcelTemplateDownloadLink = "https://drive.google.com/u/4/uc?id=1Xwos9Y9E-xZywtau9nrbW3N9zOXpkDB9&export=download";
+        public static final String exportExcelFileNamePrefix = "Training_data_";
 
     }
 

@@ -349,13 +349,17 @@ public class PatternAPI {
     @GetMapping("/export/excel/get_file/{fileName}")
     public ResponseEntity<Document> exportExcelGetFile(@PathVariable String fileName) {
         try {
-            Document resMap = new Document();
+            if (!fileName.contains(Constant.Pattern.exportExcelFileNamePrefix)) {
+                throw new Exception("file_invalid");
+            }
+
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (userEntity == null || StringUtils.isBlank((userEntity.getId()))) {
                 throw new Exception("auth_invalid");
             }
             String userId = userEntity.getId();
-            Path path = Paths.get("src/main/resources/file_data/" + userId + "/" + fileName);
+            Document resMap = new Document();
+            Path path = Paths.get(Constant.fileDataPath + userId + "/" + fileName);
             byte[] data = Files.readAllBytes(path);
 
             resMap.put("base64", Base64.getEncoder().encodeToString(data));

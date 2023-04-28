@@ -36,4 +36,6 @@ public interface IPatternService extends IBaseService {
 //    List<PatternEntity> getList(CommandGetListPattern command);
 
     void exportExcel(CommandGetListPattern command, String sessionId) throws Exception;
+
+    List<PatternEntity> add(CommandPatternAddMany command);
 }
