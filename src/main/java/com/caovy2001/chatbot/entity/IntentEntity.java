@@ -46,5 +46,4 @@ public class IntentEntity extends BaseEntity{
 
     @Transient
     private List<ConditionMappingEntity> conditionMapping;
-
 }

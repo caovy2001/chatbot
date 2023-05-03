@@ -2,10 +2,7 @@ package com.caovy2001.chatbot.service.script;
 
 import com.caovy2001.chatbot.constant.Constant;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
-import com.caovy2001.chatbot.entity.ConditionMappingEntity;
-import com.caovy2001.chatbot.entity.IntentEntity;
-import com.caovy2001.chatbot.entity.NodeEntity;
-import com.caovy2001.chatbot.entity.ScriptEntity;
+import com.caovy2001.chatbot.entity.*;
 import com.caovy2001.chatbot.model.DateFilter;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.ScriptRepository;
@@ -351,7 +348,7 @@ public class ScriptService extends BaseService implements IScriptService {
     }
 
     @Override
-    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+    protected <Entity extends BaseEntity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
 
     }
 }

@@ -1,6 +1,7 @@
 package com.caovy2001.chatbot.service.entity;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
+import com.caovy2001.chatbot.entity.BaseEntity;
 import com.caovy2001.chatbot.entity.EntityEntity;
 import com.caovy2001.chatbot.entity.EntityTypeEntity;
 import com.caovy2001.chatbot.entity.PatternEntity;
@@ -109,7 +110,7 @@ public class EntityService extends BaseService implements IEntityServiceAPI, IEn
             }
 
             entitiesToAdd.add(EntityEntity.builder()
-                    .userId(entity.getUserId())
+                    .userId(command.getUserId())
                     .patternId(entity.getPatternId())
                     .entityTypeId(entity.getEntityTypeId())
                     .value(entity.getValue())
@@ -150,7 +151,7 @@ public class EntityService extends BaseService implements IEntityServiceAPI, IEn
     }
 
     @Override
-    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+    protected <T extends CommandGetListBase> Query buildQueryGetList(@NonNull T commandGetListBase) {
         CommandGetListEntity command = (CommandGetListEntity) commandGetListBase;
         Query query = new Query();
         Criteria criteria = new Criteria();
@@ -190,7 +191,7 @@ public class EntityService extends BaseService implements IEntityServiceAPI, IEn
     }
 
     @Override
-    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+    protected <Entity extends BaseEntity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
         List<EntityEntity> entities = (List<EntityEntity>) entitiesBase;
         CommandGetListEntity command = (CommandGetListEntity) commandGetListBase;
 

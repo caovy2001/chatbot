@@ -1,6 +1,7 @@
 package com.caovy2001.chatbot.service.entity_type;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
+import com.caovy2001.chatbot.entity.BaseEntity;
 import com.caovy2001.chatbot.entity.EntityEntity;
 import com.caovy2001.chatbot.entity.EntityTypeEntity;
 import com.caovy2001.chatbot.model.DateFilter;
@@ -351,7 +352,7 @@ public class EntityTypeService extends BaseService implements IEntityTypeService
     }
 
     @Override
-    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+    protected <Entity extends BaseEntity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
 
     }
 }

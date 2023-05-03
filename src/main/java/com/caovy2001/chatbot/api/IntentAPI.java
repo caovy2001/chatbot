@@ -9,6 +9,7 @@ import com.caovy2001.chatbot.service.intent.command.*;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntentAdd;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -43,7 +44,7 @@ public class IntentAPI {
                     .id(intent.getId())
                     .build());
         } catch (Exception e) {
-            return ResponseEntity.ok(intentService.returnException(e.toString(), ResponseIntentAdd.class));
+            return ResponseEntity.ok(intentService.returnException(e.getMessage(), ResponseIntentAdd.class));
         }
     }
 
@@ -77,27 +78,13 @@ public class IntentAPI {
             if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
                 throw new Exception("auth_invalid");
 
-            ResponseIntents responseIntents = intentService.getByUserId(userEntity.getId());
-            return ResponseEntity.ok(responseIntents);
+            return ResponseEntity.ok(ResponseIntents.builder()
+                    .intents(intentService.getList(CommandGetListIntent.builder()
+                            .userId(userEntity.getId())
+                            .build(), IntentEntity.class))
+                    .build());
         } catch (Exception e) {
             return ResponseEntity.ok(intentService.returnException(e.toString(), ResponseIntents.class));
-        }
-    }
-
-    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-    @GetMapping("/get_pagination/by_user_id")
-    public ResponseEntity<Paginated<IntentEntity>> getByPaginationUserId(@RequestParam int page, @RequestParam int size) {
-        try {
-            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
-                throw new Exception("auth_invalid");
-
-            page--;
-            Paginated<IntentEntity> intents = intentService.getPaginationByUserId(userEntity.getId(), page, size);
-            intents.setPageNumber(++page);
-            return ResponseEntity.ok(intents);
-        } catch (Exception e) {
-            return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 1, 0, 0));
         }
     }
 
@@ -110,7 +97,7 @@ public class IntentAPI {
                 throw new Exception("auth_invalid");
 
             command.setUserId(userEntity.getId());
-            return ResponseEntity.ok(intentService.getPagination(command));
+            return ResponseEntity.ok(intentService.getPaginatedList(command, IntentEntity.class, CommandGetListIntent.class));
         } catch (Exception e) {
             return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 1, 0, 0));
         }
@@ -124,26 +111,38 @@ public class IntentAPI {
             if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
                 throw new Exception("auth_invalid");
 
-            ResponseIntents responseIntents = intentService.getById(id, userEntity.getId());
-            return ResponseEntity.ok(responseIntents);
+            List<IntentEntity> intents = intentService.getList(CommandGetListIntent.builder()
+                    .userId(userEntity.getId())
+                    .ids(List.of(id))
+                    .hasPatterns(true)
+                    .build(), IntentEntity.class);
+
+            if (CollectionUtils.isEmpty(intents)) {
+                throw new Exception("intent_null");
+            }
+
+            return ResponseEntity.ok(ResponseIntents.builder()
+                    .intent(intents.get(0))
+                    .build());
         } catch (Exception e) {
-            return ResponseEntity.ok(intentService.returnException(e.toString(), ResponseIntents.class));
+            return ResponseEntity.ok(intentService.returnException(e.getMessage(), ResponseIntents.class));
         }
     }
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @PostMapping("/update")
-    public ResponseEntity<?> update(@RequestBody CommandIntent command) {
+    public ResponseEntity<?> update(@RequestBody CommandIntentUpdate command) {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
                 throw new Exception("auth_invalid");
 
             command.setUserId(userEntity.getId());
-            ResponseIntents responseIntents = intentService.update(command);
-            return ResponseEntity.ok(responseIntents);
+            return ResponseEntity.ok(ResponseIntents.builder()
+                    .intent(intentService.update(command))
+                    .build());
         } catch (Exception e) {
-            return ResponseEntity.ok(intentService.returnException(e.toString(), ResponseIntents.class));
+            return ResponseEntity.ok(intentService.returnException(e.getMessage(), ResponseIntents.class));
         }
     }
 
@@ -155,30 +154,36 @@ public class IntentAPI {
             if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
                 throw new Exception("auth_invalid");
 
-            ResponseIntents responseIntents = intentService.deleteIntent(command.getId(), userEntity.getId());
-            return ResponseEntity.ok(responseIntents);
+            if (BooleanUtils.isFalse(intentService.delete(CommandGetListIntent.builder()
+                    .userId(userEntity.getId())
+                    .ids(List.of(command.getId()))
+                    .build()))) {
+                throw new Exception(ExceptionConstant.error_occur);
+            }
+
+            return ResponseEntity.ok(ResponseIntents.builder().build());
         } catch (Exception e) {
-            return ResponseEntity.ok(intentService.returnException(e.toString(), ResponseIntents.class));
+            return ResponseEntity.ok(intentService.returnException(e.getMessage(), ResponseIntents.class));
         }
     }
 
 
-    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-    @PostMapping("/add_patterns")
-    public ResponseEntity<ResponseIntents> addPatterns(@RequestBody CommandIntentAddPattern command) {
-        try {
-            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
-                throw new Exception("auth_invalid");
-
-            if (StringUtils.isBlank(command.getIntentId())) throw new Exception(ExceptionConstant.missing_param);
-
-            command.setUserId(userEntity.getId());
-            ResponseIntents responseIntents = intentService.addPatterns(command);
-            return ResponseEntity.ok(responseIntents);
-        } catch (Exception e) {
-            return ResponseEntity.ok(intentService.returnException(e.toString(), ResponseIntents.class));
-        }
-    }
+//    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+//    @PostMapping("/add_patterns")
+//    public ResponseEntity<ResponseIntents> addPatterns(@RequestBody CommandIntentAddPattern command) {
+//        try {
+//            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+//            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
+//                throw new Exception("auth_invalid");
+//
+//            if (StringUtils.isBlank(command.getIntentId())) throw new Exception(ExceptionConstant.missing_param);
+//
+//            command.setUserId(userEntity.getId());
+//            ResponseIntents responseIntents = intentService.addPatterns(command);
+//            return ResponseEntity.ok(responseIntents);
+//        } catch (Exception e) {
+//            return ResponseEntity.ok(intentService.returnException(e.toString(), ResponseIntents.class));
+//        }
+//    }
 
 }

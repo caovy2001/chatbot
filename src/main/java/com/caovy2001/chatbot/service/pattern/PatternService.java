@@ -2,15 +2,14 @@ package com.caovy2001.chatbot.service.pattern;
 
 import com.caovy2001.chatbot.constant.Constant;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
-import com.caovy2001.chatbot.entity.EntityEntity;
-import com.caovy2001.chatbot.entity.EntityTypeEntity;
-import com.caovy2001.chatbot.entity.IntentEntity;
-import com.caovy2001.chatbot.entity.PatternEntity;
+import com.caovy2001.chatbot.entity.*;
 import com.caovy2001.chatbot.model.DateFilter;
-import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.repository.PatternRepository;
 import com.caovy2001.chatbot.service.BaseService;
+import com.caovy2001.chatbot.service.common.command.CommandAddBase;
+import com.caovy2001.chatbot.service.common.command.CommandAddManyBase;
 import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
+import com.caovy2001.chatbot.service.common.command.CommandUpdateBase;
 import com.caovy2001.chatbot.service.entity.IEntityService;
 import com.caovy2001.chatbot.service.entity.command.CommandAddEntity;
 import com.caovy2001.chatbot.service.entity.command.CommandEntityAddMany;
@@ -20,7 +19,6 @@ import com.caovy2001.chatbot.service.entity_type.command.CommandEntityTypeAddMan
 import com.caovy2001.chatbot.service.intent.IIntentService;
 import com.caovy2001.chatbot.service.intent.command.CommandGetListIntent;
 import com.caovy2001.chatbot.service.intent.command.CommandIntentAddMany;
-import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 import com.caovy2001.chatbot.service.jedis.IJedisService;
 import com.caovy2001.chatbot.service.pattern.command.*;
 import com.caovy2001.chatbot.service.pattern.response.ResponseExportExcelStatus;
@@ -42,7 +40,6 @@ import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -82,89 +79,161 @@ public class PatternService extends BaseService implements IPatternService {
     private KafkaTemplate<String, String> kafkaTemplate;
 
     @Override
-    public ResponsePatternAdd add(CommandPatternAdd command) throws Exception {
+    public <Entity extends BaseEntity, CommandAdd extends CommandAddBase> Entity add(CommandAdd commandAddBase) throws Exception {
+        CommandPatternAdd command = (CommandPatternAdd) commandAddBase;
         if (StringUtils.isAnyBlank(command.getUserId(), command.getContent(), command.getIntentId())) {
-            return returnException(ExceptionConstant.missing_param, ResponsePatternAdd.class);
+            throw new Exception(ExceptionConstant.missing_param);
         }
 
-        PatternEntity pattern = PatternEntity.builder()
-                .content(command.getContent())
-                .intentId(command.getIntentId())
+        String uuid = UUID.randomUUID().toString();
+
+        // set UUID của pattern cho list entity
+        if (command.getCommandEntityAddMany() != null &&
+                CollectionUtils.isNotEmpty(command.getCommandEntityAddMany().getEntities())) {
+            command.getCommandEntityAddMany().getEntities().forEach(entity -> entity.setPatternUuid(uuid));
+        }
+
+        CommandPatternAddMany commandPatternAddMany = CommandPatternAddMany.builder()
                 .userId(command.getUserId())
+                .patterns(List.of(PatternEntity.builder()
+                        .content(command.getContent())
+                        .intentId(command.getIntentId())
+                        .userId(command.getUserId())
+                        .uuid(uuid)
+                        .build()))
+                .commandEntityAddMany(command.getCommandEntityAddMany())
                 .build();
-        PatternEntity addedPattern = patternRepository.insert(pattern);
+
+        List<PatternEntity> addedPatterns = this.add(commandPatternAddMany);
+
+        if (CollectionUtils.isEmpty(addedPatterns)) {
+            throw new Exception("add_pattern_fail");
+        }
+
+        return (Entity) addedPatterns.get(0);
+    }
+
+    @Override
+    public <Entity extends BaseEntity, CommandAddMany extends CommandAddManyBase> List<Entity> add(CommandAddMany commandAddManyBase) throws Exception {
+        CommandPatternAddMany command = (CommandPatternAddMany) commandAddManyBase;
+
+        if (StringUtils.isBlank(command.getUserId()) || CollectionUtils.isEmpty(command.getPatterns())) {
+            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
+            return null;
+        }
+
+        List<PatternEntity> patternsToAdd = new ArrayList<>();
+        for (PatternEntity pattern : command.getPatterns()) {
+            if (StringUtils.isBlank(pattern.getUuid())) {
+                log.warn("[{}]: {}", new Exception().getStackTrace()[0], "pattern uuid null -> ignore to save");
+                continue;
+            }
+            pattern.setUserId(command.getUserId());
+            pattern.setCreatedDate(System.currentTimeMillis());
+            pattern.setLastCreatedDate(System.currentTimeMillis());
+            if (pattern.checkIsValid()) {
+                patternsToAdd.add(pattern);
+            }
+        }
+        List<PatternEntity> savedPatterns = patternRepository.saveAll(patternsToAdd);
+        if (CollectionUtils.isEmpty(savedPatterns)) {
+            throw new Exception("save_pattern_fail");
+        }
 
         // Index ES
-        this.indexES(CommandIndexingPatternES.builder()
-                .userId(command.getUserId())
-                .patterns(List.of(addedPattern))
-                .doSetUserId(false)
-                .build());
+        CompletableFuture.runAsync(() -> {
+            this.indexES(CommandIndexingPatternES.builder()
+                    .userId(command.getUserId())
+                    .patterns(savedPatterns)
+                    .doSetUserId(false)
+                    .build());
+        });
 
-        // Add entity of this pattern
-        if (CollectionUtils.isNotEmpty(command.getEntities())) {
+        if (command.getCommandEntityAddMany() == null ||
+                CollectionUtils.isEmpty(command.getCommandEntityAddMany().getEntities())) {
+            return (List<Entity>) savedPatterns;
+        }
+
+        // Save entities
+        Map<String, PatternEntity> patternByUuid = new HashMap<>();
+        savedPatterns.forEach(pattern -> patternByUuid.put(pattern.getUuid(), pattern));
+        if (command.getCommandEntityAddMany() != null &&
+                CollectionUtils.isNotEmpty(command.getCommandEntityAddMany().getEntities())) {
             CompletableFuture.runAsync(() -> {
                 try {
-                    this.addEntityForPattern(command.getEntities(), command.getUserId(), addedPattern.getId());
+                    for (EntityEntity entity : command.getCommandEntityAddMany().getEntities()) {
+                        if (StringUtils.isBlank(entity.getPatternUuid())) {
+                            log.warn("[{}]: {}", new Exception().getStackTrace()[0], "cannot find pattern_uuid -> ignore saving entity");
+                            continue;
+                        }
+                        if (BooleanUtils.isTrue(entity.checkIsValid())) {
+                            log.warn("[{}]: {}", new Exception().getStackTrace()[0], "entity invalid -> ignore saving entity");
+                            continue;
+                        }
+
+                        PatternEntity pattern = patternByUuid.get(entity.getPatternUuid());
+                        if (pattern == null) {
+                            log.warn("[{}]: {}", new Exception().getStackTrace()[0], "cannot find pattern having uuid -> ignore saving entity");
+                            continue;
+                        }
+                        entity.setPatternId(pattern.getId());
+                    }
+
+                    entityService.addMany(command.getCommandEntityAddMany());
                 } catch (Exception e) {
-                    log.error(e.getMessage());
+                    e.printStackTrace();
                 }
             });
         }
 
-        return ResponsePatternAdd.builder()
-                .id(addedPattern.getId())
-                .build();
-    }
-
-    private List<EntityEntity> addEntityForPattern(@NonNull List<CommandAddEntity> commandAddEntities, @NonNull String userId, @NonNull String patternId) {
-        if (CollectionUtils.isEmpty(commandAddEntities)) {
-            return null;
-        }
-        List<CommandAddEntity> commandAddEntitiesToAdd = new ArrayList<>();
-        for (CommandAddEntity commandAddEntity : commandAddEntities) {
-            commandAddEntitiesToAdd.add(CommandAddEntity.builder()
-                    .userId(userId)
-                    .patternId(patternId)
-                    .entityTypeId(commandAddEntity.getEntityTypeId())
-                    .value(commandAddEntity.getValue())
-                    .startPosition(commandAddEntity.getStartPosition())
-                    .endPosition(commandAddEntity.getEndPosition())
-                    .build());
-        }
-
-        return entityService.add(commandAddEntitiesToAdd);
+        return (List<Entity>) savedPatterns;
     }
 
     @Override
-    public ResponsePattern delete(CommandPatternDelete command) {
+    public <Entity extends BaseEntity, CommandUpdate extends CommandUpdateBase> Entity update(CommandUpdate commandUpdateBase) throws Exception {
+        CommandPatternUpdate command = (CommandPatternUpdate) commandUpdateBase;
+
         if (StringUtils.isAnyBlank(command.getId(), command.getUserId())) {
-            return returnException(ExceptionConstant.missing_param, ResponsePattern.class);
+            throw new Exception(ExceptionConstant.missing_param);
         }
 
-        PatternEntity pattern = patternRepository.findByIdAndUserId(command.getId(), command.getUserId());
-        if (pattern == null) {
-            return returnException("pattern_not_exist", ResponsePattern.class);
+        List<PatternEntity> patterns = this.getList(CommandGetListPattern.builder()
+                .id(command.getId())
+                .userId(command.getUserId())
+                .hasEntities(true)
+                .build(), PatternEntity.class);
+        if (CollectionUtils.isEmpty(patterns)) {
+            throw new Exception("pattern_not_exist");
         }
 
-        patternRepository.deleteById(command.getId());
+        PatternEntity pattern = patterns.get(0);
+        pattern.setContent(command.getContent());
+        PatternEntity updatedPattern = patternRepository.save(pattern);
 
-        if (BooleanUtils.isTrue(command.isDoDeleteEntities())) {
-            entityService.delete(CommandGetListEntity.builder()
+        // Xóa entity cũ
+        if (CollectionUtils.isNotEmpty(pattern.getEntities())) {
+            boolean removeEntities = entityService.delete(CommandGetListEntity.builder()
                     .userId(command.getUserId())
-                    .patternId(command.getId())
+                    .ids(pattern.getEntities().stream().map(EntityEntity::getId).toList())
                     .build());
+
+            if (BooleanUtils.isFalse(removeEntities)) {
+                throw new Exception("update_entities_fail");
+            }
         }
-        return ResponsePattern.builder()
-                .pattern(PatternEntity.builder()
-                        .id(command.getId())
-                        .userId(command.getUserId())
-                        .build())
-                .build();
+
+        // Thêm entities mới
+        if (CollectionUtils.isNotEmpty(command.getEntities())) {
+            updatedPattern.setEntities(this.addEntityForPattern(command.getEntities(), command.getUserId(), pattern.getId()));
+        }
+
+        return (Entity) updatedPattern;
     }
 
     @Override
-    public boolean delete(CommandGetListPattern command) {
+    public <CommandGetList extends CommandGetListBase> boolean delete(CommandGetList commandGetListBase) throws Exception {
+        CommandGetListPattern command = (CommandGetListPattern) commandGetListBase;
+
         if (StringUtils.isBlank(command.getUserId())) {
             log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
             return false;
@@ -197,148 +266,277 @@ public class PatternService extends BaseService implements IPatternService {
         return result;
     }
 
-    @Override
-    public ResponsePattern getByIntentId(String intentId, String userId) {
-        if (intentId == null) {
-            return returnException(ExceptionConstant.missing_param, ResponsePattern.class);
-        }
-        return ResponsePattern.builder().patterns(patternRepository.findByIntentIdInAndUserId(intentId, userId)).build();
-    }
+//    @Override
+//    public ResponsePatternAdd add(CommandPatternAdd command) throws Exception {
+//        if (StringUtils.isAnyBlank(command.getUserId(), command.getContent(), command.getIntentId())) {
+//            return returnException(ExceptionConstant.missing_param, ResponsePatternAdd.class);
+//        }
+//
+//        PatternEntity pattern = PatternEntity.builder()
+//                .content(command.getContent())
+//                .intentId(command.getIntentId())
+//                .userId(command.getUserId())
+//                .build();
+//        PatternEntity addedPattern = patternRepository.insert(pattern);
+//
+//        // Index ES
+//        this.indexES(CommandIndexingPatternES.builder()
+//                .userId(command.getUserId())
+//                .patterns(List.of(addedPattern))
+//                .doSetUserId(false)
+//                .build());
+//
+//        // Add entity of this pattern
+//        if (CollectionUtils.isNotEmpty(command.getEntities())) {
+//            CompletableFuture.runAsync(() -> {
+//                try {
+//                    this.addEntityForPattern(command.getEntities(), command.getUserId(), addedPattern.getId());
+//                } catch (Exception e) {
+//                    log.error(e.getMessage());
+//                }
+//            });
+//        }
+//
+//        return ResponsePatternAdd.builder()
+//                .id(addedPattern.getId())
+//                .build();
+//    }
 
-    @Override
-    @Deprecated
-    public List<PatternEntity> addMany(List<PatternEntity> patternsToAdd) {
-        return patternRepository.insert(patternsToAdd);
-    }
-
-    @Override
-    public List<PatternEntity> addMany(@NonNull CommandPatternAddMany command) {
-        if (StringUtils.isBlank(command.getUserId()) || CollectionUtils.isEmpty(command.getPatterns())) {
-            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
+    private List<EntityEntity> addEntityForPattern(@NonNull List<CommandAddEntity> commandAddEntities, @NonNull String userId, @NonNull String patternId) {
+        if (CollectionUtils.isEmpty(commandAddEntities)) {
             return null;
         }
-
-        command.getPatterns().forEach(patternEntity -> {
-            patternEntity.setUserId(command.getUserId());
-        });
-        return patternRepository.saveAll(command.getPatterns());
-    }
-
-    @Override
-    public ResponsePattern getById(String id, String userId) {
-        if (StringUtils.isAnyBlank(id, userId)) {
-            return returnException(ExceptionConstant.missing_param, ResponsePattern.class);
-        }
-
-        PatternEntity pattern = patternRepository.findByIdAndUserId(id, userId);
-        if (pattern == null) {
-            return returnException("pattern_not_exist", ResponsePattern.class);
-        }
-
-        return ResponsePattern.builder()
-                .pattern(pattern)
-                .entities(entityService.findByUserIdAndPatternId(userId, pattern.getId()))
-                .build();
-    }
-
-    @Override
-    public ResponsePattern getByUserId(String userId) {
-        if (StringUtils.isBlank(userId)) {
-            return returnException(ExceptionConstant.missing_param, ResponsePattern.class);
-        }
-
-        List<PatternEntity> patterns = patternRepository.findAllByUserId(userId);
-        if (CollectionUtils.isEmpty(patterns)) {
-            patterns = new ArrayList<>();
-        }
-
-        return ResponsePattern.builder()
-                .patterns(patterns)
-                .build();
-    }
-
-    @Override
-    public ResponsePattern update(CommandPatternUpdate command) throws Exception {
-        if (StringUtils.isAnyBlank(command.getId(), command.getUserId())) {
-            return returnException(ExceptionConstant.missing_param, ResponsePattern.class);
-        }
-
-        List<PatternEntity> patterns = this.getList(CommandGetListPattern.builder()
-                .id(command.getId())
-                .userId(command.getUserId())
-                .hasEntities(true)
-                .build(), PatternEntity.class);
-        if (CollectionUtils.isEmpty(patterns)) {
-            return returnException("pattern_not_exist", ResponsePattern.class);
-        }
-
-        PatternEntity pattern = patterns.get(0);
-        pattern.setContent(command.getContent());
-        PatternEntity updatedPattern = patternRepository.save(pattern);
-
-        // Xóa entity cũ
-        if (CollectionUtils.isNotEmpty(pattern.getEntities())) {
-            boolean removeEntities = entityService.delete(CommandGetListEntity.builder()
-                    .userId(command.getUserId())
-                    .ids(pattern.getEntities().stream().map(EntityEntity::getId).toList())
+        List<CommandAddEntity> commandAddEntitiesToAdd = new ArrayList<>();
+        for (CommandAddEntity commandAddEntity : commandAddEntities) {
+            commandAddEntitiesToAdd.add(CommandAddEntity.builder()
+                    .userId(userId)
+                    .patternId(patternId)
+                    .entityTypeId(commandAddEntity.getEntityTypeId())
+                    .value(commandAddEntity.getValue())
+                    .startPosition(commandAddEntity.getStartPosition())
+                    .endPosition(commandAddEntity.getEndPosition())
                     .build());
-
-            if (BooleanUtils.isFalse(removeEntities)) {
-                throw new Exception("update_entities_fail");
-            }
         }
 
-        // Thêm entities mới
-        if (CollectionUtils.isNotEmpty(command.getEntities())) {
-            updatedPattern.setEntities(this.addEntityForPattern(command.getEntities(), command.getUserId(), pattern.getId()));
-        }
-
-        return ResponsePattern.builder()
-                .pattern(updatedPattern)
-                .build();
+        return entityService.add(commandAddEntitiesToAdd);
     }
 
-    @Override
-    @Deprecated
-    public Paginated<PatternEntity> getPagination(String userId, int page, int size) {
-        if (StringUtils.isBlank(userId)) {
-            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
-        }
+//    @Override
+//    public ResponsePattern delete(CommandPatternDelete command) {
+//        if (StringUtils.isAnyBlank(command.getId(), command.getUserId())) {
+//            return returnException(ExceptionConstant.missing_param, ResponsePattern.class);
+//        }
+//
+//        PatternEntity pattern = patternRepository.findByIdAndUserId(command.getId(), command.getUserId());
+//        if (pattern == null) {
+//            return returnException("pattern_not_exist", ResponsePattern.class);
+//        }
+//
+//        patternRepository.deleteById(command.getId());
+//
+//        if (BooleanUtils.isTrue(command.isDoDeleteEntities())) {
+//            entityService.delete(CommandGetListEntity.builder()
+//                    .userId(command.getUserId())
+//                    .patternId(command.getId())
+//                    .build());
+//        }
+//        return ResponsePattern.builder()
+//                .pattern(PatternEntity.builder()
+//                        .id(command.getId())
+//                        .userId(command.getUserId())
+//                        .build())
+//                .build();
+//    }
 
-        long total = patternRepository.countByUserId(userId);
-        if (total == 0L) {
-            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
-        }
+//    @Override
+//    public boolean delete(CommandGetListPattern command) {
+//        if (StringUtils.isBlank(command.getUserId())) {
+//            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
+//            return false;
+//        }
+//
+//        // Quyết định những trường trả về
+//        command.setReturnFields(List.of("id"));
+//
+//        List<PatternEntity> patterns = this.getList(command, PatternEntity.class);
+//        if (CollectionUtils.isEmpty(patterns)) {
+//            return false;
+//        }
+//
+//        List<String> patternIds = patterns.stream().map(PatternEntity::getId).toList();
+//        if (CollectionUtils.isEmpty(patternIds)) {
+//            return false;
+//        }
+//
+//        boolean result = patternRepository.deleteAllByIdIn(patternIds) > 0;
+//        if (BooleanUtils.isFalse(result)) {
+//            return false;
+//        }
+//
+//        if (BooleanUtils.isTrue(command.isHasEntities())) {
+//            entityService.delete(CommandGetListEntity.builder()
+//                    .userId(command.getUserId())
+//                    .patternId(command.getId())
+//                    .build());
+//        }
+//        return result;
+//    }
 
-        List<PatternEntity> patterns = patternRepository.findByUserId(userId, PageRequest.of(page, size));
-        if (!CollectionUtils.isEmpty(patterns)) {
-            for (PatternEntity pattern : patterns) {
-                if (StringUtils.isNotBlank(pattern.getIntentId())) {
-                    ResponseIntents responseIntents = intentService.getById(pattern.getIntentId(), pattern.getUserId());
-                    if (responseIntents != null && responseIntents.getIntent() != null) {
-                        pattern.setIntentName(responseIntents.getIntent().getName());
-                    }
-                }
-            }
-        }
-        return new Paginated<>(patterns, page, size, total);
-    }
+//    @Override
+//    public ResponsePattern getByIntentId(String intentId, String userId) {
+//        if (intentId == null) {
+//            return returnException(ExceptionConstant.missing_param, ResponsePattern.class);
+//        }
+//        return ResponsePattern.builder().patterns(patternRepository.findByIntentIdInAndUserId(intentId, userId)).build();
+//    }
 
-    @Override
-    @Deprecated
-    public Paginated<PatternEntity> getPaginationByIntentId(String intentId, int page, int size) {
-        if (StringUtils.isBlank(intentId)) {
-            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
-        }
+//    @Override
+//    @Deprecated
+//    public List<PatternEntity> addMany(List<PatternEntity> patternsToAdd) {
+//        return patternRepository.insert(patternsToAdd);
+//    }
 
-        long total = patternRepository.countByIntentId(intentId);
-        if (total == 0L) {
-            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
-        }
+//    @Override
+//    public List<PatternEntity> addMany(@NonNull CommandPatternAddMany command) throws Exception {
+//        if (StringUtils.isBlank(command.getUserId()) || CollectionUtils.isEmpty(command.getPatterns())) {
+//            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
+//            return null;
+//        }
+//
+//        command.getPatterns().forEach(patternEntity -> {
+//            patternEntity.setUserId(command.getUserId());
+//        });
+//
+//        List<PatternEntity> savedPatterns = patternRepository.saveAll(command.getPatterns());
+//
+//        // Index ES
+//        this.indexES(CommandIndexingPatternES.builder()
+//                .userId(command.getUserId())
+//                .patterns(savedPatterns)
+//                .doSetUserId(false)
+//                .build());
+//
+//        return savedPatterns;
+//    }
 
-        List<PatternEntity> patterns = patternRepository.findByIntentId(intentId, PageRequest.of(page, size));
-        return new Paginated<>(patterns, page, size, total);
-    }
+//    @Override
+//    public ResponsePattern getById(String id, String userId) {
+//        if (StringUtils.isAnyBlank(id, userId)) {
+//            return returnException(ExceptionConstant.missing_param, ResponsePattern.class);
+//        }
+//
+//        PatternEntity pattern = patternRepository.findByIdAndUserId(id, userId);
+//        if (pattern == null) {
+//            return returnException("pattern_not_exist", ResponsePattern.class);
+//        }
+//
+//        return ResponsePattern.builder()
+//                .pattern(pattern)
+//                .entities(entityService.findByUserIdAndPatternId(userId, pattern.getId()))
+//                .build();
+//    }
+
+//    @Override
+//    public ResponsePattern getByUserId(String userId) {
+//        if (StringUtils.isBlank(userId)) {
+//            return returnException(ExceptionConstant.missing_param, ResponsePattern.class);
+//        }
+//
+//        List<PatternEntity> patterns = patternRepository.findAllByUserId(userId);
+//        if (CollectionUtils.isEmpty(patterns)) {
+//            patterns = new ArrayList<>();
+//        }
+//
+//        return ResponsePattern.builder()
+//                .patterns(patterns)
+//                .build();
+//    }
+
+//    @Override
+//    public ResponsePattern update(CommandPatternUpdate command) throws Exception {
+//        if (StringUtils.isAnyBlank(command.getId(), command.getUserId())) {
+//            return returnException(ExceptionConstant.missing_param, ResponsePattern.class);
+//        }
+//
+//        List<PatternEntity> patterns = this.getList(CommandGetListPattern.builder()
+//                .id(command.getId())
+//                .userId(command.getUserId())
+//                .hasEntities(true)
+//                .build(), PatternEntity.class);
+//        if (CollectionUtils.isEmpty(patterns)) {
+//            return returnException("pattern_not_exist", ResponsePattern.class);
+//        }
+//
+//        PatternEntity pattern = patterns.get(0);
+//        pattern.setContent(command.getContent());
+//        PatternEntity updatedPattern = patternRepository.save(pattern);
+//
+//        // Xóa entity cũ
+//        if (CollectionUtils.isNotEmpty(pattern.getEntities())) {
+//            boolean removeEntities = entityService.delete(CommandGetListEntity.builder()
+//                    .userId(command.getUserId())
+//                    .ids(pattern.getEntities().stream().map(EntityEntity::getId).toList())
+//                    .build());
+//
+//            if (BooleanUtils.isFalse(removeEntities)) {
+//                throw new Exception("update_entities_fail");
+//            }
+//        }
+//
+//        // Thêm entities mới
+//        if (CollectionUtils.isNotEmpty(command.getEntities())) {
+//            updatedPattern.setEntities(this.addEntityForPattern(command.getEntities(), command.getUserId(), pattern.getId()));
+//        }
+//
+//        return ResponsePattern.builder()
+//                .pattern(updatedPattern)
+//                .build();
+//    }
+
+//    @Override
+//    @Deprecated
+//    public Paginated<PatternEntity> getPagination(String userId, int page, int size) {
+//        if (StringUtils.isBlank(userId)) {
+//            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
+//        }
+//
+//        long total = patternRepository.countByUserId(userId);
+//        if (total == 0L) {
+//            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
+//        }
+//
+//        List<PatternEntity> patterns = patternRepository.findByUserId(userId, PageRequest.of(page, size));
+//        if (!CollectionUtils.isEmpty(patterns)) {
+//            for (PatternEntity pattern : patterns) {
+//                if (StringUtils.isNotBlank(pattern.getIntentId())) {
+//                    List<IntentEntity> intents = intentService.getList(CommandGetListIntent.builder()
+//                            .userId(pattern.getUserId())
+//                            .ids(List.of(pattern.getIntentId()))
+//                            .build(), IntentEntity.class);
+//                    if (CollectionUtils.isNotEmpty(intents)) {
+//                        pattern.setIntentName(intents.get(0).getName());
+//                    }
+//                }
+//            }
+//        }
+//        return new Paginated<>(patterns, page, size, total);
+//    }
+
+//    @Override
+//    @Deprecated
+//    public Paginated<PatternEntity> getPaginationByIntentId(String intentId, int page, int size) {
+//        if (StringUtils.isBlank(intentId)) {
+//            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
+//        }
+//
+//        long total = patternRepository.countByIntentId(intentId);
+//        if (total == 0L) {
+//            return new Paginated<>(new ArrayList<>(), 0, 0, 0);
+//        }
+//
+//        List<PatternEntity> patterns = patternRepository.findByIntentId(intentId, PageRequest.of(page, size));
+//        return new Paginated<>(patterns, page, size, total);
+//    }
 
     @Override
     public void importFromFile(CommandImportPatternsFromFile command) throws Exception {
@@ -545,7 +743,7 @@ public class PatternService extends BaseService implements IPatternService {
 
                 // Lấy intent từ excel
                 intentEntity.setName(currentRow.getCell(1).getStringCellValue().trim());
-                intentEntity.setCode(ChatbotStringUtils.stripAccents(currentRow.getCell(1).getStringCellValue().trim()).replace(" ", "_").toLowerCase());
+                intentEntity.setCode(ChatbotStringUtils.stripAccents(currentRow.getCell(1).getStringCellValue().trim()).replace(" ", "_"));
                 intentEntity.setUserId(command.getUserId());
                 IntentEntity existIntent = intentEntities.stream().filter(intent -> intent.getCode().equals(intentEntity.getCode())).findFirst().orElse(null);
                 if (existIntent == null) {
@@ -778,7 +976,7 @@ public class PatternService extends BaseService implements IPatternService {
                     .size(sizeOfIntentsPerTime)
                     .checkPageAndSize(true)
                     .build();
-            List<IntentEntity> intents = intentService.getList(commandGetListIntent);
+            List<IntentEntity> intents = intentService.getList(commandGetListIntent, IntentEntity.class);
             if (CollectionUtils.isEmpty(intents)) {
                 break;
             }
@@ -879,24 +1077,79 @@ public class PatternService extends BaseService implements IPatternService {
         }
     }
 
-    @Override
-    public List<PatternEntity> add(CommandPatternAddMany command) {
-        if (StringUtils.isBlank(command.getUserId()) || CollectionUtils.isEmpty(command.getPatterns())) {
-            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
-            return null;
-        }
-
-        List<PatternEntity> patternsToAdd = new ArrayList<>();
-        for (PatternEntity pattern: command.getPatterns()) {
-            pattern.setUserId(command.getUserId());
-            pattern.setCreatedDate(System.currentTimeMillis());
-            pattern.setLastCreatedDate(System.currentTimeMillis());
-            if (pattern.isValid()) {
-                patternsToAdd.add(pattern);
-            }
-        }
-        return patternRepository.saveAll(patternsToAdd);
-    }
+//    @Override
+//    public List<PatternEntity> add(CommandPatternAddMany command) throws Exception {
+//        if (StringUtils.isBlank(command.getUserId()) || CollectionUtils.isEmpty(command.getPatterns())) {
+//            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
+//            return null;
+//        }
+//
+//        List<PatternEntity> patternsToAdd = new ArrayList<>();
+//        for (PatternEntity pattern : command.getPatterns()) {
+//            if (StringUtils.isBlank(pattern.getUuid())) {
+//                log.warn("[{}]: {}", new Exception().getStackTrace()[0], "pattern uuid null -> ignore to save");
+//                continue;
+//            }
+//            pattern.setUserId(command.getUserId());
+//            pattern.setCreatedDate(System.currentTimeMillis());
+//            pattern.setLastCreatedDate(System.currentTimeMillis());
+//            if (pattern.checkIsValid()) {
+//                patternsToAdd.add(pattern);
+//            }
+//        }
+//        List<PatternEntity> savedPatterns = patternRepository.saveAll(patternsToAdd);
+//        if (CollectionUtils.isEmpty(savedPatterns)) {
+//            throw new Exception("save_pattern_fail");
+//        }
+//
+//        // Index ES
+//        CompletableFuture.runAsync(() -> {
+//            this.indexES(CommandIndexingPatternES.builder()
+//                    .userId(command.getUserId())
+//                    .patterns(savedPatterns)
+//                    .doSetUserId(false)
+//                    .build());
+//        });
+//
+//        if (command.getCommandEntityAddMany() == null ||
+//                CollectionUtils.isEmpty(command.getCommandEntityAddMany().getEntities())) {
+//            return savedPatterns;
+//        }
+//
+//        // Save entities
+//        Map<String, PatternEntity> patternByUuid = new HashMap<>();
+//        savedPatterns.forEach(pattern -> patternByUuid.put(pattern.getUuid(), pattern));
+//        if (command.getCommandEntityAddMany() != null &&
+//                CollectionUtils.isNotEmpty(command.getCommandEntityAddMany().getEntities())) {
+//            CompletableFuture.runAsync(() -> {
+//                try {
+//                    for (EntityEntity entity : command.getCommandEntityAddMany().getEntities()) {
+//                        if (StringUtils.isBlank(entity.getPatternUuid())) {
+//                            log.warn("[{}]: {}", new Exception().getStackTrace()[0], "cannot find pattern_uuid -> ignore saving entity");
+//                            continue;
+//                        }
+//                        if (BooleanUtils.isTrue(entity.checkIsValid())) {
+//                            log.warn("[{}]: {}", new Exception().getStackTrace()[0], "entity invalid -> ignore saving entity");
+//                            continue;
+//                        }
+//
+//                        PatternEntity pattern = patternByUuid.get(entity.getPatternUuid());
+//                        if (pattern == null) {
+//                            log.warn("[{}]: {}", new Exception().getStackTrace()[0], "cannot find pattern having uuid -> ignore saving entity");
+//                            continue;
+//                        }
+//                        entity.setPatternId(pattern.getId());
+//                    }
+//
+//                    entityService.addMany(command.getCommandEntityAddMany());
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//            });
+//        }
+//
+//        return savedPatterns;
+//    }
 
     /**
      * Hàm này chỉ được dùng cho hàm importFromFile, không được dùng hàm này ở những hàm khác
@@ -912,6 +1165,7 @@ public class PatternService extends BaseService implements IPatternService {
         CommandIntentAddMany commandIntentAddMany = CommandIntentAddMany.builder()
                 .userId(userId)
                 .intents(intentEntities)
+                .returnSameCodeIntent(true)
                 .build();
         List<IntentEntity> savedIntents = null;
         try {
@@ -946,7 +1200,12 @@ public class PatternService extends BaseService implements IPatternService {
                 .userId(userId)
                 .patterns(patternEntities)
                 .build();
-        List<PatternEntity> savedPatterns = this.addMany(commandPatternAddMany);
+        List<PatternEntity> savedPatterns = null;
+        try {
+            savedPatterns = this.add(commandPatternAddMany);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         if (CollectionUtils.isEmpty(savedPatterns)) {
             response.setNumOfFailed(response.getNumOfFailed() + patternEntities.size());
             return;
@@ -1038,6 +1297,10 @@ public class PatternService extends BaseService implements IPatternService {
             andCriteriaList.add(Criteria.where("intent_id").is(command.getIntentId()));
         }
 
+        if (CollectionUtils.isNotEmpty(command.getIntentIds())) {
+            andCriteriaList.add(Criteria.where("intent_id").in(command.getIntentIds()));
+        }
+
         if (CollectionUtils.isNotEmpty(command.getDateFilters())) {
             for (DateFilter dateFilter : command.getDateFilters()) {
                 if (dateFilter.getFromDate() != null &&
@@ -1067,7 +1330,7 @@ public class PatternService extends BaseService implements IPatternService {
     }
 
     @Override
-    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+    protected <Entity extends BaseEntity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
         if (CollectionUtils.isEmpty(entitiesBase)) return;
         List<PatternEntity> patterns = (List<PatternEntity>) entitiesBase;
         CommandGetListPattern command = (CommandGetListPattern) commandGetListBase;
@@ -1083,7 +1346,7 @@ public class PatternService extends BaseService implements IPatternService {
             List<IntentEntity> intents = intentService.getList(CommandGetListIntent.builder()
                     .userId(command.getUserId())
                     .ids(intentIds.stream().toList())
-                    .build());
+                    .build(), IntentEntity.class);
             if (CollectionUtils.isNotEmpty(intents)) {
                 intents.forEach(i -> {
                     intentsById.put(i.getId(), i);

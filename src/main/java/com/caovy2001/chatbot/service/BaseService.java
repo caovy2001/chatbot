@@ -3,6 +3,7 @@ package com.caovy2001.chatbot.service;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.BaseEntity;
 import com.caovy2001.chatbot.model.Paginated;
+import com.caovy2001.chatbot.service.common.command.CommandAddManyBase;
 import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NonNull;
@@ -74,7 +75,7 @@ public abstract class BaseService implements IBaseService {
     }
 
     @Override
-    public <T> List<T> getList(CommandGetListBase command, Class<T> entityType) {
+    public <T extends BaseEntity> List<T> getList(CommandGetListBase command, Class<T> entityType) {
         if (StringUtils.isBlank(command.getUserId())) {
             log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
             return null;
@@ -111,5 +112,7 @@ public abstract class BaseService implements IBaseService {
 
     protected abstract <T extends CommandGetListBase> Query buildQueryGetList(@NonNull T commandGetListBase);
 
-    protected abstract <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase);
+    protected abstract <Entity extends BaseEntity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase);
+
+//    public abstract <Entity extends BaseEntity, CommandAddMany extends CommandAddManyBase> List<Entity> add(CommandAddMany command) throws Exception;
 }

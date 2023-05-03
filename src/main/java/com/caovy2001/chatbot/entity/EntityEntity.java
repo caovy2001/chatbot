@@ -25,7 +25,7 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Slf4j
 @Document("entity")
-public class EntityEntity extends BaseEntity{
+public class EntityEntity extends BaseEntity {
     @Id
     private String id;
 
@@ -167,6 +167,19 @@ public class EntityEntity extends BaseEntity{
         return this.entityType;
     }
     //endregion
+
+    public boolean checkIsValid() {
+        if (StringUtils.isAnyBlank(this.userId, this.value, this.getPatternId(), this.entityTypeId) ||
+                this.startPosition < 0 ||
+                this.endPosition < 0 ||
+                this.startPosition < this.endPosition ||
+                this.createdDate == 0 ||
+                this.lastUpdatedDate == 0) {
+            return false;
+        }
+
+        return true;
+    }
 
     //endregion
 }

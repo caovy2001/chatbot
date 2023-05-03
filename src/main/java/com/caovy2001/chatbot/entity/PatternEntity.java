@@ -52,8 +52,8 @@ public class PatternEntity extends BaseEntity {
     @Transient
     private List<EntityEntity> entities;
 
-    public boolean isValid() {
-        if (StringUtils.isAnyBlank(this.userId, this.content, this.intentId, this.intentCode) ||
+    public boolean checkIsValid() {
+        if (StringUtils.isAnyBlank(this.userId, this.content, this.intentId) ||
                 this.createdDate == 0 ||
                 this.lastCreatedDate == 0) {
             return false;

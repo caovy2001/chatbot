@@ -18,6 +18,7 @@ public class CommandGetListPattern extends CommandGetListBase {
     private String id;
     private List<String> ids;
     private String intentId;
+    private List<String> intentIds;
     private String keyword;
     private int size = 0;
     private int page = 0;

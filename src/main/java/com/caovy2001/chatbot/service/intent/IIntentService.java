@@ -1,36 +1,26 @@
 package com.caovy2001.chatbot.service.intent;
 
+import com.caovy2001.chatbot.entity.BaseEntity;
 import com.caovy2001.chatbot.entity.IntentEntity;
 import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.service.IBaseService;
+import com.caovy2001.chatbot.service.common.command.CommandAddBase;
+import com.caovy2001.chatbot.service.common.command.CommandAddManyBase;
+import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
+import com.caovy2001.chatbot.service.common.command.CommandUpdateBase;
 import com.caovy2001.chatbot.service.intent.command.*;
-import com.caovy2001.chatbot.service.intent.response.ResponseIntentAdd;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 
 import java.util.List;
 
 public interface IIntentService extends IBaseService {
-//    ResponseIntentAdd add(CommandIntent command);
-    IntentEntity add(CommandIntentAdd command) throws Exception;
-    List<IntentEntity> add(CommandIntentAddMany command) throws Exception;
+    <Entity extends BaseEntity, CommandAdd extends CommandAddBase> Entity add(CommandAdd commandAddBase) throws Exception;
 
-//    ResponseIntentAdd addMany(CommandIntentAddMany command);
+    <Entity extends BaseEntity, CommandAddMany extends CommandAddManyBase> List<Entity> add(CommandAddMany commandAddManyBase) throws Exception;
 
-    ResponseIntents getByUserId(String userId);
+    <Entity extends BaseEntity, CommandUpdate extends CommandUpdateBase> Entity update(CommandUpdate commandUpdateBase) throws Exception;
 
-    ResponseIntents getById(String id, String userId);
+    <CommandGetList extends CommandGetListBase> boolean delete(CommandGetList commandGetListBase) throws Exception;
 
-    ResponseIntents deleteIntent(String id, String userId);
-
-    ResponseIntents updateName(CommandIntent command, String userId);
-
-    ResponseIntents update(CommandIntent command);
-
-    ResponseIntents addPatterns(CommandIntentAddPattern command);
-
-    Paginated<IntentEntity> getPaginationByUserId(String userId, int page, int size);
-    Paginated<IntentEntity> getPagination(CommandGetListIntent command);
-
-//    List<IntentEntity> addManyReturnList(CommandIntentAddMany commandIntentAddMany) throws Exception;
-    List<IntentEntity> getList(CommandGetListIntent command);
+//    ResponseIntents addPatterns(CommandIntentAddPattern command);
 }

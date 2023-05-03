@@ -15,4 +15,6 @@ public interface IntentRepository extends MongoRepository<IntentEntity, String> 
     List<IntentEntity> findByUserId(String userId, PageRequest pageRequest);
 
     long countByUserId(String userId);
+
+    long deleteAllByIdIn(List<String> intentIds);
 }

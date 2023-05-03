@@ -1,6 +1,7 @@
 package com.caovy2001.chatbot.service.user;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
+import com.caovy2001.chatbot.entity.BaseEntity;
 import com.caovy2001.chatbot.entity.UserEntity;
 import com.caovy2001.chatbot.entity.es.UserEntityES;
 import com.caovy2001.chatbot.repository.UserRepository;
@@ -211,7 +212,7 @@ public class UserService extends BaseService implements IUserService {
     }
 
     @Override
-    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+    protected <Entity extends BaseEntity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
 
     }
 }

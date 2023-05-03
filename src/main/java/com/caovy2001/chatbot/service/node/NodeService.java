@@ -1,6 +1,7 @@
 package com.caovy2001.chatbot.service.node;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
+import com.caovy2001.chatbot.entity.BaseEntity;
 import com.caovy2001.chatbot.entity.NodeEntity;
 import com.caovy2001.chatbot.repository.NodeRepository;
 import com.caovy2001.chatbot.service.BaseService;
@@ -157,7 +158,7 @@ public class NodeService extends BaseService implements INodeService{
     }
 
     @Override
-    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+    protected <Entity extends BaseEntity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
 
     }
 }

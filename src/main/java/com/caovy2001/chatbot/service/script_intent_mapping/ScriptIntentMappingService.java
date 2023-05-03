@@ -1,6 +1,7 @@
 package com.caovy2001.chatbot.service.script_intent_mapping;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
+import com.caovy2001.chatbot.entity.BaseEntity;
 import com.caovy2001.chatbot.entity.ScriptIntentMappingEntity;
 import com.caovy2001.chatbot.repository.ScriptIntentMappingRepository;
 import com.caovy2001.chatbot.service.BaseService;
@@ -113,7 +114,7 @@ public class ScriptIntentMappingService extends BaseService implements IScriptIn
     }
 
     @Override
-    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+    protected <Entity extends BaseEntity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
 
     }
 }

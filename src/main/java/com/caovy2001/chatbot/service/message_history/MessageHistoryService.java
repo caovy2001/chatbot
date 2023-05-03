@@ -1,6 +1,7 @@
 package com.caovy2001.chatbot.service.message_history;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
+import com.caovy2001.chatbot.entity.BaseEntity;
 import com.caovy2001.chatbot.entity.EntityEntity;
 import com.caovy2001.chatbot.entity.MessageHistoryEntity;
 import com.caovy2001.chatbot.entity.MessageHistoryGroupEntity;
@@ -257,7 +258,7 @@ public class MessageHistoryService extends BaseService implements IMessageHistor
     }
 
     @Override
-    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+    protected <Entity extends BaseEntity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
 
     }
 }

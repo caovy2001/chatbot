@@ -1,6 +1,7 @@
 package com.caovy2001.chatbot.service.training_history;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
+import com.caovy2001.chatbot.entity.BaseEntity;
 import com.caovy2001.chatbot.entity.TrainingHistoryEntity;
 import com.caovy2001.chatbot.repository.TrainingHistoryRepository;
 import com.caovy2001.chatbot.service.BaseService;
@@ -70,7 +71,7 @@ public class TrainingHistoryService extends BaseService implements ITrainingHist
     }
 
     @Override
-    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+    protected <Entity extends BaseEntity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
 
     }
 }

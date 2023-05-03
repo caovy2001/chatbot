@@ -1,6 +1,7 @@
 package com.caovy2001.chatbot.service.intent.es;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
+import com.caovy2001.chatbot.entity.BaseEntity;
 import com.caovy2001.chatbot.entity.IntentEntity;
 import com.caovy2001.chatbot.entity.es.IntentEntityES;
 import com.caovy2001.chatbot.repository.es.IntentRepositoryES;
@@ -64,7 +65,7 @@ public class IntentServiceES extends BaseService implements IIntentServiceES {
     }
 
     @Override
-    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+    protected <Entity extends BaseEntity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
 
     }
 }

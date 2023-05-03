@@ -1,6 +1,7 @@
 package com.caovy2001.chatbot.service.intent.command;
 
 import com.caovy2001.chatbot.model.DateFilter;
+import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class CommandGetListIntent {
+public class CommandGetListIntent extends CommandGetListBase {
     private int page;
     private int size;
     private List<String> ids;

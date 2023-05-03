@@ -5,6 +5,7 @@ import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.PatternEntity;
 import com.caovy2001.chatbot.entity.UserEntity;
 import com.caovy2001.chatbot.model.Paginated;
+import com.caovy2001.chatbot.service.entity.command.CommandEntityAddMany;
 import com.caovy2001.chatbot.service.jedis.IJedisService;
 import com.caovy2001.chatbot.service.pattern.IPatternService;
 import com.caovy2001.chatbot.service.pattern.command.*;
@@ -13,6 +14,7 @@ import com.caovy2001.chatbot.service.pattern.response.ResponsePatternAdd;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,10 +55,22 @@ public class PatternAPI {
                 throw new Exception("auth_invalid");
 
             command.setUserId(userEntity.getId());
-            ResponsePatternAdd responsePatternAdd = patternService.add(command);
-            return ResponseEntity.ok(responsePatternAdd);
+            if (CollectionUtils.isNotEmpty(command.getEntities())) {
+                command.setCommandEntityAddMany(CommandEntityAddMany.builder()
+                        .userId(command.getUserId())
+                        .entities(command.getEntities())
+                        .build());
+            }
+            PatternEntity pattern = patternService.add(command);
+            if (pattern == null) {
+                throw new Exception(ExceptionConstant.error_occur);
+            }
+
+            return ResponseEntity.ok(ResponsePatternAdd.builder()
+                    .id(pattern.getId())
+                    .build());
         } catch (Exception e) {
-            return ResponseEntity.ok(patternService.returnException(e.toString(), ResponsePatternAdd.class));
+            return ResponseEntity.ok(patternService.returnException(e.getMessage(), ResponsePatternAdd.class));
         }
     }
 
@@ -73,42 +87,43 @@ public class PatternAPI {
             }
 
             command.setUserId(userEntity.getId());
-            ResponsePattern responsePattern = patternService.update(command);
-            return ResponseEntity.ok(responsePattern);
+            return ResponseEntity.ok(ResponsePattern.builder()
+                            .pattern(patternService.update(command))
+                    .build());
         } catch (Exception e) {
             return ResponseEntity.ok(patternService.returnException(e.toString(), ResponsePattern.class));
         }
     }
 
-    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-    @GetMapping("/get_all/by_intent_id/{intentId}")
-    public ResponseEntity<ResponsePattern> getByIntentId(@PathVariable String intentId) {
-        try {
-            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
-                throw new Exception("auth_invalid");
+//    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+//    @GetMapping("/get_all/by_intent_id/{intentId}")
+//    public ResponseEntity<ResponsePattern> getByIntentId(@PathVariable String intentId) {
+//        try {
+//            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+//            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
+//                throw new Exception("auth_invalid");
+//
+//            ResponsePattern patterns = patternService.getByIntentId(intentId, userEntity.getId());
+//            return ResponseEntity.ok(patterns);
+//        } catch (Exception e) {
+//            return ResponseEntity.ok(patternService.returnException(e.toString(), ResponsePattern.class));
+//        }
+//    }
 
-            ResponsePattern patterns = patternService.getByIntentId(intentId, userEntity.getId());
-            return ResponseEntity.ok(patterns);
-        } catch (Exception e) {
-            return ResponseEntity.ok(patternService.returnException(e.toString(), ResponsePattern.class));
-        }
-    }
-
-    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-    @GetMapping("/get_all/by_user_id")
-    public ResponseEntity<ResponsePattern> getByUserId() {
-        try {
-            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
-                throw new Exception("auth_invalid");
-
-            ResponsePattern patterns = patternService.getByUserId(userEntity.getId());
-            return ResponseEntity.ok(patterns);
-        } catch (Exception e) {
-            return ResponseEntity.ok(patternService.returnException(e.toString(), ResponsePattern.class));
-        }
-    }
+//    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+//    @GetMapping("/get_all/by_user_id")
+//    public ResponseEntity<ResponsePattern> getByUserId() {
+//        try {
+//            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+//            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
+//                throw new Exception("auth_invalid");
+//
+//            ResponsePattern patterns = patternService.getByUserId(userEntity.getId());
+//            return ResponseEntity.ok(patterns);
+//        } catch (Exception e) {
+//            return ResponseEntity.ok(patternService.returnException(e.toString(), ResponsePattern.class));
+//        }
+//    }
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @GetMapping("/get/{id}")
@@ -148,31 +163,43 @@ public class PatternAPI {
 
             command.setUserId(userEntity.getId());
             command.setDoDeleteEntities(true);
-            ResponsePattern responsePattern = patternService.delete(command);
-            return ResponseEntity.ok(responsePattern);
+            if (BooleanUtils.isTrue(patternService.delete(CommandGetListPattern.builder()
+                            .userId(userEntity.getId())
+                            .ids(List.of(command.getId()))
+                            .hasEntities(true)
+                    .build()))) {
+                throw new Exception(ExceptionConstant.error_occur);
+            }
+
+            return ResponseEntity.ok(ResponsePattern.builder()
+                    .pattern(PatternEntity.builder()
+                            .id(command.getId())
+                            .userId(command.getUserId())
+                            .build())
+                    .build());
         } catch (Exception e) {
             return ResponseEntity.ok(patternService.returnException(e.toString(), ResponsePattern.class));
         }
     }
 
-    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-    @GetMapping("/get_pagination/by_user_id")
-    public ResponseEntity<Paginated<PatternEntity>> getPaginationByUserId(@RequestParam int page, @RequestParam int size) {
-        try {
-            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))) {
-                throw new Exception("auth_invalid");
-            }
-
-            page--;
-            Paginated<PatternEntity> patterns = patternService.getPagination(userEntity.getId(), page, size);
-            patterns.setPageNumber(++page);
-            return ResponseEntity.ok(patterns);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 0, 0, 0));
-        }
-    }
+//    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+//    @GetMapping("/get_pagination/by_user_id")
+//    public ResponseEntity<Paginated<PatternEntity>> getPaginationByUserId(@RequestParam int page, @RequestParam int size) {
+//        try {
+//            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+//            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))) {
+//                throw new Exception("auth_invalid");
+//            }
+//
+//            page--;
+//            Paginated<PatternEntity> patterns = patternService.getPagination(userEntity.getId(), page, size);
+//            patterns.setPageNumber(++page);
+//            return ResponseEntity.ok(patterns);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 0, 0, 0));
+//        }
+//    }
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @PostMapping("/get_pagination")
@@ -193,18 +220,31 @@ public class PatternAPI {
     }
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-    @GetMapping("/get_pagination/by_intent_id/{intent_id}")
-    public ResponseEntity<Paginated<PatternEntity>> getPaginationByIntentId(@RequestParam int page, @RequestParam int size, @PathVariable String intent_id) {
+    @GetMapping("/get_pagination/by_intent_id/{intentId}")
+    public ResponseEntity<Paginated<PatternEntity>> getPaginationByIntentId(@RequestParam int page, @RequestParam int size, @PathVariable String intentId) {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (userEntity == null || StringUtils.isBlank((userEntity.getId()))) {
                 throw new Exception("auth_invalid");
             }
 
-            page--;
-            Paginated<PatternEntity> patterns = patternService.getPaginationByIntentId(intent_id, page, size);
-            patterns.setPageNumber(++page);
-            return ResponseEntity.ok(patterns);
+//            patternService.getPaginatedList(CommandGetListPattern.builder()
+//                            .userId(userEntity.getId())
+//                            .intentId(intentId)
+//                            .page(page)
+//                            .size(size)
+//                    .build(), PatternEntity.class, CommandGetListPattern.class);
+
+//            page--;
+//            Paginated<PatternEntity> patterns = patternService.getPaginationByIntentId(intent_id, page, size);
+//            patterns.setPageNumber(++page);
+
+            return ResponseEntity.ok(patternService.getPaginatedList(CommandGetListPattern.builder()
+                    .userId(userEntity.getId())
+                    .intentId(intentId)
+                    .page(page)
+                    .size(size)
+                    .build(), PatternEntity.class, CommandGetListPattern.class));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 0, 0, 0));

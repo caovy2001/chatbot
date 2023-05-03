@@ -96,7 +96,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                 .hasPatterns(true)
                 .hasEntitiesOfPatterns(true)
                 .hasEntityTypesOfEntitiesOfPatterns(true)
-                .build());
+                .build(), IntentEntity.class);
         if (CollectionUtils.isEmpty(intentEntities)) {
             return returnException("intents_empty", ResponseTrainingTrain.class);
         }
@@ -608,7 +608,7 @@ public class TrainingService extends BaseService implements ITrainingService {
     }
 
     @Override
-    protected <Entity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
+    protected <Entity extends BaseEntity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
 
     }
 }
