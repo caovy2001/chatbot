@@ -1,19 +1,20 @@
 package com.caovy2001.chatbot.service.entity_type.command;
 
 import com.caovy2001.chatbot.model.DateFilter;
+import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
-import java.util.Collection;
 import java.util.List;
 
-@Builder
+@SuperBuilder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CommandGetListEntityType {
+public class CommandGetListEntityType extends CommandGetListBase {
     private String userId;
     private int size = 0;
     private int page = 0;

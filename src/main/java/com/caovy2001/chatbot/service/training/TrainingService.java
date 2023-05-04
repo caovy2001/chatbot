@@ -407,7 +407,7 @@ public class TrainingService extends BaseService implements ITrainingService {
             List<EntityTypeEntity> entityTypeEntities = entityTypeService.getList(CommandGetListEntityType.builder()
                     .userId(userId)
                     .ids(entityTypeIds)
-                    .build());
+                    .build(), EntityTypeEntity.class);
             if (CollectionUtils.isNotEmpty(entityTypeEntities)) {
                 entityTypeEntities.forEach(entityTypeEntity -> entityTypeById.put(entityTypeEntity.getId(), entityTypeEntity));
             }

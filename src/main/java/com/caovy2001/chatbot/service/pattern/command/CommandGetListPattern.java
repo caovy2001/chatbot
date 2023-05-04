@@ -30,7 +30,7 @@ public class CommandGetListPattern extends CommandGetListBase {
     @Builder.Default
     private boolean hasIntentName = false;
     @Builder.Default
-    private boolean hasEntityTypeOfEntities = false;
+    private Boolean hasEntityTypeOfEntities = false;
     @Builder.Default
     private Boolean checkPageAndSize = false;
 }

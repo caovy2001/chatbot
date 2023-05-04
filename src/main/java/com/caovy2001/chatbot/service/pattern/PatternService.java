@@ -11,7 +11,6 @@ import com.caovy2001.chatbot.service.common.command.CommandAddManyBase;
 import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
 import com.caovy2001.chatbot.service.common.command.CommandUpdateBase;
 import com.caovy2001.chatbot.service.entity.IEntityService;
-import com.caovy2001.chatbot.service.entity.command.CommandAddEntity;
 import com.caovy2001.chatbot.service.entity.command.CommandEntityAddMany;
 import com.caovy2001.chatbot.service.entity.command.CommandGetListEntity;
 import com.caovy2001.chatbot.service.entity_type.IEntityTypeService;
@@ -889,7 +888,7 @@ public class PatternService extends BaseService implements IPatternService {
                     .userId(userId)
                     .entityTypes(entityTypeEntities)
                     .build();
-            List<EntityTypeEntity> savedEntityTypes = entityTypeService.addMany(commandEntityTypeAddMany);
+            List<EntityTypeEntity> savedEntityTypes = entityTypeService.add(commandEntityTypeAddMany);
 
             if (CollectionUtils.isNotEmpty(savedEntityTypes)) {
                 // Lưu entity
@@ -1030,7 +1029,7 @@ public class PatternService extends BaseService implements IPatternService {
                 List<EntityEntity> entities = entityService.getList(CommandGetListEntity.builder()
                         .userId(command.getUserId())
                         .patternId(pattern.getId())
-                        .hasEntityType(command.isHasEntityTypeOfEntities())
+                        .hasEntityType(command.getHasEntityTypeOfEntities())
                         .build(), EntityEntity.class);
                 pattern.setEntities(entities);
             }

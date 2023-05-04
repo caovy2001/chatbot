@@ -147,7 +147,7 @@ public class MessageEntityHistoryService extends BaseService implements IMessage
             List<EntityTypeEntity> entityTypes = entityTypeService.getList(CommandGetListEntityType.builder()
                     .userId(command.getUserId())
                     .ids(messageEntityHistories.stream().map(MessageEntityHistoryEntity::getEntityTypeId).filter(StringUtils::isNotBlank).toList())
-                    .build());
+                    .build(), EntityTypeEntity.class);
             if (CollectionUtils.isNotEmpty(entityTypes)) {
                 for (EntityTypeEntity entityType : entityTypes) {
                     entityTypeById.put(entityType.getId(), entityType);

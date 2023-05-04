@@ -365,7 +365,7 @@ public class IntentService extends BaseService implements IIntentService {
 //            patternsToAdd.add(pattern);
 //        }
 //
-//        List<PatternEntity> addedPatterns = patternService.addMany(patternsToAdd);
+//        List<PatternEntity> addedPatterns = patternService.add(patternsToAdd);
 //
 //        if (CollectionUtils.isEmpty(addedPatterns)) {
 //            return returnException("add_patterns_fail", ResponseIntents.class);

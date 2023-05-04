@@ -88,7 +88,7 @@ public class PatternAPI {
 
             command.setUserId(userEntity.getId());
             return ResponseEntity.ok(ResponsePattern.builder()
-                            .pattern(patternService.update(command))
+                    .pattern(patternService.update(command))
                     .build());
         } catch (Exception e) {
             return ResponseEntity.ok(patternService.returnException(e.toString(), ResponsePattern.class));
@@ -164,9 +164,9 @@ public class PatternAPI {
             command.setUserId(userEntity.getId());
             command.setDoDeleteEntities(true);
             if (BooleanUtils.isFalse(patternService.delete(CommandGetListPattern.builder()
-                            .userId(userEntity.getId())
-                            .ids(List.of(command.getId()))
-                            .hasEntities(true)
+                    .userId(userEntity.getId())
+                    .ids(List.of(command.getId()))
+                    .hasEntities(true)
                     .build()))) {
                 throw new Exception(ExceptionConstant.error_occur);
             }

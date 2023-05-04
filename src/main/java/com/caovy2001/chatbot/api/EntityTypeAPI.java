@@ -3,8 +3,7 @@ package com.caovy2001.chatbot.api;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.EntityTypeEntity;
 import com.caovy2001.chatbot.entity.UserEntity;
-import com.caovy2001.chatbot.service.IBaseService;
-import com.caovy2001.chatbot.service.entity_type.IEntityTypeServiceAPI;
+import com.caovy2001.chatbot.service.entity_type.IEntityTypeService;
 import com.caovy2001.chatbot.service.entity_type.command.CommandAddEntityType;
 import com.caovy2001.chatbot.service.entity_type.command.CommandGetListEntityType;
 import com.caovy2001.chatbot.service.entity_type.command.CommandUpdateEntityType;
@@ -27,7 +26,7 @@ import java.util.List;
 @Slf4j
 public class EntityTypeAPI {
     @Autowired
-    private IEntityTypeServiceAPI entityTypeServiceAPI;
+    private IEntityTypeService entityTypeService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -37,12 +36,12 @@ public class EntityTypeAPI {
     public ResponseEntity<Document> add(@RequestBody CommandAddEntityType command) {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))) {
                 throw new Exception("auth_invalid");
             }
 
             command.setUserId(userEntity.getId());
-            Document resMap = objectMapper.convertValue(entityTypeServiceAPI.add(command), Document.class);
+            Document resMap = objectMapper.convertValue(entityTypeService.add(command), Document.class);
             if (resMap == null) {
                 throw new Exception("cannot_parse_result");
             }
@@ -51,7 +50,7 @@ public class EntityTypeAPI {
         } catch (Exception e) {
             Document resMap = new Document();
             resMap.put("http_status", "EXPECTATION_FAILED");
-            resMap.put("exception_code", StringUtils.isNotBlank(e.getMessage())? e.getMessage() : ExceptionConstant.error_occur);
+            resMap.put("exception_code", StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
             return ResponseEntity.ok(resMap);
         }
     }
@@ -61,12 +60,12 @@ public class EntityTypeAPI {
     public ResponseEntity<Document> update(@RequestBody CommandUpdateEntityType command) {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))) {
                 throw new Exception("auth_invalid");
             }
 
             command.setUserId(userEntity.getId());
-            Document resMap = objectMapper.convertValue(entityTypeServiceAPI.update(command), Document.class);
+            Document resMap = objectMapper.convertValue(entityTypeService.update(command), Document.class);
             if (resMap == null) {
                 throw new Exception("cannot_parse_result");
             }
@@ -75,7 +74,7 @@ public class EntityTypeAPI {
         } catch (Exception e) {
             Document resMap = new Document();
             resMap.put("http_status", "EXPECTATION_FAILED");
-            resMap.put("exception_code", StringUtils.isNotBlank(e.getMessage())? e.getMessage() : ExceptionConstant.error_occur);
+            resMap.put("exception_code", StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
             return ResponseEntity.ok(resMap);
         }
     }
@@ -85,12 +84,12 @@ public class EntityTypeAPI {
     public ResponseEntity<Document> getPaginatedList(@RequestBody CommandGetListEntityType command) {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))) {
                 throw new Exception("auth_invalid");
             }
 
             command.setUserId(userEntity.getId());
-            Document resMap = objectMapper.convertValue(entityTypeServiceAPI.getPaginatedEntityTypeList(command), Document.class);
+            Document resMap = objectMapper.convertValue(entityTypeService.getPaginatedList(command, EntityTypeEntity.class, CommandGetListEntityType.class), Document.class);
             if (resMap == null) {
                 throw new Exception("cannot_parse_result");
             }
@@ -99,7 +98,7 @@ public class EntityTypeAPI {
         } catch (Exception e) {
             Document resMap = new Document();
             resMap.put("http_status", "EXPECTATION_FAILED");
-            resMap.put("exception_code", StringUtils.isNotBlank(e.getMessage())? e.getMessage() : ExceptionConstant.error_occur);
+            resMap.put("exception_code", StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
             return ResponseEntity.ok(resMap);
         }
     }
@@ -109,18 +108,16 @@ public class EntityTypeAPI {
     public ResponseEntity<Document> getDetail(@PathVariable String id) {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))) {
                 throw new Exception("auth_invalid");
             }
 
             CommandGetListEntityType command = CommandGetListEntityType.builder()
                     .userId(userEntity.getId())
                     .id(id)
-                    .page(1)
-                    .size(1)
                     .build();
 
-            List<EntityTypeEntity> entityTypes = entityTypeServiceAPI.getPaginatedEntityTypeList(command).getItems();
+            List<EntityTypeEntity> entityTypes = entityTypeService.getList(command, EntityTypeEntity.class);
             if (CollectionUtils.isEmpty(entityTypes)) {
                 throw new Exception("entity_type_not_exist");
             }
@@ -131,7 +128,7 @@ public class EntityTypeAPI {
         } catch (Exception e) {
             Document resMap = new Document();
             resMap.put("http_status", "EXPECTATION_FAILED");
-            resMap.put("exception_code", StringUtils.isNotBlank(e.getMessage())? e.getMessage() : ExceptionConstant.error_occur);
+            resMap.put("exception_code", StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
             return ResponseEntity.ok(resMap);
         }
     }
@@ -141,13 +138,13 @@ public class EntityTypeAPI {
     public ResponseEntity<Document> delete(@RequestBody CommandGetListEntityType command) {
         try {
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))) {
                 throw new Exception("auth_invalid");
             }
             command.setUserId(userEntity.getId());
             command.setHasEntities(true);
 
-            if (BooleanUtils.isFalse(entityTypeServiceAPI.delete(command))) {
+            if (BooleanUtils.isFalse(entityTypeService.delete(command))) {
                 throw new Exception("delete_fail");
             }
 
@@ -157,7 +154,7 @@ public class EntityTypeAPI {
         } catch (Exception e) {
             Document resMap = new Document();
             resMap.put("http_status", "EXPECTATION_FAILED");
-            resMap.put("exception_code", StringUtils.isNotBlank(e.getMessage())? e.getMessage() : ExceptionConstant.error_occur);
+            resMap.put("exception_code", StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
             return ResponseEntity.ok(resMap);
         }
     }

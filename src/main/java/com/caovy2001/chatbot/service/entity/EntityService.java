@@ -46,49 +46,6 @@ public class EntityService extends BaseService implements IEntityServiceAPI, IEn
     @Autowired
     private IPatternService patternService;
 
-//    @Override
-//    @Deprecated
-//    public List<EntityEntity> add(List<CommandAddEntity> commandAddEntities) {
-//        if (CollectionUtils.isEmpty(commandAddEntities)) {
-//            return null;
-//        }
-//
-//        List<EntityEntity> entitiesToAdd = new ArrayList<>();
-//        for (CommandAddEntity commandAddEntity : commandAddEntities) {
-//            if (StringUtils.isAnyBlank(commandAddEntity.getUserId(), commandAddEntity.getPatternId(), commandAddEntity.getEntityTypeId(), commandAddEntity.getValue())) {
-//                log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
-//                continue;
-//            }
-//
-//            if (commandAddEntity.getStartPosition() < 0 ||
-//                    commandAddEntity.getEndPosition() < 0 ||
-//                    commandAddEntity.getStartPosition() > commandAddEntity.getEndPosition()) {
-//                log.error("[{}]: {}", new Exception().getStackTrace()[0], "invalid_start_and_end_position");
-//                continue;
-//            }
-//
-//            entitiesToAdd.add(EntityEntity.builder()
-//                    .userId(commandAddEntity.getUserId())
-//                    .patternId(commandAddEntity.getPatternId())
-//                    .entityTypeId(commandAddEntity.getEntityTypeId())
-//                    .value(commandAddEntity.getValue())
-//                    .startPosition(commandAddEntity.getStartPosition())
-//                    .endPosition(commandAddEntity.getEndPosition())
-//                    .build());
-//        }
-//
-//        if (CollectionUtils.isEmpty(entitiesToAdd)) {
-//            return null;
-//        }
-//
-//        return entityRepository.insert(entitiesToAdd);
-//    }
-
-//    @Override
-//    public List<EntityEntity> findByUserIdAndPatternId(String userId, String patternId) {
-//        return entityRepository.findByUserIdAndPatternId(userId, patternId);
-//    }
-
     @Override
     public <Entity extends BaseEntity, CommandAddMany extends CommandAddManyBase> List<Entity> add(CommandAddMany commandAddManyBase) throws Exception {
         CommandEntityAddMany command = (CommandEntityAddMany) commandAddManyBase;
@@ -154,68 +111,6 @@ public class EntityService extends BaseService implements IEntityServiceAPI, IEn
 
         return entityRepository.deleteAllByIdIn(entityIds) > 0;
     }
-
-//    @Override
-//    public List<EntityEntity> addMany(@NonNull CommandEntityAddMany command) {
-//        if (StringUtils.isBlank(command.getUserId()) || CollectionUtils.isEmpty(command.getEntities())) {
-//            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
-//            return null;
-//        }
-//
-//        List<EntityEntity> entitiesToAdd = new ArrayList<>();
-//        for (EntityEntity entity : command.getEntities()) {
-//            if (StringUtils.isAnyBlank(entity.getPatternId(), entity.getEntityTypeId(), entity.getValue())) {
-//                log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
-//                continue;
-//            }
-//
-//            if (entity.getStartPosition() < 0 ||
-//                    entity.getEndPosition() < 0 ||
-//                    entity.getStartPosition() > entity.getEndPosition()) {
-//                log.error("[{}]: {}", new Exception().getStackTrace()[0], "invalid_start_and_end_position");
-//                continue;
-//            }
-//
-//            entitiesToAdd.add(EntityEntity.builder()
-//                    .userId(command.getUserId())
-//                    .patternId(entity.getPatternId())
-//                    .entityTypeId(entity.getEntityTypeId())
-//                    .value(entity.getValue())
-//                    .startPosition(entity.getStartPosition())
-//                    .endPosition(entity.getEndPosition())
-//                    .build());
-//        }
-//
-//        if (CollectionUtils.isEmpty(entitiesToAdd)) {
-//            log.error("[{}]: {}", new Exception().getStackTrace()[0], "entity_to_save_empty");
-//            return null;
-//        }
-//
-//        return entityRepository.insert(entitiesToAdd);
-//    }
-
-//    @Override
-//    public boolean delete(CommandGetListEntity command) {
-//        if (StringUtils.isBlank(command.getUserId())) {
-//            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
-//            return false;
-//        }
-//
-//        // Quyết định những trường trả về
-//        command.setReturnFields(List.of("id"));
-//
-//        List<EntityEntity> entities = this.getList(command, EntityEntity.class);
-//        if (CollectionUtils.isEmpty(entities)) {
-//            return false;
-//        }
-//
-//        List<String> entityIds = entities.stream().map(EntityEntity::getId).toList();
-//        if (CollectionUtils.isEmpty(entityIds)) {
-//            return false;
-//        }
-//
-//        return entityRepository.deleteAllByIdIn(entityIds) > 0;
-//    }
 
     @Override
     protected <T extends CommandGetListBase> Query buildQueryGetList(@NonNull T commandGetListBase) {
@@ -289,7 +184,7 @@ public class EntityService extends BaseService implements IEntityServiceAPI, IEn
                 List<EntityTypeEntity> entityTypes = entityTypeService.getList(CommandGetListEntityType.builder()
                         .userId(command.getUserId())
                         .ids(entityTypeIds)
-                        .build());
+                        .build(), EntityTypeEntity.class);
                 if (CollectionUtils.isNotEmpty(entityTypes)) {
                     entityTypes.forEach(et -> entityTypeById.put(et.getId(), et));
                 }

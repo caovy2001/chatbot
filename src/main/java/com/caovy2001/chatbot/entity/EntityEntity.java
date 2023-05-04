@@ -145,7 +145,7 @@ public class EntityEntity extends BaseEntity {
         List<EntityTypeEntity> entityTypes = entityTypeService.getList(CommandGetListEntityType.builder()
                 .userId(this.userId)
                 .id(this.entityTypeId)
-                .build());
+                .build(), EntityTypeEntity.class);
         if (CollectionUtils.isNotEmpty(entityTypes)) {
             this.entityType = entityTypes.get(0);
         }
