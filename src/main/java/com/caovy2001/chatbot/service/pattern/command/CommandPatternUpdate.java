@@ -1,5 +1,6 @@
 package com.caovy2001.chatbot.service.pattern.command;
 
+import com.caovy2001.chatbot.entity.EntityEntity;
 import com.caovy2001.chatbot.service.common.command.CommandUpdateBase;
 import com.caovy2001.chatbot.service.entity.command.CommandAddEntity;
 import lombok.AllArgsConstructor;
@@ -19,5 +20,5 @@ public class CommandPatternUpdate extends CommandUpdateBase {
 //    private String userId;
     private String content;
     private String intentId;
-    private List<CommandAddEntity> entities;
+    private List<EntityEntity> entities;
 }

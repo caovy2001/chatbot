@@ -11,7 +11,7 @@ import java.util.List;
 public interface IEntityService extends IBaseService {
     List<EntityEntity> add(List<CommandAddEntity> commandAddEntities);
 
-    List<EntityEntity> findByUserIdAndPatternId(String userId, String patternId);
+//    List<EntityEntity> findByUserIdAndPatternId(String userId, String patternId);
 
     List<EntityEntity> addMany(CommandEntityAddMany command);
 

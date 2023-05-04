@@ -83,10 +83,10 @@ public class EntityService extends BaseService implements IEntityServiceAPI, IEn
         return entityRepository.insert(entitiesToAdd);
     }
 
-    @Override
-    public List<EntityEntity> findByUserIdAndPatternId(String userId, String patternId) {
-        return entityRepository.findByUserIdAndPatternId(userId, patternId);
-    }
+//    @Override
+//    public List<EntityEntity> findByUserIdAndPatternId(String userId, String patternId) {
+//        return entityRepository.findByUserIdAndPatternId(userId, patternId);
+//    }
 
     @Override
     public List<EntityEntity> addMany(@NonNull CommandEntityAddMany command) {

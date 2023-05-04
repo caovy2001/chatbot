@@ -163,7 +163,7 @@ public class PatternAPI {
 
             command.setUserId(userEntity.getId());
             command.setDoDeleteEntities(true);
-            if (BooleanUtils.isTrue(patternService.delete(CommandGetListPattern.builder()
+            if (BooleanUtils.isFalse(patternService.delete(CommandGetListPattern.builder()
                             .userId(userEntity.getId())
                             .ids(List.of(command.getId()))
                             .hasEntities(true)
