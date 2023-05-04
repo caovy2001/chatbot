@@ -389,7 +389,7 @@ public class PatternAPI {
     @GetMapping("/export/excel/get_file/{fileName}")
     public ResponseEntity<Document> exportExcelGetFile(@PathVariable String fileName) {
         try {
-            if (!fileName.contains(Constant.Pattern.exportExcelFileNamePrefix)) {
+            if (!fileName.contains(Constant.Pattern.exportExcelFileName)) {
                 throw new Exception("file_invalid");
             }
 

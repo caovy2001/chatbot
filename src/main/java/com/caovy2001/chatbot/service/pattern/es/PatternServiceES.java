@@ -12,6 +12,7 @@ import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
 import com.caovy2001.chatbot.service.pattern.command.CommandIndexingPatternES;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.NonNull;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -49,7 +50,7 @@ public class PatternServiceES extends BaseService implements IPatternServiceES {
     }
 
     @Override
-    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+    protected <T extends CommandGetListBase> Query buildQueryGetList(@NonNull T commandGetListBase) {
         return null;
     }
 

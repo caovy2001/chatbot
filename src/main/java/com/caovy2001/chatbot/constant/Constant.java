@@ -16,7 +16,7 @@ public class Constant {
     }
     public static class Pattern {
         public static final String importExcelTemplateDownloadLink = "https://drive.google.com/u/4/uc?id=1Xwos9Y9E-xZywtau9nrbW3N9zOXpkDB9&export=download";
-        public static final String exportExcelFileNamePrefix = "Training_data_";
+        public static final String exportExcelFileName = "Training_data";
 
     }
 
@@ -25,5 +25,6 @@ public class Constant {
         public static final String process_indexing_intent_es = "process_indexing_intent_es";
         public static final String process_indexing_pattern_es = "process_indexing_pattern_es";
         public static final String process_cache_entity_type_mapping = "process_cache_entity_type_mapping";
+        public static final String process_removing_exported_training_data_file = "process_removing_exported_training_data_file";
     }
 }

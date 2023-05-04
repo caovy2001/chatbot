@@ -123,7 +123,6 @@ public class EntityEntity extends BaseEntity {
     //endregion
 
     //region Entity type
-    @Deprecated
     public EntityTypeEntity getEntityType() {
         return this.entityType;
     }

@@ -3,7 +3,7 @@ package com.caovy2001.chatbot.api;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.EntityEntity;
 import com.caovy2001.chatbot.entity.UserEntity;
-import com.caovy2001.chatbot.service.entity.IEntityServiceAPI;
+import com.caovy2001.chatbot.service.entity.IEntityService;
 import com.caovy2001.chatbot.service.entity.command.CommandGetListEntity;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/entity")
@@ -24,7 +27,7 @@ public class EntityAPI {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private IEntityServiceAPI entityServiceAPI;
+    private IEntityService entityService;
 
     @PostMapping("/")
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
@@ -37,7 +40,7 @@ public class EntityAPI {
 
             command.setUserId(userEntity.getId());
 //            Document resMap = objectMapper.convertValue(entityServiceAPI.getPaginatedList(command), Document.class);
-            Document resMap = objectMapper.convertValue(entityServiceAPI.getPaginatedList(command, EntityEntity.class, CommandGetListEntity.class), Document.class);
+            Document resMap = objectMapper.convertValue(entityService.getPaginatedList(command, EntityEntity.class, CommandGetListEntity.class), Document.class);
             if (resMap == null) {
                 throw new Exception("cannot_parse_result");
             }

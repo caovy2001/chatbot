@@ -243,7 +243,7 @@ public class MessageEntityHistoryService extends BaseService implements IMessage
     }
 
     @Override
-    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+    protected <T extends CommandGetListBase> Query buildQueryGetList(@NonNull T commandGetListBase) {
         return null;
     }
 

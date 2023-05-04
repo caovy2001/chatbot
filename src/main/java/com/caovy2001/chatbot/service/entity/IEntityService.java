@@ -12,7 +12,4 @@ import com.caovy2001.chatbot.service.entity.command.CommandGetListEntity;
 import java.util.List;
 
 public interface IEntityService extends IBaseService {
-    <Entity extends BaseEntity, CommandAddMany extends CommandAddManyBase> List<Entity> add(CommandAddMany commandAddManyBase) throws Exception;
-
-    <CommandGetList extends CommandGetListBase> boolean delete(CommandGetList commandGetListBase) throws Exception;
 }

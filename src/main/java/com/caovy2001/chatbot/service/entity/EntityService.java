@@ -1,5 +1,6 @@
 package com.caovy2001.chatbot.service.entity;
 
+import com.caovy2001.chatbot.constant.Constant;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.BaseEntity;
 import com.caovy2001.chatbot.entity.EntityEntity;
@@ -27,13 +28,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 
 @Service
 @Slf4j
-public class EntityService extends BaseService implements IEntityServiceAPI, IEntityService {
+public class EntityService extends BaseService implements IEntityService {
     @Autowired
     private EntityRepository entityRepository;
 
@@ -45,6 +47,9 @@ public class EntityService extends BaseService implements IEntityServiceAPI, IEn
 
     @Autowired
     private IPatternService patternService;
+
+    @Autowired
+    private KafkaTemplate<String, String> kafkaTemplate;
 
     @Override
     public <Entity extends BaseEntity, CommandAddMany extends CommandAddManyBase> List<Entity> add(CommandAddMany commandAddManyBase) throws Exception {
@@ -84,7 +89,15 @@ public class EntityService extends BaseService implements IEntityServiceAPI, IEn
             return null;
         }
 
-        return (List<Entity>) entityRepository.insert(entitiesToAdd);
+        List<EntityEntity> entities = entityRepository.insert(entitiesToAdd);
+        if (CollectionUtils.isEmpty(entities)) {
+            throw new Exception(ExceptionConstant.error_occur);
+        }
+
+        // Xóa file Training_data.xlsx
+        kafkaTemplate.send(Constant.KafkaTopic.process_removing_exported_training_data_file, command.getUserId());
+
+        return (List<Entity>) entities;
     }
 
     @Override
@@ -109,7 +122,15 @@ public class EntityService extends BaseService implements IEntityServiceAPI, IEn
             return false;
         }
 
-        return entityRepository.deleteAllByIdIn(entityIds) > 0;
+        boolean result = entityRepository.deleteAllByIdIn(entityIds) > 0;
+        if (BooleanUtils.isFalse(result)) {
+            return false;
+        }
+
+        // Xóa file Training_data.xlsx
+        kafkaTemplate.send(Constant.KafkaTopic.process_removing_exported_training_data_file, command.getUserId());
+
+        return result;
     }
 
     @Override

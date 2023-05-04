@@ -109,7 +109,7 @@ public class ScriptIntentMappingService extends BaseService implements IScriptIn
     }
 
     @Override
-    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+    protected <T extends CommandGetListBase> Query buildQueryGetList(@NonNull T commandGetListBase) {
         return null;
     }
 

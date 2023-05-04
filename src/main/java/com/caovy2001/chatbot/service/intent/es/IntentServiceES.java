@@ -11,6 +11,7 @@ import com.caovy2001.chatbot.service.intent.command.CommandDeleteIntentES;
 import com.caovy2001.chatbot.service.intent.command.CommandIndexingIntentES;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.NonNull;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -60,7 +61,7 @@ public class IntentServiceES extends BaseService implements IIntentServiceES {
 
 
     @Override
-    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+    protected <T extends CommandGetListBase> Query buildQueryGetList(@NonNull T commandGetListBase) {
         return null;
     }
 

@@ -207,7 +207,7 @@ public class UserService extends BaseService implements IUserService {
     }
 
     @Override
-    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+    protected <T extends CommandGetListBase> Query buildQueryGetList(@NonNull T commandGetListBase) {
         return null;
     }
 

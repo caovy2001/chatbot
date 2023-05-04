@@ -180,7 +180,7 @@ public class MessageHistoryGroupService extends BaseService implements IMessageH
     }
 
     @Override
-    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+    protected <T extends CommandGetListBase> Query buildQueryGetList(@NonNull T commandGetListBase) {
         return null;
     }
 

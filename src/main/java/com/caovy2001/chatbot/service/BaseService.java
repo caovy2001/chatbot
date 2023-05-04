@@ -3,8 +3,10 @@ package com.caovy2001.chatbot.service;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.BaseEntity;
 import com.caovy2001.chatbot.model.Paginated;
+import com.caovy2001.chatbot.service.common.command.CommandAddBase;
 import com.caovy2001.chatbot.service.common.command.CommandAddManyBase;
 import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
+import com.caovy2001.chatbot.service.common.command.CommandUpdateBase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -114,5 +116,19 @@ public abstract class BaseService implements IBaseService {
 
     protected abstract <Entity extends BaseEntity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase);
 
-//    public abstract <Entity extends BaseEntity, CommandAddMany extends CommandAddManyBase> List<Entity> add(CommandAddMany command) throws Exception;
+    public <Entity extends BaseEntity, CommandAdd extends CommandAddBase> Entity add(CommandAdd commandAddBase) throws Exception {
+        return null;
+    }
+
+    public <Entity extends BaseEntity, CommandAddMany extends CommandAddManyBase> List<Entity> add(CommandAddMany commandAddManyBase) throws Exception {
+        return null;
+    }
+
+    public <Entity extends BaseEntity, CommandUpdate extends CommandUpdateBase> Entity update(CommandUpdate commandUpdateBase) throws Exception {
+        return null;
+    }
+
+    public <CommandGetList extends CommandGetListBase> boolean delete(CommandGetList commandGetListBase) throws Exception {
+        return false;
+    }
 }

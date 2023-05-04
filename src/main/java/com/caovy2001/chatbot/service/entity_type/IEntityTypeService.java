@@ -15,22 +15,4 @@ import com.caovy2001.chatbot.service.entity_type.command.CommandUpdateEntityType
 import java.util.List;
 
 public interface IEntityTypeService extends IBaseService {
-    //    List<EntityTypeEntity> add(CommandEntityTypeAddMany command);
-    <Entity extends BaseEntity, CommandAddMany extends CommandAddManyBase> List<Entity> add(CommandAddMany commandAddManyBase) throws Exception;
-
-    <Entity extends BaseEntity, CommandAdd extends CommandAddBase> Entity add(CommandAdd commandAddBase) throws Exception;
-
-    <Entity extends BaseEntity, CommandUpdate extends CommandUpdateBase> Entity update(CommandUpdate commandUpdateBase) throws Exception;
-
-    <CommandGetList extends CommandGetListBase> boolean delete(CommandGetList commandGetListBase) throws Exception;
-
-//    List<EntityTypeEntity> getList(CommandGetListEntityType command);
-
-//    EntityTypeEntity add(CommandAddEntityType command) throws Exception;
-
-//    EntityTypeEntity update(CommandUpdateEntityType command) throws Exception;
-
-//    Paginated<EntityTypeEntity> getPaginatedEntityTypeList(CommandGetListEntityType command) throws Exception;
-
-//    boolean delete(CommandGetListEntityType command) throws Exception;
 }

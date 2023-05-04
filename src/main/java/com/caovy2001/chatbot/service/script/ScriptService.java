@@ -19,6 +19,7 @@ import com.caovy2001.chatbot.service.script.response.ResponseScriptAdd;
 import com.caovy2001.chatbot.service.script.response.ResponseScriptGetByUserId;
 import com.caovy2001.chatbot.service.script_intent_mapping.IScriptIntentMappingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
@@ -343,7 +344,7 @@ public class ScriptService extends BaseService implements IScriptService {
     }
 
     @Override
-    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+    protected <T extends CommandGetListBase> Query buildQueryGetList(@NonNull T commandGetListBase) {
         return null;
     }
 

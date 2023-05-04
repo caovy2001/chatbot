@@ -14,13 +14,4 @@ import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 import java.util.List;
 
 public interface IIntentService extends IBaseService {
-    <Entity extends BaseEntity, CommandAdd extends CommandAddBase> Entity add(CommandAdd commandAddBase) throws Exception;
-
-    <Entity extends BaseEntity, CommandAddMany extends CommandAddManyBase> List<Entity> add(CommandAddMany commandAddManyBase) throws Exception;
-
-    <Entity extends BaseEntity, CommandUpdate extends CommandUpdateBase> Entity update(CommandUpdate commandUpdateBase) throws Exception;
-
-    <CommandGetList extends CommandGetListBase> boolean delete(CommandGetList commandGetListBase) throws Exception;
-
-//    ResponseIntents addPatterns(CommandIntentAddPattern command);
 }

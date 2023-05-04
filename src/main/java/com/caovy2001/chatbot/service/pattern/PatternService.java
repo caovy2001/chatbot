@@ -146,6 +146,9 @@ public class PatternService extends BaseService implements IPatternService {
                     .build());
         });
 
+        // Xóa file Training_data.xlsx
+        kafkaTemplate.send(Constant.KafkaTopic.process_removing_exported_training_data_file, command.getUserId());
+
         if (command.getCommandEntityAddMany() == null ||
                 CollectionUtils.isEmpty(command.getCommandEntityAddMany().getEntities())) {
             return (List<Entity>) savedPatterns;
@@ -213,6 +216,9 @@ public class PatternService extends BaseService implements IPatternService {
                     .build(), patternByUuid));
         }
 
+        // Xóa file Training_data.xlsx
+        kafkaTemplate.send(Constant.KafkaTopic.process_removing_exported_training_data_file, command.getUserId());
+
         return (Entity) updatedPattern;
     }
 
@@ -243,17 +249,21 @@ public class PatternService extends BaseService implements IPatternService {
             return false;
         }
 
+        // Xóa file Training_data.xlsx
+        kafkaTemplate.send(Constant.KafkaTopic.process_removing_exported_training_data_file, command.getUserId());
+
         if (BooleanUtils.isTrue(command.isHasEntities())) {
             entityService.delete(CommandGetListEntity.builder()
                     .userId(command.getUserId())
                     .patternId(command.getId())
                     .build());
         }
+
         return result;
     }
 
     private List<EntityEntity> addEntityForPatterns(@NonNull CommandEntityAddMany command,
-                                                    @NonNull Map<String, PatternEntity> patternByUuid) throws Exception{
+                                                    @NonNull Map<String, PatternEntity> patternByUuid) throws Exception {
 
         if (CollectionUtils.isEmpty(command.getEntities()) ||
                 patternByUuid.isEmpty()) {
@@ -592,6 +602,9 @@ public class PatternService extends BaseService implements IPatternService {
 
     @Override
     public void exportExcel(CommandGetListPattern command, String sessionId) throws Exception {
+        String filePath = Constant.fileDataPath + command.getUserId() + "/";
+        String fileName = Constant.Pattern.exportExcelFileName + ".xlsx";
+
         //region Set init status
         ResponseExportExcelStatus response = ResponseExportExcelStatus.builder()
                 .sessionId(sessionId)
@@ -601,10 +614,32 @@ public class PatternService extends BaseService implements IPatternService {
                 .status(ResponseExportExcelStatus.EExportExcelStatus.PROCESSING)
                 .build();
 
+        // Nếu tồn tại file Training_data.xlsx thì return DONE luôn
+        File fileFolder = new File(filePath);
+        File file = new File(filePath + fileName);
+        if (fileFolder.exists() && file.exists()) {
+            List<IntentEntity> intents = intentService.getList(CommandGetListIntent.builder()
+                    .userId(command.getUserId())
+                    .returnFields(List.of("id"))
+                    .build(), IntentEntity.class);
+
+            response.setNumOfSuccess(this.getList(CommandGetListPattern.builder()
+                    .userId(command.getUserId())
+                    .intentIds(intents.stream().map(IntentEntity::getId).toList())
+                    .returnFields(List.of("id"))
+                    .build(), PatternEntity.class).size());
+            response.setStatus(ResponseExportExcelStatus.EExportExcelStatus.DONE);
+            response.setFileName(fileName);
+        }
+
         String exportExcelJedisKey = Constant.JedisPrefix.userIdPrefix_ + command.getUserId() +
                 Constant.JedisPrefix.COLON +
                 Constant.JedisPrefix.Pattern.exportExcelSessionIdPrefix_ + sessionId;
         jedisService.setWithExpired(exportExcelJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
+
+        if (ResponseExportExcelStatus.EExportExcelStatus.DONE.equals(response.getStatus())) {
+            return;
+        }
         //endregion
 
         XSSFWorkbook workbook = new XSSFWorkbook();
@@ -800,24 +835,33 @@ public class PatternService extends BaseService implements IPatternService {
             }
         }
 
-        String fileName = Constant.Pattern.exportExcelFileNamePrefix + sessionId + "_" + System.currentTimeMillis() + ".xlsx";
-        String filePath = Constant.fileDataPath + command.getUserId() + "/";
         response.setStatus(ResponseExportExcelStatus.EExportExcelStatus.DONE);
         response.setFileName(fileName);
         jedisService.setWithExpired(exportExcelJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
         //endregion
 
         try {
-            File file = new File(filePath);
-            if (!file.exists()) {
-                file.mkdir();
+            if (!fileFolder.exists()) {
+                fileFolder.mkdir();
             }
-            file = new File(filePath + fileName);
+
             file.createNewFile();
             FileOutputStream outputStream = new FileOutputStream(file, false);
             workbook.write(outputStream);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void removeExportedTrainingDataFile(String userId) throws Exception {
+        String filePath = Constant.fileDataPath + userId + "/";
+        String fileName = Constant.Pattern.exportExcelFileName + ".xlsx";
+
+        File fileFolder = new File(filePath);
+        File file = new File(filePath + fileName);
+        if (fileFolder.exists() && file.exists()) {
+            file.delete();
         }
     }
 
@@ -830,7 +874,7 @@ public class PatternService extends BaseService implements IPatternService {
                                           @NonNull List<IntentEntity> intentEntities,
                                           @NonNull List<PatternEntity> patternEntities,
                                           @NonNull List<EntityTypeEntity> entityTypeEntities,
-                                          @NonNull List<EntityEntity> entityEntities) throws Exception{
+                                          @NonNull List<EntityEntity> entityEntities) throws Exception {
         // Lưu intent
         CommandIntentAddMany commandIntentAddMany = CommandIntentAddMany.builder()
                 .userId(userId)

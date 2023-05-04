@@ -18,6 +18,7 @@ import com.caovy2001.chatbot.service.message_history_group.IMessageHistoryGroupS
 import com.caovy2001.chatbot.service.message_history_group.command.CommandAddMessageHistoryGroup;
 import com.caovy2001.chatbot.service.message_history_group.command.CommandGetListMessageHistoryGroup;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
@@ -253,7 +254,7 @@ public class MessageHistoryService extends BaseService implements IMessageHistor
     }
 
     @Override
-    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+    protected <T extends CommandGetListBase> Query buildQueryGetList(@NonNull T commandGetListBase) {
         return null;
     }
 

@@ -11,6 +11,7 @@ import com.caovy2001.chatbot.service.node.command.CommandNodeAddConditionMapping
 import com.caovy2001.chatbot.service.node.command.CommandUpdateMessage;
 import com.caovy2001.chatbot.service.node.response.ResponseListNode;
 import com.caovy2001.chatbot.service.node.response.ResponseNode;
+import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.query.Query;
@@ -153,7 +154,7 @@ public class NodeService extends BaseService implements INodeService{
     }
 
     @Override
-    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+    protected <T extends CommandGetListBase> Query buildQueryGetList(@NonNull T commandGetListBase) {
         return null;
     }
 

@@ -42,7 +42,6 @@ import java.util.concurrent.CompletableFuture;
 @Service
 @Slf4j
 public class IntentService extends BaseService implements IIntentService {
-
     @Autowired
     private IntentRepository intentRepository;
 
@@ -176,6 +175,9 @@ public class IntentService extends BaseService implements IIntentService {
                 .doSetUserId(false)
                 .build());
 
+        // Xóa file Training_data.xlsx
+        kafkaTemplate.send(Constant.KafkaTopic.process_removing_exported_training_data_file, command.getUserId());
+
         return (List<Entity>) intentsToSave;
     }
 
@@ -207,6 +209,9 @@ public class IntentService extends BaseService implements IIntentService {
                 .intents(List.of(updatedIntent))
                 .doSetUserId(false)
                 .build());
+
+        // Xóa file Training_data.xlsx
+        kafkaTemplate.send(Constant.KafkaTopic.process_removing_exported_training_data_file, command.getUserId());
 
         return (Entity) updatedIntent;
     }
@@ -253,6 +258,9 @@ public class IntentService extends BaseService implements IIntentService {
                     log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
                 }
             });
+
+            // Xóa file Training_data.xlsx
+            kafkaTemplate.send(Constant.KafkaTopic.process_removing_exported_training_data_file, command.getUserId());
         }
 
         return result;
@@ -346,35 +354,6 @@ public class IntentService extends BaseService implements IIntentService {
             }
         }
     }
-
-//    @Override
-//    public ResponseIntents addPatterns(CommandIntentAddPattern command) {
-//        if (StringUtils.isAnyBlank(command.getUserId(), command.getIntentId()) ||
-//                CollectionUtils.isEmpty(command.getPatterns())) {
-//            return returnException(ExceptionConstant.missing_param, ResponseIntents.class);
-//        }
-//
-//        List<PatternEntity> patternsToAdd = new ArrayList<>();
-//
-//        for (PatternEntity pattern : command.getPatterns()) {
-//            if (StringUtils.isBlank(pattern.getContent())) continue;
-//
-//            pattern.setId(null);
-//            pattern.setIntentId(command.getIntentId());
-//            pattern.setUserId(command.getUserId());
-//            patternsToAdd.add(pattern);
-//        }
-//
-//        List<PatternEntity> addedPatterns = patternService.add(patternsToAdd);
-//
-//        if (CollectionUtils.isEmpty(addedPatterns)) {
-//            return returnException("add_patterns_fail", ResponseIntents.class);
-//        }
-//
-//        return ResponseIntents.builder()
-//                .patterns(addedPatterns)
-//                .build();
-//    }
 
     private void indexES(CommandIndexingIntentES command) {
         try {

@@ -10,6 +10,7 @@ import com.caovy2001.chatbot.service.training_history.command.CommandTrainingHis
 import com.caovy2001.chatbot.service.training_history.command.CommandTrainingHistoryAdd;
 import com.caovy2001.chatbot.service.training_history.response.ResponseTrainingHistory;
 import com.caovy2001.chatbot.service.training_history.response.ResponseTrainingHistoryAdd;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,7 +67,7 @@ public class TrainingHistoryService extends BaseService implements ITrainingHist
     }
 
     @Override
-    protected <T extends CommandGetListBase> Query buildQueryGetList(T commandGetListBase) {
+    protected <T extends CommandGetListBase> Query buildQueryGetList(@NonNull T commandGetListBase) {
         return null;
     }
 
