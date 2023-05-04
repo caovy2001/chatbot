@@ -6,15 +6,16 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 
-@Builder
+@SuperBuilder
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class CommandGetListPattern extends CommandGetListBase {
-    private String userId;
+//    private String userId;
     private String id;
     private List<String> ids;
     private String intentId;

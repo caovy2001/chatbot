@@ -153,10 +153,14 @@ public class PatternService extends BaseService implements IPatternService {
         }
 
         CompletableFuture.runAsync(() -> {
-            // Save entities
-            Map<String, PatternEntity> patternByUuid = new HashMap<>();
-            savedPatterns.forEach(pattern -> patternByUuid.put(pattern.getUuid(), pattern));
-            this.addEntityForPatterns(command.getCommandEntityAddMany(), patternByUuid);
+            try {
+                // Save entities
+                Map<String, PatternEntity> patternByUuid = new HashMap<>();
+                savedPatterns.forEach(pattern -> patternByUuid.put(pattern.getUuid(), pattern));
+                this.addEntityForPatterns(command.getCommandEntityAddMany(), patternByUuid);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         });
 
         return (List<Entity>) savedPatterns;
@@ -249,27 +253,8 @@ public class PatternService extends BaseService implements IPatternService {
         return result;
     }
 
-//    private List<EntityEntity> addEntityForPattern(@NonNull List<CommandAddEntity> commandAddEntities, @NonNull String userId, @NonNull String patternId) {
-//        if (CollectionUtils.isEmpty(commandAddEntities)) {
-//            return null;
-//        }
-//        List<CommandAddEntity> commandAddEntitiesToAdd = new ArrayList<>();
-//        for (CommandAddEntity commandAddEntity : commandAddEntities) {
-//            commandAddEntitiesToAdd.add(CommandAddEntity.builder()
-//                    .userId(userId)
-//                    .patternId(patternId)
-//                    .entityTypeId(commandAddEntity.getEntityTypeId())
-//                    .value(commandAddEntity.getValue())
-//                    .startPosition(commandAddEntity.getStartPosition())
-//                    .endPosition(commandAddEntity.getEndPosition())
-//                    .build());
-//        }
-//
-//        return entityService.add(commandAddEntitiesToAdd);
-//    }
-
     private List<EntityEntity> addEntityForPatterns(@NonNull CommandEntityAddMany command,
-                                                    @NonNull Map<String, PatternEntity> patternByUuid) {
+                                                    @NonNull Map<String, PatternEntity> patternByUuid) throws Exception{
 
         if (CollectionUtils.isEmpty(command.getEntities()) ||
                 patternByUuid.isEmpty()) {
@@ -295,7 +280,7 @@ public class PatternService extends BaseService implements IPatternService {
             entity.setPatternId(pattern.getId());
         }
 
-        return entityService.addMany(command);
+        return entityService.add(command);
     }
 
     @Override
@@ -846,7 +831,7 @@ public class PatternService extends BaseService implements IPatternService {
                                           @NonNull List<IntentEntity> intentEntities,
                                           @NonNull List<PatternEntity> patternEntities,
                                           @NonNull List<EntityTypeEntity> entityTypeEntities,
-                                          @NonNull List<EntityEntity> entityEntities) {
+                                          @NonNull List<EntityEntity> entityEntities) throws Exception{
         // Lưu intent
         CommandIntentAddMany commandIntentAddMany = CommandIntentAddMany.builder()
                 .userId(userId)
@@ -942,7 +927,7 @@ public class PatternService extends BaseService implements IPatternService {
                     .userId(userId)
                     .entities(entityEntities)
                     .build();
-            entityService.addMany(commandEntityAddMany);
+            entityService.add(commandEntityAddMany);
         }
         response.setNumOfSuccess(response.getNumOfSuccess() + patternEntities.size());
     }

@@ -6,10 +6,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 
-@Builder
+@SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
@@ -17,7 +18,7 @@ public class CommandGetListIntent extends CommandGetListBase {
     private int page;
     private int size;
     private List<String> ids;
-    private String userId;
+//    private String userId;
     private String code;
     private List<String> codes;
     private List<String> scriptIds;

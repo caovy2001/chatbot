@@ -5,17 +5,18 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 
-@Builder
+@SuperBuilder
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class CommandGetListEntity extends CommandGetListBase {
     private int page;
     private int size;
-    private String userId;
+//    private String userId;
     private List<String> ids;
     private String keyword;
     private String patternId;
