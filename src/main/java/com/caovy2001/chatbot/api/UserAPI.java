@@ -16,6 +16,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @RestController
 @RequestMapping("/user")
 public class UserAPI {
@@ -73,6 +76,16 @@ public class UserAPI {
             return ResponseEntity.ok(responseBase);
         } catch (Exception e) {
             return ResponseEntity.ok(userService.returnException(ExceptionConstant.error_occur, ResponseUserLogin.class));
+        }
+    }
+
+    // Vul
+    @GetMapping("/")
+    public List<UserEntity> getList() {
+        try {
+            return userService.getAll_vul();
+        } catch (Exception e) {
+            return new ArrayList<>();
         }
     }
 }

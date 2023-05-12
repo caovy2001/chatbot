@@ -19,6 +19,7 @@ import com.caovy2001.chatbot.service.intent.es.IIntentServiceES;
 import com.caovy2001.chatbot.service.pattern.IPatternService;
 import com.caovy2001.chatbot.service.pattern.command.CommandGetListPattern;
 import com.caovy2001.chatbot.service.pattern.command.CommandPatternAddMany;
+import com.caovy2001.chatbot.service.pattern.command.CommandProcessAfterCUDIntentPatternEntityEntityType;
 import com.caovy2001.chatbot.service.script_intent_mapping.IScriptIntentMappingService;
 import com.caovy2001.chatbot.service.script_intent_mapping.command.CommandGetListScriptIntentMapping;
 import com.caovy2001.chatbot.utils.ChatbotStringUtils;
@@ -176,7 +177,9 @@ public class IntentService extends BaseService implements IIntentService {
                 .build());
 
         // Xóa file Training_data.xlsx
-        kafkaTemplate.send(Constant.KafkaTopic.process_removing_exported_training_data_file, command.getUserId());
+        kafkaTemplate.send(Constant.KafkaTopic.process_after_cud_intent_pattern_entity_entityType, objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
+                .userId(command.getUserId())
+                .build()));
 
         return (List<Entity>) intentsToSave;
     }
@@ -211,7 +214,9 @@ public class IntentService extends BaseService implements IIntentService {
                 .build());
 
         // Xóa file Training_data.xlsx
-        kafkaTemplate.send(Constant.KafkaTopic.process_removing_exported_training_data_file, command.getUserId());
+        kafkaTemplate.send(Constant.KafkaTopic.process_after_cud_intent_pattern_entity_entityType, objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
+                .userId(command.getUserId())
+                .build()));
 
         return (Entity) updatedIntent;
     }
@@ -260,7 +265,9 @@ public class IntentService extends BaseService implements IIntentService {
             });
 
             // Xóa file Training_data.xlsx
-            kafkaTemplate.send(Constant.KafkaTopic.process_removing_exported_training_data_file, command.getUserId());
+            kafkaTemplate.send(Constant.KafkaTopic.process_after_cud_intent_pattern_entity_entityType, objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
+                    .userId(command.getUserId())
+                    .build()));
         }
 
         return result;

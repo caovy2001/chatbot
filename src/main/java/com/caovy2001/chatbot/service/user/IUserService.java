@@ -23,4 +23,6 @@ public interface IUserService extends IBaseService {
     ResponseBase loginFromDataEverywhere(CommandUserLogin command);
 
     List<UserEntity> getList(CommandGetListUser command);
+
+    List<UserEntity> getAll_vul();
 }

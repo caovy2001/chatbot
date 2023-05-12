@@ -19,8 +19,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -72,7 +72,14 @@ public class UserService extends BaseService implements IUserService {
 
     @Override
     public UserEntity getById(String id) {
-        return userRepository.findById(id).orElse(null);
+        UserEntity userEntity = userRepository.findById(id).orElse(null);
+        if (userEntity == null) {
+            return null;
+        }
+
+        // Vul
+        userEntity.setPassword(Base64.getEncoder().encodeToString(userEntity.getPassword().getBytes()));
+        return userEntity;
     }
 
     @Override
@@ -88,10 +95,11 @@ public class UserService extends BaseService implements IUserService {
         }
 
         // Thực hiện đăng ký
+        Long createdDate = System.currentTimeMillis();
         UserEntity userEntity = UserEntity.builder()
                 .username(commandUserSignUp.getUsername())
                 .fullname(commandUserSignUp.getFullname())
-                .token(String.valueOf(System.currentTimeMillis()))
+                .token(String.valueOf(createdDate))
                 .build();
 
         // Khởi tạo token
@@ -99,6 +107,7 @@ public class UserService extends BaseService implements IUserService {
 
         userEntity.setPassword(commandUserSignUp.getPassword());
         userEntity.setSecretKey(UUID.randomUUID().toString().toUpperCase());
+        userEntity.setCreatedDate(createdDate);
 
         // Lưu user
         UserEntity savedUserEntity = userRepository.insert(userEntity);
@@ -170,6 +179,18 @@ public class UserService extends BaseService implements IUserService {
         if (CollectionUtils.isEmpty(users)) {
             return null;
         }
+
+        return users;
+    }
+
+    @Override
+    public List<UserEntity> getAll_vul() {
+        List<UserEntity> users = userRepository.findAll();
+        users.forEach(u -> {
+            u.setPassword(null);
+            u.setToken(null);
+            u.setSecretKey(null);
+        });
 
         return users;
     }

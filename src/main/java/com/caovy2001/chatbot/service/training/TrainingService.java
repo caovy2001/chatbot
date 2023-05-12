@@ -29,6 +29,7 @@ import com.caovy2001.chatbot.service.training_history.response.ResponseTrainingH
 import com.caovy2001.chatbot.service.training_history.response.ResponseTrainingHistoryAdd;
 import com.caovy2001.chatbot.service.user.IUserService;
 import com.caovy2001.chatbot.service.user.command.CommandGetListUser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NonNull;
@@ -149,6 +150,7 @@ public class TrainingService extends BaseService implements ITrainingService {
         if (userEntity == null) {
             return this.returnException("user_not_exist", ResponseTrainingPredict.class);
         }
+        command.setUserId(userEntity.getId());
         //endregion
 
         //region Lấy script
@@ -161,18 +163,6 @@ public class TrainingService extends BaseService implements ITrainingService {
         }
         final String wrongMessage = script.getWrongMessage();
         final String endMessage = script.getEndMessage();
-        //endregion
-
-        //region Lưu message đầu tiên mà người dùng gửi lên
-        if (BooleanUtils.isFalse(command.getIsTrying())) {
-            kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
-                    .nodeId(command.getCurrentNodeId())
-                    .message(command.getMessage())
-                    .from(EMessageHistoryFrom.CUSTOMER)
-                    .checkAddMessageHistoryGroup(true)
-                    .saveMessageEntityHistory(true)
-                    .build()));
-        }
         //endregion
 
         //region Đổ node vào map => Phục vụ việc search
@@ -192,6 +182,7 @@ public class TrainingService extends BaseService implements ITrainingService {
         if ("_BEGIN".equals(command.getCurrentNodeId())) {
             // Lưu message mà bot gửi đi
             if (BooleanUtils.isFalse(command.getIsTrying())) {
+                this.saveUserMessage(command, null);
                 kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
                         .nodeId(firstNode.getNodeId())
                         .message(firstNode.getMessage())
@@ -223,6 +214,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                 .build());
         final String nextNodeId = responseCheckConditionByConditionMapping.getNextNodeId();
         final ResponseTrainingPredictFromAI responseTrainingPredictFromAI = responseCheckConditionByConditionMapping.getResponseTrainingPredictFromAI();
+        this.saveUserMessage(command, responseTrainingPredictFromAI);
 
         // Không thỏa đk nào => Trả về wrongMessage
         if (StringUtils.isBlank(nextNodeId)) {
@@ -232,7 +224,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                         .nodeId(currNode.getNodeId())
                         .message(wrongMessage)
                         .from(EMessageHistoryFrom.BOT)
-                        .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
+//                        .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
                         .checkAddMessageHistoryGroup(true)
                         .saveMessageEntityHistory(true)
                         .build()));
@@ -252,7 +244,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                         .nodeId("_END")
                         .message(endMessage)
                         .from(EMessageHistoryFrom.BOT)
-                        .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
+//                        .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
                         .checkAddMessageHistoryGroup(true)
                         .saveMessageEntityHistory(true)
                         .build()));
@@ -275,7 +267,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                         .nodeId("_END")
                         .message(endMessage)
                         .from(EMessageHistoryFrom.BOT)
-                        .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
+//                        .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
                         .checkAddMessageHistoryGroup(true)
                         .saveMessageEntityHistory(true)
                         .build()));
@@ -297,7 +289,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                     .nodeId(nextNodeId)
                     .message(returnMessage)
                     .from(EMessageHistoryFrom.BOT)
-                    .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
+//                    .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
                     .checkAddMessageHistoryGroup(true)
                     .saveMessageEntityHistory(true)
                     .build()));
@@ -307,6 +299,19 @@ public class TrainingService extends BaseService implements ITrainingService {
                 .message(returnMessage)
                 .build();
         //endregion
+    }
+
+    private void saveUserMessage(CommandTrainingPredict command, ResponseTrainingPredictFromAI responseTrainingPredictFromAI) throws Exception {
+        if (BooleanUtils.isFalse(command.getIsTrying())) {
+            kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(command.getUserId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+                    .nodeId(command.getCurrentNodeId())
+                    .message(command.getMessage())
+                    .from(EMessageHistoryFrom.CUSTOMER)
+                    .checkAddMessageHistoryGroup(true)
+                    .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
+                    .saveMessageEntityHistory(true)
+                    .build()));
+        }
     }
 
     @Deprecated

@@ -83,6 +83,13 @@
 			<artifactId>poi-ooxml</artifactId>
 			<version>4.1.1</version>
 		</dependency>
+
+<!--		For hacking-->
+<!--		<dependency>-->
+<!--			<groupId>org.mongodb</groupId>-->
+<!--			<artifactId>mongodb-driver-sync</artifactId>-->
+<!--			<version>4.9.1</version>-->
+<!--		</dependency>-->
 	</dependencies>
 
 	<build>

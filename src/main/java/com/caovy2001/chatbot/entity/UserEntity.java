@@ -37,4 +37,7 @@ public class UserEntity extends BaseEntity{
     @Field("token")
     @Indexed
     private String token;
+
+    @Field("created_date")
+    private Long createdDate;
 }

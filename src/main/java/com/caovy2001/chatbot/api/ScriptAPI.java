@@ -36,6 +36,7 @@ public class ScriptAPI {
             if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
                 throw new Exception("auth_invalid");
             }
+
             command.setUser_id(userEntity.getId());
             ResponseScriptAdd responseScriptAdd = scriptService.add(command);
             return ResponseEntity.ok(responseScriptAdd);

@@ -3,6 +3,7 @@ package com.caovy2001.chatbot.service.pattern;
 import com.caovy2001.chatbot.constant.Constant;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.*;
+import com.caovy2001.chatbot.enumeration.EExportTrainingDataToExcelRedisStatus;
 import com.caovy2001.chatbot.model.DateFilter;
 import com.caovy2001.chatbot.repository.PatternRepository;
 import com.caovy2001.chatbot.service.BaseService;
@@ -147,7 +148,9 @@ public class PatternService extends BaseService implements IPatternService {
         });
 
         // Xóa file Training_data.xlsx
-        kafkaTemplate.send(Constant.KafkaTopic.process_removing_exported_training_data_file, command.getUserId());
+        kafkaTemplate.send(Constant.KafkaTopic.process_after_cud_intent_pattern_entity_entityType, objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
+                .userId(command.getUserId())
+                .build()));
 
         if (command.getCommandEntityAddMany() == null ||
                 CollectionUtils.isEmpty(command.getCommandEntityAddMany().getEntities())) {
@@ -217,7 +220,9 @@ public class PatternService extends BaseService implements IPatternService {
         }
 
         // Xóa file Training_data.xlsx
-        kafkaTemplate.send(Constant.KafkaTopic.process_removing_exported_training_data_file, command.getUserId());
+        kafkaTemplate.send(Constant.KafkaTopic.process_after_cud_intent_pattern_entity_entityType, objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
+                .userId(command.getUserId())
+                .build()));
 
         return (Entity) updatedPattern;
     }
@@ -250,7 +255,9 @@ public class PatternService extends BaseService implements IPatternService {
         }
 
         // Xóa file Training_data.xlsx
-        kafkaTemplate.send(Constant.KafkaTopic.process_removing_exported_training_data_file, command.getUserId());
+        kafkaTemplate.send(Constant.KafkaTopic.process_after_cud_intent_pattern_entity_entityType, objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
+                .userId(command.getUserId())
+                .build()));
 
         if (BooleanUtils.isTrue(command.isHasEntities())) {
             entityService.delete(CommandGetListEntity.builder()
@@ -313,7 +320,7 @@ public class PatternService extends BaseService implements IPatternService {
         String importFileJedisKey = Constant.JedisPrefix.userIdPrefix_ + command.getUserId() +
                 Constant.JedisPrefix.COLON +
                 Constant.JedisPrefix.Pattern.importExcelSessionIdPrefix_ + command.getSessionId();
-        jedisService.setWithExpired(importFileJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
+        jedisService.setWithExpired(importFileJedisKey, objectMapper.writeValueAsString(response), 60 * 60 * 24);
 
         if (Arrays.asList("xls", "xlsx").contains(command.getExtensionType())) { // File xls/xlsx
             this.importFromFile_Excel(command, importFileJedisKey, response);
@@ -435,7 +442,7 @@ public class PatternService extends BaseService implements IPatternService {
                     entityEntities = new ArrayList<>();
 
                     // Cập nhật trạng thái trên redis
-                    jedisService.setWithExpired(importFileJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
+                    jedisService.setWithExpired(importFileJedisKey, objectMapper.writeValueAsString(response), 60 * 60 * 24);
                 }
 
                 rowIndex++;
@@ -451,7 +458,7 @@ public class PatternService extends BaseService implements IPatternService {
             }
             // Cập nhật trạng thái trên redis => DONE
             response.setStatus(ResponseImportExcelStatus.EImportExcelStatus.DONE);
-            jedisService.setWithExpired(importFileJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
+            jedisService.setWithExpired(importFileJedisKey, objectMapper.writeValueAsString(response), 60 * 60 * 24);
         } catch (Throwable e) {
             e.printStackTrace();
             log.error(e.getLocalizedMessage());
@@ -571,7 +578,7 @@ public class PatternService extends BaseService implements IPatternService {
                     entityEntities = new ArrayList<>();
 
                     // Cập nhật trạng thái trên redis
-                    jedisService.setWithExpired(importFileJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
+                    jedisService.setWithExpired(importFileJedisKey, objectMapper.writeValueAsString(response), 60 * 60 * 24);
                 }
             }
 
@@ -586,7 +593,7 @@ public class PatternService extends BaseService implements IPatternService {
 
             // Cập nhật trạng thái trên redis => DONE
             response.setStatus(ResponseImportExcelStatus.EImportExcelStatus.DONE);
-            jedisService.setWithExpired(importFileJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
+            jedisService.setWithExpired(importFileJedisKey, objectMapper.writeValueAsString(response), 60 * 60 * 24);
         } catch (Throwable e) {
             e.printStackTrace();
             log.error(e.getLocalizedMessage());
@@ -613,8 +620,9 @@ public class PatternService extends BaseService implements IPatternService {
                 .numOfFailed(0)
                 .status(ResponseExportExcelStatus.EExportExcelStatus.PROCESSING)
                 .build();
+        EExportTrainingDataToExcelRedisStatus exportTrainingDataToExcelRedisStatus = EExportTrainingDataToExcelRedisStatus.PROCESSING;
 
-        // Nếu tồn tại file Training_data.xlsx thì return DONE luôn
+        // Nếu tồn tại file Training_data.xlsx thì return DONE luôn (download file xlsx hiện có)
         File fileFolder = new File(filePath);
         File file = new File(filePath + fileName);
         if (fileFolder.exists() && file.exists()) {
@@ -630,12 +638,22 @@ public class PatternService extends BaseService implements IPatternService {
                     .build(), PatternEntity.class).size());
             response.setStatus(ResponseExportExcelStatus.EExportExcelStatus.DONE);
             response.setFileName(fileName);
+
+            exportTrainingDataToExcelRedisStatus = EExportTrainingDataToExcelRedisStatus.NONE;
         }
 
         String exportExcelJedisKey = Constant.JedisPrefix.userIdPrefix_ + command.getUserId() +
                 Constant.JedisPrefix.COLON +
-                Constant.JedisPrefix.Pattern.exportExcelSessionIdPrefix_ + sessionId;
-        jedisService.setWithExpired(exportExcelJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
+                Constant.JedisPrefix.Pattern.exportExcelSessionIdPrefix_ + sessionId; // Trạng thái export của từng session
+        String exportTrainingDataToExcelStatusJedisKey = Constant.JedisPrefix.userIdPrefix_ + command.getUserId() +
+                Constant.JedisPrefix.COLON +
+                Constant.Jedis.exportingTrainingDataToExcelStatus; // Trạng thái export chung của từng người dùng
+        String currentExportTrainingDataToExcelSessionIdJedisKey = Constant.JedisPrefix.userIdPrefix_ + command.getUserId() +
+                Constant.JedisPrefix.COLON +
+                Constant.Jedis.currentExportingTrainingDataToExcelSessionId; // Session id của luồng đang thực hiện export, nhằm mục đích để terminate các luồng cũ trong case KH nhấn export 2 lần (lần 1 chưa export xong)
+        jedisService.setWithExpired(exportExcelJedisKey, objectMapper.writeValueAsString(response), 60 * 60 * 24);
+        jedisService.setWithExpired(exportTrainingDataToExcelStatusJedisKey, exportTrainingDataToExcelRedisStatus.name(), 60 * 60 * 24);
+        jedisService.setWithExpired(currentExportTrainingDataToExcelSessionIdJedisKey, sessionId, 60 * 60 * 24);
 
         if (ResponseExportExcelStatus.EExportExcelStatus.DONE.equals(response.getStatus())) {
             return;
@@ -822,8 +840,21 @@ public class PatternService extends BaseService implements IPatternService {
                         }
                     }
 
+                    // Check and Update status
+                    String exportTrainingDataToExcelRedisStatusStr = jedisService.get(exportTrainingDataToExcelStatusJedisKey);
+                    String currentExportTrainingDataToExcelSessionIdRedisStr = jedisService.get(currentExportTrainingDataToExcelSessionIdJedisKey);
+                    if ((StringUtils.isNotBlank(exportTrainingDataToExcelRedisStatusStr) &&
+                            EExportTrainingDataToExcelRedisStatus.CRASHED.name().equals(exportTrainingDataToExcelRedisStatusStr)) || // KH chỉnh sửa dữ liệu training trong lúc đang export
+                            (StringUtils.isNotBlank(currentExportTrainingDataToExcelSessionIdRedisStr) &&
+                                    !currentExportTrainingDataToExcelSessionIdRedisStr.equals(sessionId))) { // KH chưa đợi luồng cũ export xong thì export luồng mới
+                        response.setStatus(ResponseExportExcelStatus.EExportExcelStatus.CRASHED); // ==> CRASHED luồng hiện tại
+                    }
                     response.setNumOfSuccess(response.getNumOfSuccess() + patterns.size());
-                    jedisService.setWithExpired(exportExcelJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
+                    jedisService.setWithExpired(exportExcelJedisKey, objectMapper.writeValueAsString(response), 60 * 60 * 24);
+                    if (response.getStatus().equals(ResponseExportExcelStatus.EExportExcelStatus.CRASHED)) {
+                        log.warn("[{}]: {}", new Exception().getStackTrace()[0], "Exporting training data to excel crashed!");
+                        return;
+                    }
                     if (patterns.size() != sizeOfPatternsPerTime) {
                         break;
                     }
@@ -835,11 +866,6 @@ public class PatternService extends BaseService implements IPatternService {
             }
         }
 
-        response.setStatus(ResponseExportExcelStatus.EExportExcelStatus.DONE);
-        response.setFileName(fileName);
-        jedisService.setWithExpired(exportExcelJedisKey, objectMapper.writeValueAsString(response), 60 * 24);
-        //endregion
-
         try {
             if (!fileFolder.exists()) {
                 fileFolder.mkdir();
@@ -848,21 +874,45 @@ public class PatternService extends BaseService implements IPatternService {
             file.createNewFile();
             FileOutputStream outputStream = new FileOutputStream(file, false);
             workbook.write(outputStream);
+
+            // Set trạng thái về DONE
+            response.setStatus(ResponseExportExcelStatus.EExportExcelStatus.DONE);
+            response.setFileName(fileName);
+            jedisService.setWithExpired(exportExcelJedisKey, objectMapper.writeValueAsString(response), 60 * 60 * 24);
+            jedisService.setWithExpired(exportTrainingDataToExcelStatusJedisKey, EExportTrainingDataToExcelRedisStatus.NONE.name(), 60 * 60 * 24);
         } catch (Exception e) {
             e.printStackTrace();
+            response.setStatus(ResponseExportExcelStatus.EExportExcelStatus.ERROR);
+            jedisService.setWithExpired(exportExcelJedisKey, objectMapper.writeValueAsString(response), 60 * 60 * 24);
+            jedisService.setWithExpired(exportTrainingDataToExcelStatusJedisKey, EExportTrainingDataToExcelRedisStatus.NONE.name(), 60 * 60 * 24);
         }
+        //endregion
+
     }
 
-    @Override
     public void removeExportedTrainingDataFile(String userId) throws Exception {
+        String jedisKey = Constant.JedisPrefix.userIdPrefix_ + userId +
+                Constant.JedisPrefix.COLON +
+                Constant.Jedis.exportingTrainingDataToExcelStatus;
+        String exportStatus = jedisService.get(jedisKey);
+        if (EExportTrainingDataToExcelRedisStatus.PROCESSING.name().equals(exportStatus)) {
+            // Nếu đang trong quá trình export thì chuyển cờ về CRASHED
+            jedisService.setWithExpired(jedisKey, EExportTrainingDataToExcelRedisStatus.CRASHED.name(), 60 * 60 * 24);
+            return;
+        }
+
         String filePath = Constant.fileDataPath + userId + "/";
         String fileName = Constant.Pattern.exportExcelFileName + ".xlsx";
-
         File fileFolder = new File(filePath);
         File file = new File(filePath + fileName);
         if (fileFolder.exists() && file.exists()) {
             file.delete();
         }
+    }
+
+    @Override
+    public void processAfterCUDIntentPatternEntityEntityType(CommandProcessAfterCUDIntentPatternEntityEntityType command) throws Exception {
+        this.removeExportedTrainingDataFile(command.getUserId());
     }
 
     /**

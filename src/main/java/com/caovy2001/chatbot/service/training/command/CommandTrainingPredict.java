@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CommandTrainingPredict {
+    private String userId;
     private String secretKey;
     private String scriptId;
     private String currentNodeId;

@@ -20,6 +20,8 @@ public class ResponseExportExcelStatus {
 
     public enum EExportExcelStatus {
         PROCESSING,
-        DONE
+        DONE,
+        CRASHED,
+        ERROR
     }
 }

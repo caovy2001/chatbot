@@ -96,7 +96,10 @@ public class IntentAPI {
             if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
                 throw new Exception("auth_invalid");
 
-            command.setUserId(userEntity.getId());
+            // Vul
+            if (StringUtils.isNotBlank(command.getUserId())) {
+                command.setUserId(userEntity.getId());
+            }
             return ResponseEntity.ok(intentService.getPaginatedList(command, IntentEntity.class, CommandGetListIntent.class));
         } catch (Exception e) {
             return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 1, 0, 0));

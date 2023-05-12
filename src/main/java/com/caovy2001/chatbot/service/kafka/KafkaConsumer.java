@@ -8,6 +8,7 @@ import com.caovy2001.chatbot.service.message_history.IMessageHistoryService;
 import com.caovy2001.chatbot.service.message_history.command.CommandAddMessageHistory;
 import com.caovy2001.chatbot.service.pattern.IPatternService;
 import com.caovy2001.chatbot.service.pattern.command.CommandIndexingPatternES;
+import com.caovy2001.chatbot.service.pattern.command.CommandProcessAfterCUDIntentPatternEntityEntityType;
 import com.caovy2001.chatbot.service.pattern.es.IPatternServiceES;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -66,11 +67,11 @@ public class KafkaConsumer {
         }
     }
 
-    @KafkaListener(topics = Constant.KafkaTopic.process_removing_exported_training_data_file, groupId = "group_id")
-    private void processRemovingTrainingDataFile(String userId) throws Exception {
+    @KafkaListener(topics = Constant.KafkaTopic.process_after_cud_intent_pattern_entity_entityType, groupId = "group_id")
+    private void processAfterCUDIntentPatternEntityEntityType(String message) throws Exception {
         try {
-            log.info("[{}]: {}", "Consumer process_removing_exported_training_data_file", userId);
-            patternService.removeExportedTrainingDataFile(userId);
+            log.info("[{}]: {}", "Consumer process_after_cud_intent_pattern_entity_entityType", message);
+            patternService.processAfterCUDIntentPatternEntityEntityType(objectMapper.readValue(message, CommandProcessAfterCUDIntentPatternEntityEntityType.class));
         } catch (Exception e) {
             log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage())? e.getMessage(): ExceptionConstant.error_occur);
         }
