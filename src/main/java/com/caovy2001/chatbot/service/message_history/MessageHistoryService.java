@@ -64,9 +64,11 @@ public class MessageHistoryService extends BaseService implements IMessageHistor
 
         // Convert entity thành document (do trường entity type là transient)
         List<Document> entities = null;
+        List<String> entityTypeIds = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(command.getEntities())) {
             entities = new ArrayList<>();
             for (EntityEntity entity : command.getEntities()) {
+                entityTypeIds.add(entity.getEntityTypeId());
                 entity.getEntityType().setUuid(null);
                 entity.getEntityType().setUserId(null);
                 entity.getEntityType().setLowerCaseName(null);
@@ -74,6 +76,12 @@ public class MessageHistoryService extends BaseService implements IMessageHistor
                 entities.add(objectMapper.convertValue(entity, Document.class));
             }
         }
+
+        // Update trường inMessageHistoryGroupListTitle vycds
+//        if (BooleanUtils.isTrue(command.getUpdateInMHGListTitleFieldInEntityType()) &&
+//                CollectionUtils.isNotEmpty(entityTypeIds)) {
+//
+//        }
 
         if (BooleanUtils.isTrue(command.isCheckAddMessageHistoryGroup())) {
             CompletableFuture.runAsync(() -> {

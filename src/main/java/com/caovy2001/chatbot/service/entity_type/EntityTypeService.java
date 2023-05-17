@@ -14,10 +14,7 @@ import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
 import com.caovy2001.chatbot.service.common.command.CommandUpdateBase;
 import com.caovy2001.chatbot.service.entity.IEntityService;
 import com.caovy2001.chatbot.service.entity.command.CommandGetListEntity;
-import com.caovy2001.chatbot.service.entity_type.command.CommandAddEntityType;
-import com.caovy2001.chatbot.service.entity_type.command.CommandEntityTypeAddMany;
-import com.caovy2001.chatbot.service.entity_type.command.CommandGetListEntityType;
-import com.caovy2001.chatbot.service.entity_type.command.CommandUpdateEntityType;
+import com.caovy2001.chatbot.service.entity_type.command.*;
 import com.caovy2001.chatbot.service.pattern.command.CommandProcessAfterCUDIntentPatternEntityEntityType;
 import com.caovy2001.chatbot.utils.ChatbotStringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,9 +27,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -343,5 +343,60 @@ public class EntityTypeService extends BaseService implements IEntityTypeService
                 entityType.setEntities(entitiesByEntityTypeId.get(entityType.getId()));
             }
         }
+    }
+
+    public boolean updateManyByQuery(CommandEntityTypeUpdateManyByQuery command) throws Exception {
+        if (StringUtils.isBlank(command.getUserId()) ||
+                command.getCommandGetListEntityType() == null ||
+                CollectionUtils.isEmpty(command.getFieldsToUpdate()) ||
+                command.getValue() == null) {
+            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.missing_param);
+            return false;
+        }
+
+        Query query = this.buildQueryGetList(command.getCommandGetListEntityType());
+        if (query == null) {
+            return false;
+        }
+
+        Update update = new Update();
+        boolean hasValue = false;
+        Field[] fields = command.getValue().getClass().getDeclaredFields();
+        for (String field: command.getFieldsToUpdate()) {
+            if (StringUtils.isBlank(field)) {
+                continue;
+            }
+
+            // Check xem inpValue có đúng hay không (có nàm trong tên của model này hay không)
+            Field fieldInClass = Arrays.stream(fields).filter(f -> f.getName().equals(field)).findFirst().orElse(null);
+            if (fieldInClass == null) {
+                log.warn("[{}]: {}", new Exception().getStackTrace()[0], field + " is not a field name of EntityType class");
+                continue;
+            }
+
+            org.springframework.data.mongodb.core.mapping.Field fieldAnnotation = fieldInClass.getAnnotation(org.springframework.data.mongodb.core.mapping.Field.class);
+            if (fieldAnnotation == null) {
+                log.warn("[{}]: {}", new Exception().getStackTrace()[0], "Cannot get Field annotation of field: " + field);
+                continue;
+            }
+
+            String snackCaseFieldName = fieldAnnotation.value();
+            if (StringUtils.isBlank(snackCaseFieldName)) {
+                log.warn("[{}]: {}", new Exception().getStackTrace()[0], "Cannot get field name in snake case of field: " + field);
+                continue;
+            }
+
+            fieldInClass.setAccessible(true);
+            Object fieldValue = fieldInClass.get(command.getValue());
+            update.set(snackCaseFieldName, fieldValue);
+            hasValue = true;
+        }
+
+        if (BooleanUtils.isTrue(hasValue)) {
+            mongoTemplate.updateMulti(query, update, EntityTypeEntity.class);
+            return true;
+        }
+
+        return false;
     }
 }

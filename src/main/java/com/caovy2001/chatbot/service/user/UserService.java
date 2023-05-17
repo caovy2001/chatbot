@@ -30,7 +30,11 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @Slf4j
@@ -78,8 +82,34 @@ public class UserService extends BaseService implements IUserService {
         }
 
         // Vul
-        userEntity.setPassword(Base64.getEncoder().encodeToString(userEntity.getPassword().getBytes()));
+//        userEntity.setPassword(Base64.getEncoder().encodeToString(userEntity.getPassword().getBytes()));
+        userEntity.setPassword(this.convertStringToHash(userEntity.getPassword()));
         return userEntity;
+    }
+
+    private String convertStringToHash(String input) {
+        try {
+            // Create a MessageDigest object with the desired algorithm
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+            // Convert the input string to bytes
+            byte[] hashBytes = digest.digest(input.getBytes());
+
+            // Convert the byte array to a hexadecimal string
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hashBytes) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     @Override
@@ -87,6 +117,10 @@ public class UserService extends BaseService implements IUserService {
         if (commandUserSignUp == null ||
                 StringUtils.isAnyBlank(commandUserSignUp.getUsername(), commandUserSignUp.getPassword(), commandUserSignUp.getFullname())) {
             return this.returnException(ExceptionConstant.missing_param, ResponseUserSignUp.class);
+        }
+
+        if (!this.validatePassword(commandUserSignUp.getPassword())) {
+            return returnException("wrong_password_format", ResponseUserSignUp.class);
         }
 
         // Check xem username này đã tồn tại hay chưa
@@ -122,6 +156,29 @@ public class UserService extends BaseService implements IUserService {
                 .token(savedUserEntity.getToken())
                 .secretKey(savedUserEntity.getSecretKey())
                 .build();
+    }
+
+    private boolean validatePassword(String password) {
+        // Check length
+        if (password.length() < 8 || password.length() > 20) {
+            return false;
+        }
+
+        // Chỉ chứa các kí tự chữ (kí tự chữ hoa, kí tự chữ thường, kí tự số)
+        Pattern p = Pattern.compile("[^a-z0-9 ]", Pattern.CASE_INSENSITIVE);
+        Matcher m = p.matcher(password);
+        if (m.find()) {
+            return false;
+        }
+
+        // Có tối thiểu 1 kí tự chữ hoa, 1 kí tự chữ thường và 1 kí tự số
+        p = Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+$");
+        m = p.matcher(password);
+        if (!m.find()) {
+            return false;
+        }
+
+        return true;
     }
 
     @Override

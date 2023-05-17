@@ -1,14 +1,17 @@
 package com.caovy2001.chatbot.api;
 
+import com.caovy2001.chatbot.entity.EntityTypeEntity;
 import com.caovy2001.chatbot.entity.IntentEntity;
 import com.caovy2001.chatbot.entity.PatternEntity;
 import com.caovy2001.chatbot.entity.es.IntentEntityES;
 import com.caovy2001.chatbot.repository.IntentRepository;
 import com.caovy2001.chatbot.repository.es.IntentRepositoryES;
+import com.caovy2001.chatbot.service.entity_type.EntityTypeService;
+import com.caovy2001.chatbot.service.entity_type.command.CommandEntityTypeUpdateManyByQuery;
+import com.caovy2001.chatbot.service.entity_type.command.CommandGetListEntityType;
 import com.caovy2001.chatbot.service.intent.IIntentService;
 import com.caovy2001.chatbot.service.intent.command.CommandIntentAddMany;
 import com.caovy2001.chatbot.service.jedis.IJedisService;
-import com.caovy2001.chatbot.service.kafka.KafkaConsumer;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
@@ -24,7 +27,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
@@ -45,7 +48,7 @@ public class Tool {
     @Autowired
     private ObjectMapper objectMapper;
 
-//    @GetMapping("/tool1")
+    //    @GetMapping("/tool1")
     public ResponseEntity<Boolean> tool1() {
         try {
             ResponseListPatterns responseListPatterns = null;
@@ -104,7 +107,7 @@ public class Tool {
     @Autowired
     private IIntentService intentService;
 
-//    @GetMapping("/tool2")
+    //    @GetMapping("/tool2")
     public ResponseEntity<Boolean> tool2() {
         try {
             List<IntentEntity> intentEntities = new ArrayList<>();
@@ -167,7 +170,7 @@ public class Tool {
     @Autowired
     private IJedisService jedisService;
 
-//    @GetMapping("/tool3")
+    //    @GetMapping("/tool3")
     public ResponseEntity<String> tool3() {
 //        Jedis jedis = new Jedis("redis://default:yPqm07QgkiXFbZ9gxR9ejjpmuhO3j9sG@redis-18384.c16.us-east-1-2.ec2.cloud.redislabs.com:18384");
         jedisService.set("test_key1", "test_value1");
@@ -190,6 +193,7 @@ public class Tool {
     public static class Payload {
         private List<Item> items;
     }
+
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
@@ -201,7 +205,7 @@ public class Tool {
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
 
-//    @GetMapping("/test_kafka")
+    //    @GetMapping("/test_kafka")
     public void testKafka() {
         kafkaTemplate.send("process_save_message_when_predict", "Helloooooo!");
     }
@@ -212,13 +216,36 @@ public class Tool {
     @Autowired
     private IntentRepositoryES intentRepositoryES;
 
-//    @GetMapping("/index_all_intents")
-    public void indexESIntent() throws Exception{
+    //    @GetMapping("/index_all_intents")
+    public void indexESIntent() throws Exception {
         List<IntentEntity> intents = intentRepository.findAll();
         List<IntentEntityES> intentESes = objectMapper.readValue(objectMapper.writeValueAsString(intents), new TypeReference<List<IntentEntityES>>() {
         });
 
         intentRepositoryES.saveAll(intentESes);
+    }
+
+    @Autowired
+    private EntityTypeService entityTypeService;
+
+//    @PostMapping("/test_update_many_entity_type")
+    public boolean testUpdateManyEntityType() {
+        try {
+            String userId = "6427132b2ce9b1155a05f3ea";
+            return entityTypeService.updateManyByQuery(CommandEntityTypeUpdateManyByQuery.builder()
+                    .userId(userId)
+                    .commandGetListEntityType(CommandGetListEntityType.builder()
+                            .userId(userId)
+                            .build())
+                    .fieldsToUpdate(List.of("createdDate"))
+                    .value(EntityTypeEntity.builder()
+                            .createdDate(1681363802748L)
+                            .build())
+                    .build());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
 }

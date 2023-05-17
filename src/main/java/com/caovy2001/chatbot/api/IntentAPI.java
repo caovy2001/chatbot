@@ -96,10 +96,7 @@ public class IntentAPI {
             if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
                 throw new Exception("auth_invalid");
 
-            // Vul
-            if (StringUtils.isBlank(command.getUserId())) {
-                command.setUserId(userEntity.getId());
-            }
+            command.setUserId(userEntity.getId());
             return ResponseEntity.ok(intentService.getPaginatedList(command, IntentEntity.class, CommandGetListIntent.class));
         } catch (Exception e) {
             return ResponseEntity.ok(new Paginated<>(new ArrayList<>(), 1, 0, 0));
@@ -169,24 +166,4 @@ public class IntentAPI {
             return ResponseEntity.ok(intentService.returnException(e.getMessage(), ResponseIntents.class));
         }
     }
-
-
-//    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-//    @PostMapping("/add_patterns")
-//    public ResponseEntity<ResponseIntents> addPatterns(@RequestBody CommandIntentAddPattern command) {
-//        try {
-//            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-//            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
-//                throw new Exception("auth_invalid");
-//
-//            if (StringUtils.isBlank(command.getIntentId())) throw new Exception(ExceptionConstant.missing_param);
-//
-//            command.setUserId(userEntity.getId());
-//            ResponseIntents responseIntents = intentService.addPatterns(command);
-//            return ResponseEntity.ok(responseIntents);
-//        } catch (Exception e) {
-//            return ResponseEntity.ok(intentService.returnException(e.toString(), ResponseIntents.class));
-//        }
-//    }
-
 }

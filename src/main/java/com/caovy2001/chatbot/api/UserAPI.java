@@ -27,9 +27,17 @@ public class UserAPI {
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @GetMapping("/{id}")
-    public ResponseEntity<UserEntity> getById(@PathVariable String id) {
-        UserEntity userEntity = userService.getById(id);
-        return ResponseEntity.ok(userEntity);
+    public ResponseEntity<UserEntity> getById(@PathVariable String id) throws Exception{
+        UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
+            throw new Exception("auth_invalid");
+        }
+
+//        if (!userEntity.getId().equals(id)) {
+//            throw new Exception("auth_invalid");
+//        }
+
+        return ResponseEntity.ok(userService.getById(id));
     }
 
     @PostMapping("/login")
