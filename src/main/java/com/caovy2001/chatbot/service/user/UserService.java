@@ -63,6 +63,7 @@ public class UserService extends BaseService implements IUserService {
     public ResponseUserLogin login(CommandUserLogin command) {
         UserEntity userEntity = userRepository.findByUsernameAndPassword(command.getUsername(), command.getPassword()).orElse(null);
         if (userEntity == null) {
+            log.error("[{}]: {}", new Exception().getStackTrace()[0], ExceptionConstant.login_fail);
             return returnException(ExceptionConstant.login_fail, ResponseUserLogin.class);
         }
 
