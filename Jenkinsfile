@@ -3,7 +3,7 @@ pipeline {
     stages {
         stage('Clone') {
             steps {
-                git 'https://github.com/vyphotphet100/chatbot.git'
+                git branch: 'main', credentialsId: 'vyphotphet100-github-2', url: 'https://github.com/vyphotphet100/chatbot.git'
             }
         }
         stage('Build stage') {
