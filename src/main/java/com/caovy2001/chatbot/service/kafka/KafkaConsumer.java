@@ -50,7 +50,7 @@ public class KafkaConsumer {
     @KafkaListener(topics = Constant.KafkaTopic.process_indexing_intent_es, groupId = "group_id")
     private void processIndexingIntentES(String message) throws IOException {
         try {
-            log.info("[{}]: {}", "Consumer process_indexing_intent_es", message);
+            log.info("[{}]: {}", "Consumer process_indexing_intent_es ", message);
             intentServiceES.index(objectMapper.readValue(message, CommandIndexingIntentES.class));
         } catch (Exception e) {
             log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage())? e.getMessage(): ExceptionConstant.error_occur);
