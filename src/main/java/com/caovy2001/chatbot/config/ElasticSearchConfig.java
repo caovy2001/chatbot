@@ -15,7 +15,7 @@ import java.util.ResourceBundle;
 @EnableElasticsearchRepositories(basePackages = "com.caovy2001.chatbot.repository.es")
 @ComponentScan(basePackages = { "com.caovy2001.chatbot" })
 public class ElasticSearchConfig extends AbstractElasticsearchConfiguration {
-    private final ResourceBundle resourceBundle = ResourceBundle.getBundle("custom");
+    private final ResourceBundle resourceBundle = ResourceBundle.getBundle("application");
 
     @Override
     @Bean

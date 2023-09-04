@@ -85,7 +85,7 @@ public class TrainingService extends BaseService implements ITrainingService {
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
 
-    private final ResourceBundle resourceBundle = ResourceBundle.getBundle("custom");
+    private final ResourceBundle resourceBundle = ResourceBundle.getBundle("application");
 
     @Override
     public ResponseTrainingTrain train(CommandTrainingTrain command) {

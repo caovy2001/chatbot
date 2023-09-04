@@ -57,7 +57,7 @@ public class UserService extends BaseService implements IUserService {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private final ResourceBundle resourceBundle = ResourceBundle.getBundle("custom");
+    private final ResourceBundle resourceBundle = ResourceBundle.getBundle("application");
 
     @Override
     public ResponseUserLogin login(CommandUserLogin command) {

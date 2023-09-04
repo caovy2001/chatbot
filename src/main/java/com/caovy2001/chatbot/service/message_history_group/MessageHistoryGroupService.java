@@ -19,6 +19,7 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -95,7 +96,8 @@ public class MessageHistoryGroupService extends BaseService implements IMessageH
             return new Paginated<>(new ArrayList<>(), command.getPage(), command.getSize(), 0);
         }
 
-        PageRequest pageRequest = PageRequest.of(command.getPage() - 1, command.getSize());
+        // vycds - need to refactor: remove sort
+        PageRequest pageRequest = PageRequest.of(command.getPage() - 1, command.getSize(), Sort.by(Sort.Direction.DESC, "created_date"));
         query.with(pageRequest);
         List<MessageHistoryGroupEntity> messageHistoryGroups = mongoTemplate.find(query, MessageHistoryGroupEntity.class);
         this.setViewForMessageHistoryGroupList(messageHistoryGroups, command);
