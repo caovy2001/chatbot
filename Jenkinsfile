@@ -9,8 +9,8 @@ pipeline {
         stage('Build stage') {
             steps {
                 echo '======= START BUILD STAGE ========'
-                sh 'sudo docker compose up -d --build'
-                sh 'echo "y" | sudo docker system prune -a'
+                sh 'docker compose up -d --build'
+                sh 'echo "y" | docker system prune -a'
                 echo '======= FINISH BUILD STAGE ========'
             }
         }
