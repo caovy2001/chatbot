@@ -1,7 +1,7 @@
 pipeline {
     agent any
     stages {
-        stage('Clone ') {
+        stage('Clone') {
             steps {
                 git branch: 'main', credentialsId: 'vyphotphet100-github-2', url: 'https://github.com/vyphotphet100/chatbot.git'
             }
