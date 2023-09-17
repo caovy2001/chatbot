@@ -9,7 +9,7 @@ pipeline {
         }
         stage('Build stage') {
             steps {
-                echo '======= START BUILD STAGE ========'
+                echo '======= START BUILD STAGE ======== '
                 //sh 'cd /'
                 //sh 'cd root/test_jenkins_folder'
                 sh 'cd test'
