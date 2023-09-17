@@ -9,7 +9,7 @@ pipeline {
         stage('Build stage') {
             steps {
                 echo '======= START BUILD STAGE ========'
-                sh 'cd ~'
+                sh 'cd /root'
                 sh 'cd test_jenkins_folder'
                 sh 'mkdir test'
                 //sh 'docker compose up -d --build'
