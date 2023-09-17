@@ -9,8 +9,10 @@ pipeline {
         stage('Build stage') {
             steps {
                 echo '======= START BUILD STAGE ========'
-                sh 'docker compose up -d --build'
-                sh 'echo "y" | docker system prune -a'
+                sh 'cd test_jenkins_folder'
+                sh 'mkdir test'
+                //sh 'docker compose up -d --build'
+                //sh 'echo "y" | docker system prune -a'
                 echo '======= FINISH BUILD STAGE ========'
             }
         }
