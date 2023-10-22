@@ -120,9 +120,9 @@ public class UserService extends BaseService implements IUserService {
             return this.returnException(ExceptionConstant.missing_param, ResponseUserSignUp.class);
         }
 
-        if (!this.validatePassword(commandUserSignUp.getPassword())) {
-            return returnException("wrong_password_format", ResponseUserSignUp.class);
-        }
+//        if (!this.validatePassword(commandUserSignUp.getPassword())) {
+//            return returnException("wrong_password_format", ResponseUserSignUp.class);
+//        }
 
         // Check xem username này đã tồn tại hay chưa
         if (userRepository.countByUsername(commandUserSignUp.getUsername()) > 0) {

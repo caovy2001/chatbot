@@ -1118,14 +1118,28 @@ public class PatternService extends BaseService implements IPatternService {
             }
         }
 
+        Map<String, List<EntityEntity>> entitiesByPatternId = new HashMap<>();
+        if (BooleanUtils.isTrue(command.isHasEntities())) {
+            List<EntityEntity> entities = entityService.getList(CommandGetListEntity.builder()
+                    .userId(command.getUserId())
+                    .patternIds(patterns.stream().map(PatternEntity::getId).toList())
+                    .hasEntityType(command.getHasEntityTypeOfEntities())
+                    .build(), EntityEntity.class);
+
+            entities.forEach(e -> {
+                List<EntityEntity> entitiesItem = new ArrayList<>();
+                if (entitiesByPatternId.get(e.getPatternId()) != null) {
+                    entitiesItem = entitiesByPatternId.get(e.getPatternId());
+                }
+
+                entitiesItem.add(e);
+                entitiesByPatternId.put(e.getPatternId(), entitiesItem);
+            });
+        }
+
         for (PatternEntity pattern : patterns) {
             if (BooleanUtils.isTrue(command.isHasEntities())) {
-                List<EntityEntity> entities = entityService.getList(CommandGetListEntity.builder()
-                        .userId(command.getUserId())
-                        .patternId(pattern.getId())
-                        .hasEntityType(command.getHasEntityTypeOfEntities())
-                        .build(), EntityEntity.class);
-                pattern.setEntities(entities);
+                pattern.setEntities(entitiesByPatternId.get(pattern.getId()));
             }
 
             if (BooleanUtils.isTrue(command.isHasIntentName())) {

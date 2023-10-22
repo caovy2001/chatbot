@@ -20,6 +20,7 @@ public class CommandGetListEntity extends CommandGetListBase {
     private List<String> ids;
     private String keyword;
     private String patternId;
+    private List<String> patternIds;
     private List<String> entityTypeIds;
     private List<String> returnFields;
     @Builder.Default

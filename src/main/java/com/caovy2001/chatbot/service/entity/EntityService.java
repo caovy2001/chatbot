@@ -157,6 +157,10 @@ public class EntityService extends BaseService implements IEntityService {
             andCriteriaList.add(Criteria.where("pattern_id").is(command.getPatternId()));
         }
 
+        if (CollectionUtils.isNotEmpty(command.getPatternIds())) {
+            andCriteriaList.add(Criteria.where("pattern_id").in(command.getPatternIds()));
+        }
+
         if (CollectionUtils.isNotEmpty(command.getEntityTypeIds())) {
             andCriteriaList.add(Criteria.where("entity_type_id").in(command.getEntityTypeIds()));
         }
@@ -164,6 +168,8 @@ public class EntityService extends BaseService implements IEntityService {
         if (CollectionUtils.isNotEmpty(command.getIds())) {
             andCriteriaList.add(Criteria.where("id").in(command.getIds()));
         }
+
+
 
         if (CollectionUtils.isNotEmpty(orCriteriaList)) {
             criteria.orOperator(orCriteriaList);

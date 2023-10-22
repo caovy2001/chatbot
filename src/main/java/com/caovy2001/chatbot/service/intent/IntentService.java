@@ -349,17 +349,43 @@ public class IntentService extends BaseService implements IIntentService {
             return;
         }
 
+        // Set pattern
+        List<String> intentIds = intents.stream().map(IntentEntity::getId).toList();
+        List<PatternEntity> patterns = patternService.getList(CommandGetListPattern.builder()
+                .userId(command.getUserId())
+                .intentIds(intentIds)
+                .hasEntities(command.isHasEntitiesOfPatterns())
+                .hasEntityTypeOfEntities(command.isHasEntityTypesOfEntitiesOfPatterns())
+                .build(), PatternEntity.class);
+
+        Map<String, List<PatternEntity>> intentPatternsMap = new HashMap<>();
+        List<PatternEntity> patternsItem = new ArrayList<>();
+        for (PatternEntity pattern : patterns) {
+            if (intentPatternsMap.get(pattern.getIntentId()) != null) {
+                patternsItem = intentPatternsMap.get(pattern.getIntentId());
+            }
+            patternsItem.add(pattern);
+            intentPatternsMap.put(pattern.getIntentId(), patternsItem);
+
+        }
+
         for (IntentEntity intent : intents) {
-            if (BooleanUtils.isTrue(command.isHasPatterns())) {
-                List<PatternEntity> patterns = patternService.getList(CommandGetListPattern.builder()
-                        .userId(command.getUserId())
-                        .intentId(intent.getId())
-                        .hasEntities(command.isHasEntitiesOfPatterns())
-                        .hasEntityTypeOfEntities(command.isHasEntityTypesOfEntitiesOfPatterns())
-                        .build(), PatternEntity.class);
-                intent.setPatterns(patterns);
+            if (intentPatternsMap.get(intent.getId()) != null) {
+                intent.setPatterns(intentPatternsMap.get(intent.getId()));
             }
         }
+
+//        for (IntentEntity intent : intents) {
+//            if (BooleanUtils.isTrue(command.isHasPatterns())) {
+//                List<PatternEntity> patterns = patternService.getList(CommandGetListPattern.builder()
+//                        .userId(command.getUserId())
+//                        .intentId(intent.getId())
+//                        .hasEntities(command.isHasEntitiesOfPatterns())
+//                        .hasEntityTypeOfEntities(command.isHasEntityTypesOfEntitiesOfPatterns())
+//                        .build(), PatternEntity.class);
+//                intent.setPatterns(patterns);
+//            }
+//        }
     }
 
     private void indexES(CommandIndexingIntentES command) {

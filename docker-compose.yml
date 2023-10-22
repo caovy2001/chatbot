@@ -29,15 +29,15 @@ services:
       - "2181:2181"
 
   # API
-  api:
-    build:
-      context: .
-    image: chatbot-image
-    network_mode: host
-    command: [
-      "java",
-      "-jar",
-      "-Dspring.config.name=application",
-      "-Dspring.config.location=file:application.properties",
-      "app.jar"
-    ]
+#  api:
+#    build:
+#      context: .
+#    image: chatbot-image
+#    network_mode: host
+#    command: [
+#      "java",
+#      "-jar",
+#      "-Dspring.config.name=application",
+#      "-Dspring.config.location=file:application.properties",
+#      "app.jar"
+#    ]
