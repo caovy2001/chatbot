@@ -12,6 +12,7 @@ import com.caovy2001.chatbot.service.intent.IIntentService;
 import com.caovy2001.chatbot.service.intent.command.CommandGetListIntent;
 import com.caovy2001.chatbot.service.jedis.IJedisService;
 import com.caovy2001.chatbot.service.jedis.JedisService;
+import com.caovy2001.chatbot.service.kafka.KafkaConsumer;
 import com.caovy2001.chatbot.service.message_history.IMessageHistoryService;
 import com.caovy2001.chatbot.service.message_history.command.CommandAddMessageHistory;
 import com.caovy2001.chatbot.service.node.INodeService;
@@ -84,6 +85,9 @@ public class TrainingService extends BaseService implements ITrainingService {
 
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
+
+    @Autowired
+    private KafkaConsumer kafkaConsumer;
 
     private final ResourceBundle resourceBundle = ResourceBundle.getBundle("application");
 
@@ -183,7 +187,14 @@ public class TrainingService extends BaseService implements ITrainingService {
             // Lưu message mà bot gửi đi
             if (BooleanUtils.isFalse(command.getIsTrying())) {
                 this.saveUserMessage(command, null);
-                kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+//                kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+//                        .nodeId(firstNode.getNodeId())
+//                        .message(firstNode.getMessage())
+//                        .from(EMessageHistoryFrom.BOT)
+//                        .checkAddMessageHistoryGroup(true)
+//                        .saveMessageEntityHistory(true)
+//                        .build()));
+                kafkaConsumer.processSaveMessageWhenPredictConsumer(objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
                         .nodeId(firstNode.getNodeId())
                         .message(firstNode.getMessage())
                         .from(EMessageHistoryFrom.BOT)
@@ -220,7 +231,15 @@ public class TrainingService extends BaseService implements ITrainingService {
         if (StringUtils.isBlank(nextNodeId)) {
             //region Lưu message mà bot gửi đi
             if (BooleanUtils.isFalse(command.getIsTrying())) {
-                kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+//                kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+//                        .nodeId(currNode.getNodeId())
+//                        .message(wrongMessage)
+//                        .from(EMessageHistoryFrom.BOT)
+////                        .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
+//                        .checkAddMessageHistoryGroup(true)
+//                        .saveMessageEntityHistory(true)
+//                        .build()));
+                kafkaConsumer.processSaveMessageWhenPredictConsumer(objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
                         .nodeId(currNode.getNodeId())
                         .message(wrongMessage)
                         .from(EMessageHistoryFrom.BOT)
@@ -240,7 +259,15 @@ public class TrainingService extends BaseService implements ITrainingService {
         if (nextNodeId.equals("_END")) {
             //region Lưu message mà bot gửi đi
             if (BooleanUtils.isFalse(command.getIsTrying())) {
-                kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+//                kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+//                        .nodeId("_END")
+//                        .message(endMessage)
+//                        .from(EMessageHistoryFrom.BOT)
+////                        .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
+//                        .checkAddMessageHistoryGroup(true)
+//                        .saveMessageEntityHistory(true)
+//                        .build()));
+                kafkaConsumer.processSaveMessageWhenPredictConsumer(objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
                         .nodeId("_END")
                         .message(endMessage)
                         .from(EMessageHistoryFrom.BOT)
@@ -263,7 +290,15 @@ public class TrainingService extends BaseService implements ITrainingService {
             // Nếu không có node tiếp theo thì đây là node cuối cùng
             //region Lưu message mà bot gửi đi
             if (BooleanUtils.isFalse(command.getIsTrying())) {
-                kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+//                kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+//                        .nodeId("_END")
+//                        .message(endMessage)
+//                        .from(EMessageHistoryFrom.BOT)
+////                        .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
+//                        .checkAddMessageHistoryGroup(true)
+//                        .saveMessageEntityHistory(true)
+//                        .build()));
+                kafkaConsumer.processSaveMessageWhenPredictConsumer(objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
                         .nodeId("_END")
                         .message(endMessage)
                         .from(EMessageHistoryFrom.BOT)
@@ -285,7 +320,15 @@ public class TrainingService extends BaseService implements ITrainingService {
 
         // Lưu message mà bot gửi đi
         if (BooleanUtils.isFalse(command.getIsTrying())) {
-            kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+//            kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+//                    .nodeId(nextNodeId)
+//                    .message(returnMessage)
+//                    .from(EMessageHistoryFrom.BOT)
+////                    .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
+//                    .checkAddMessageHistoryGroup(true)
+//                    .saveMessageEntityHistory(true)
+//                    .build()));
+            kafkaConsumer.processSaveMessageWhenPredictConsumer(objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
                     .nodeId(nextNodeId)
                     .message(returnMessage)
                     .from(EMessageHistoryFrom.BOT)
@@ -303,7 +346,15 @@ public class TrainingService extends BaseService implements ITrainingService {
 
     private void saveUserMessage(CommandTrainingPredict command, ResponseTrainingPredictFromAI responseTrainingPredictFromAI) throws Exception {
         if (BooleanUtils.isFalse(command.getIsTrying())) {
-            kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(command.getUserId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+//            kafkaTemplate.send(Constant.KafkaTopic.process_save_message_when_predict, objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(command.getUserId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
+//                    .nodeId(command.getCurrentNodeId())
+//                    .message(command.getMessage())
+//                    .from(EMessageHistoryFrom.CUSTOMER)
+//                    .checkAddMessageHistoryGroup(true)
+//                    .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
+//                    .saveMessageEntityHistory(true)
+//                    .build()));
+            kafkaConsumer.processSaveMessageWhenPredictConsumer(objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(command.getUserId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
                     .nodeId(command.getCurrentNodeId())
                     .message(command.getMessage())
                     .from(EMessageHistoryFrom.CUSTOMER)

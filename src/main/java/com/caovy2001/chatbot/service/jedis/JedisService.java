@@ -6,7 +6,7 @@ import redis.clients.jedis.Jedis;
 @Service
 public class JedisService implements IJedisService {
 //    private static Jedis jedis = new Jedis("redis://default:yPqm07QgkiXFbZ9gxR9ejjpmuhO3j9sG@redis-18384.c16.us-east-1-2.ec2.cloud.redislabs.com:18384");
-    private static final String jedisConnectionStr = "redis://default:OS9aHzPkrO5nwFUl1VUy1A0GrsJkD2qc@redis-18844.c81.us-east-1-2.ec2.cloud.redislabs.com:18844";
+    private static final String jedisConnectionStr = "redis://localhost:6380";
 //    private static final Jedis jedis = new Jedis("redis://default:DP52KjeuwAhZyjKrpvP3kBlOurft4mHi@redis-10810.c263.us-east-1-2.ec2.cloud.redislabs.com:10810");
 
     public static class PrefixRedisKey {

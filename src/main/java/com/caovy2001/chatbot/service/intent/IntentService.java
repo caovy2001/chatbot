@@ -16,6 +16,7 @@ import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
 import com.caovy2001.chatbot.service.common.command.CommandUpdateBase;
 import com.caovy2001.chatbot.service.intent.command.*;
 import com.caovy2001.chatbot.service.intent.es.IIntentServiceES;
+import com.caovy2001.chatbot.service.kafka.KafkaConsumer;
 import com.caovy2001.chatbot.service.pattern.IPatternService;
 import com.caovy2001.chatbot.service.pattern.command.CommandGetListPattern;
 import com.caovy2001.chatbot.service.pattern.command.CommandPatternAddMany;
@@ -37,6 +38,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -66,6 +68,9 @@ public class IntentService extends BaseService implements IIntentService {
 
     @Autowired
     private IIntentServiceES intentServiceES;
+
+    @Autowired
+    private KafkaConsumer kafkaConsumer;
 
     @Override
     public <Entity extends BaseEntity, CommandAdd extends CommandAddBase> Entity add(CommandAdd commandAddBase) throws Exception {
@@ -177,7 +182,10 @@ public class IntentService extends BaseService implements IIntentService {
                 .build());
 
         // Xóa file Training_data.xlsx
-        kafkaTemplate.send(Constant.KafkaTopic.process_after_cud_intent_pattern_entity_entityType, objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
+//        kafkaTemplate.send(Constant.KafkaTopic.process_after_cud_intent_pattern_entity_entityType, objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
+//                .userId(command.getUserId())
+//                .build()));
+        kafkaConsumer.processAfterCUDIntentPatternEntityEntityType(objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
                 .userId(command.getUserId())
                 .build()));
 
@@ -214,7 +222,10 @@ public class IntentService extends BaseService implements IIntentService {
                 .build());
 
         // Xóa file Training_data.xlsx
-        kafkaTemplate.send(Constant.KafkaTopic.process_after_cud_intent_pattern_entity_entityType, objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
+//        kafkaTemplate.send(Constant.KafkaTopic.process_after_cud_intent_pattern_entity_entityType, objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
+//                .userId(command.getUserId())
+//                .build()));
+        kafkaConsumer.processAfterCUDIntentPatternEntityEntityType(objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
                 .userId(command.getUserId())
                 .build()));
 
@@ -265,7 +276,10 @@ public class IntentService extends BaseService implements IIntentService {
             });
 
             // Xóa file Training_data.xlsx
-            kafkaTemplate.send(Constant.KafkaTopic.process_after_cud_intent_pattern_entity_entityType, objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
+//            kafkaTemplate.send(Constant.KafkaTopic.process_after_cud_intent_pattern_entity_entityType, objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
+//                    .userId(command.getUserId())
+//                    .build()));
+            kafkaConsumer.processAfterCUDIntentPatternEntityEntityType(objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
                     .userId(command.getUserId())
                     .build()));
         }
@@ -391,8 +405,9 @@ public class IntentService extends BaseService implements IIntentService {
     private void indexES(CommandIndexingIntentES command) {
         try {
             // Đẩy vào kafka để index lên ES
-            kafkaTemplate.send(Constant.KafkaTopic.process_indexing_intent_es, objectMapper.writeValueAsString(command));
-        } catch (JsonProcessingException e) {
+//            kafkaTemplate.send(Constant.KafkaTopic.process_indexing_intent_es, objectMapper.writeValueAsString(command));
+            kafkaConsumer.processIndexingIntentES(objectMapper.writeValueAsString(command));
+        } catch (IOException e) {
             log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
         }
     }

@@ -20,6 +20,7 @@ import com.caovy2001.chatbot.service.intent.IIntentService;
 import com.caovy2001.chatbot.service.intent.command.CommandGetListIntent;
 import com.caovy2001.chatbot.service.intent.command.CommandIntentAddMany;
 import com.caovy2001.chatbot.service.jedis.IJedisService;
+import com.caovy2001.chatbot.service.kafka.KafkaConsumer;
 import com.caovy2001.chatbot.service.pattern.command.*;
 import com.caovy2001.chatbot.service.pattern.response.ResponseExportExcelStatus;
 import com.caovy2001.chatbot.service.pattern.response.ResponseImportExcelStatus;
@@ -75,6 +76,9 @@ public class PatternService extends BaseService implements IPatternService {
 
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
+
+    @Autowired
+    private KafkaConsumer kafkaConsumer;
 
     @Override
     public <Entity extends BaseEntity, CommandAdd extends CommandAddBase> Entity add(CommandAdd commandAddBase) throws Exception {
@@ -148,7 +152,10 @@ public class PatternService extends BaseService implements IPatternService {
         });
 
         // Xóa file Training_data.xlsx
-        kafkaTemplate.send(Constant.KafkaTopic.process_after_cud_intent_pattern_entity_entityType, objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
+//        kafkaTemplate.send(Constant.KafkaTopic.process_after_cud_intent_pattern_entity_entityType, objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
+//                .userId(command.getUserId())
+//                .build()));
+        kafkaConsumer.processAfterCUDIntentPatternEntityEntityType(objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
                 .userId(command.getUserId())
                 .build()));
 
@@ -220,7 +227,10 @@ public class PatternService extends BaseService implements IPatternService {
         }
 
         // Xóa file Training_data.xlsx
-        kafkaTemplate.send(Constant.KafkaTopic.process_after_cud_intent_pattern_entity_entityType, objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
+//        kafkaTemplate.send(Constant.KafkaTopic.process_after_cud_intent_pattern_entity_entityType, objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
+//                .userId(command.getUserId())
+//                .build()));
+        kafkaConsumer.processAfterCUDIntentPatternEntityEntityType(objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
                 .userId(command.getUserId())
                 .build()));
 
@@ -255,7 +265,10 @@ public class PatternService extends BaseService implements IPatternService {
         }
 
         // Xóa file Training_data.xlsx
-        kafkaTemplate.send(Constant.KafkaTopic.process_after_cud_intent_pattern_entity_entityType, objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
+//        kafkaTemplate.send(Constant.KafkaTopic.process_after_cud_intent_pattern_entity_entityType, objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
+//                .userId(command.getUserId())
+//                .build()));
+        kafkaConsumer.processAfterCUDIntentPatternEntityEntityType(objectMapper.writeValueAsString(CommandProcessAfterCUDIntentPatternEntityEntityType.builder()
                 .userId(command.getUserId())
                 .build()));
 
@@ -1028,8 +1041,9 @@ public class PatternService extends BaseService implements IPatternService {
     private void indexES(CommandIndexingPatternES command) {
         try {
             // Đẩy vào kafka để index lên ES
-            kafkaTemplate.send(Constant.KafkaTopic.process_indexing_pattern_es, objectMapper.writeValueAsString(command));
-        } catch (JsonProcessingException e) {
+//            kafkaTemplate.send(Constant.KafkaTopic.process_indexing_pattern_es, objectMapper.writeValueAsString(command));
+            kafkaConsumer.processIndexingPatternES(objectMapper.writeValueAsString(command));
+        } catch (IOException e) {
             log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
         }
     }

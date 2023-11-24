@@ -37,8 +37,8 @@ public class KafkaConsumer {
     @Autowired
     private IPatternService patternService;
 
-    @KafkaListener(topics = Constant.KafkaTopic.process_save_message_when_predict, groupId = "group_id")
-    private void processSaveMessageWhenPredictConsumer(String message) throws IOException {
+//    @KafkaListener(topics = Constant.KafkaTopic.process_save_message_when_predict, groupId = "group_id")
+    public void processSaveMessageWhenPredictConsumer(String message) throws IOException {
         try {
             log.info("[{}]: {}", "Consumer process_save_message_when_predict", message);
             messageHistoryService.add(objectMapper.readValue(message, CommandAddMessageHistory.class));
@@ -47,8 +47,8 @@ public class KafkaConsumer {
         }
     }
 
-    @KafkaListener(topics = Constant.KafkaTopic.process_indexing_intent_es, groupId = "group_id")
-    private void processIndexingIntentES(String message) throws IOException {
+//    @KafkaListener(topics = Constant.KafkaTopic.process_indexing_intent_es, groupId = "group_id")
+    public void processIndexingIntentES(String message) throws IOException {
         try {
             log.info("[{}]: {}", "Consumer process_indexing_intent_es ", message);
             intentServiceES.index(objectMapper.readValue(message, CommandIndexingIntentES.class));
@@ -57,8 +57,8 @@ public class KafkaConsumer {
         }
     }
 
-    @KafkaListener(topics = Constant.KafkaTopic.process_indexing_pattern_es, groupId = "group_id")
-    private void processIndexingPatternES(String message) throws IOException {
+//    @KafkaListener(topics = Constant.KafkaTopic.process_indexing_pattern_es, groupId = "group_id")
+    public void processIndexingPatternES(String message) throws IOException {
         try {
             log.info("[{}]: {}", "Consumer process_indexing_pattern_es", message);
             patternServiceES.processIndexing(objectMapper.readValue(message, CommandIndexingPatternES.class));
@@ -67,8 +67,8 @@ public class KafkaConsumer {
         }
     }
 
-    @KafkaListener(topics = Constant.KafkaTopic.process_after_cud_intent_pattern_entity_entityType, groupId = "group_id")
-    private void processAfterCUDIntentPatternEntityEntityType(String message) throws Exception {
+//    @KafkaListener(topics = Constant.KafkaTopic.process_after_cud_intent_pattern_entity_entityType, groupId = "group_id")
+    public void processAfterCUDIntentPatternEntityEntityType(String message) throws Exception {
         try {
             log.info("[{}]: {}", "Consumer process_after_cud_intent_pattern_entity_entityType", message);
             patternService.processAfterCUDIntentPatternEntityEntityType(objectMapper.readValue(message, CommandProcessAfterCUDIntentPatternEntityEntityType.class));
