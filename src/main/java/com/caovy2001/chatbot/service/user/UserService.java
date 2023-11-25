@@ -72,6 +72,7 @@ public class UserService extends BaseService implements IUserService {
                 .username(userEntity.getUsername())
                 .token(userEntity.getToken())
                 .secretKey(userEntity.getSecretKey())
+                .role(userEntity.getRole())
                 .build();
     }
 
@@ -84,7 +85,9 @@ public class UserService extends BaseService implements IUserService {
 
         // Vul
 //        userEntity.setPassword(Base64.getEncoder().encodeToString(userEntity.getPassword().getBytes()));
-        userEntity.setPassword(this.convertStringToHash(userEntity.getPassword()));
+        userEntity.setPassword(null);
+        userEntity.setSecretKey(null);
+        userEntity.setToken(null);
         return userEntity;
     }
 

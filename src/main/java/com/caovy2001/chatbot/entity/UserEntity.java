@@ -1,5 +1,6 @@
 package com.caovy2001.chatbot.entity;
 
+import com.caovy2001.chatbot.service.user.enumeration.UserRole;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,6 +31,15 @@ public class UserEntity extends BaseEntity{
     @Field("fullname")
     private String fullname;
 
+    @Field("phone")
+    private String phone;
+
+    @Field("zalo_group_link")
+    private String zaloGroupLink;
+
+    @Field("google_meet_link")
+    private String googleMeetLink;
+
     @Field("secret_key")
     @Indexed
     private String secretKey;
@@ -37,6 +47,10 @@ public class UserEntity extends BaseEntity{
     @Field("token")
     @Indexed
     private String token;
+
+    @Field("role")
+    @Builder.Default()
+    private UserRole role = UserRole.USER;
 
     @Field("created_date")
     private Long createdDate;

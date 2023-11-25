@@ -4,6 +4,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.data.elasticsearch.client.ClientConfiguration;
 import org.springframework.data.elasticsearch.client.RestClients;
 import org.springframework.data.elasticsearch.config.AbstractElasticsearchConfiguration;
@@ -15,7 +16,11 @@ import java.util.ResourceBundle;
 @EnableElasticsearchRepositories(basePackages = "com.caovy2001.chatbot.repository.es")
 @ComponentScan(basePackages = { "com.caovy2001.chatbot" })
 public class ElasticSearchConfig extends AbstractElasticsearchConfiguration {
-    private final ResourceBundle resourceBundle = ResourceBundle.getBundle("application");
+//    private final ResourceBundle resourceBundle = ResourceBundle.getBundle("application");
+    private final Environment environment;
+    public ElasticSearchConfig(Environment environment) {
+        this.environment = environment;
+    }
 
     @Override
     @Bean
@@ -24,7 +29,7 @@ public class ElasticSearchConfig extends AbstractElasticsearchConfiguration {
         final ClientConfiguration clientConfiguration =
                 ClientConfiguration
                         .builder()
-                        .connectedTo(resourceBundle.getString("elastic_search.server"))
+                        .connectedTo(environment.getProperty("elastic_search.server"))
                         .build();
 
         return RestClients.create(clientConfiguration).rest();
