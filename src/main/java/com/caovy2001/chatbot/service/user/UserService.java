@@ -2,6 +2,7 @@ package com.caovy2001.chatbot.service.user;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.BaseEntity;
+import com.caovy2001.chatbot.entity.IntentEntity;
 import com.caovy2001.chatbot.entity.UserEntity;
 import com.caovy2001.chatbot.entity.es.UserEntityES;
 import com.caovy2001.chatbot.repository.UserRepository;
@@ -9,9 +10,16 @@ import com.caovy2001.chatbot.repository.es.UserRepositoryES;
 import com.caovy2001.chatbot.service.BaseService;
 import com.caovy2001.chatbot.service.ResponseBase;
 import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
+import com.caovy2001.chatbot.service.common.command.CommandUpdateBase;
+import com.caovy2001.chatbot.service.intent.command.CommandGetListIntent;
+import com.caovy2001.chatbot.service.intent.command.CommandIndexingIntentES;
+import com.caovy2001.chatbot.service.intent.command.CommandIntentUpdate;
+import com.caovy2001.chatbot.service.pattern.command.CommandProcessAfterCUDIntentPatternEntityEntityType;
 import com.caovy2001.chatbot.service.user.command.CommandGetListUser;
 import com.caovy2001.chatbot.service.user.command.CommandUserLogin;
 import com.caovy2001.chatbot.service.user.command.CommandUserSignUp;
+import com.caovy2001.chatbot.service.user.command.CommandUserUpdate;
+import com.caovy2001.chatbot.service.user.enumeration.UserRole;
 import com.caovy2001.chatbot.service.user.response.ResponseUserLogin;
 import com.caovy2001.chatbot.service.user.response.ResponseUserSignUp;
 import com.caovy2001.chatbot.utils.JWTUtil;
@@ -52,7 +60,7 @@ public class UserService extends BaseService implements IUserService {
     private RestTemplate restTemplate;
 
     @Autowired
-    private MongoTemplate  mongoTemplate;
+    private MongoTemplate mongoTemplate;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -259,7 +267,7 @@ public class UserService extends BaseService implements IUserService {
     private Query buildQueryGetList(CommandGetListUser command) {
         Query query = new Query();
         Criteria criteria = new Criteria();
-        List<Criteria> orCriteriaList = new ArrayList<>();
+//        List<Criteria> orCriteriaList = new ArrayList<>();
         List<Criteria> andCriteriaList = new ArrayList<>();
 
         if (StringUtils.isNotBlank(command.getId())) {
@@ -274,9 +282,33 @@ public class UserService extends BaseService implements IUserService {
             andCriteriaList.add(Criteria.where("username").is(command.getUsername()));
         }
 
-        if (CollectionUtils.isNotEmpty(orCriteriaList)) {
-            criteria.orOperator(orCriteriaList);
+        if (StringUtils.isNotBlank(command.getKeyword())) {
+            List<Criteria> keywordOrCriteriaList = new ArrayList<>();
+            keywordOrCriteriaList.add(Criteria.where("username").regex(".*" + command.getKeyword() + ".*", "i"));
+            keywordOrCriteriaList.add(Criteria.where("fullname").regex(".*" + command.getKeyword() + ".*", "i"));
+            keywordOrCriteriaList.add(Criteria.where("username").regex(".*" + command.getKeyword() + ".*", "i"));
+            keywordOrCriteriaList.add(Criteria.where("id").regex(".*" + command.getKeyword() + ".*", "i"));
+            Criteria keywordCriteria = new Criteria();
+            keywordCriteria.orOperator(keywordOrCriteriaList);
+            andCriteriaList.add(keywordCriteria);
         }
+
+        if (command.getRole() != null) {
+            if (command.getRole() == UserRole.USER) {
+                List<Criteria> roleOrCriteriaList = new ArrayList<>();
+                roleOrCriteriaList.add(Criteria.where("role").is(UserRole.USER));
+                roleOrCriteriaList.add(Criteria.where("role").is(null));
+                Criteria keywordCriteria = new Criteria();
+                keywordCriteria.orOperator(roleOrCriteriaList);
+                andCriteriaList.add(keywordCriteria);
+            } else if (command.getRole() == UserRole.ADMIN) {
+                andCriteriaList.add(Criteria.where("role").is(UserRole.ADMIN));
+            }
+        }
+
+//        if (CollectionUtils.isNotEmpty(orCriteriaList)) {
+//            criteria.orOperator(orCriteriaList);
+//        }
         if (CollectionUtils.isNotEmpty(andCriteriaList)) {
             criteria.andOperator(andCriteriaList);
         }
@@ -290,11 +322,38 @@ public class UserService extends BaseService implements IUserService {
 
     @Override
     protected <T extends CommandGetListBase> Query buildQueryGetList(@NonNull T commandGetListBase) {
-        return null;
+        return this.buildQueryGetList((CommandGetListUser) commandGetListBase);
     }
 
     @Override
     protected <Entity extends BaseEntity, Command extends CommandGetListBase> void setViews(List<Entity> entitiesBase, Command commandGetListBase) {
 
+    }
+
+    @Override
+    public <Entity extends BaseEntity, CommandUpdate extends CommandUpdateBase> Entity update(CommandUpdate commandUpdateBase) throws Exception {
+        CommandUserUpdate command = (CommandUserUpdate) commandUpdateBase;
+
+        if (StringUtils.isBlank(command.getUserId())) {
+            throw new Exception(ExceptionConstant.missing_param);
+        }
+
+        List<UserEntity> users = this.getList(CommandGetListUser.builder()
+                .id(command.getUserId())
+                .userId(command.getUserId())
+                .build(), UserEntity.class);
+        if (CollectionUtils.isEmpty(users)) {
+            throw new Exception("user_null");
+        }
+
+        UserEntity user = users.get(0);
+        if (StringUtils.isNotBlank(command.getZaloGroupLink())) {
+            user.setZaloGroupLink(command.getZaloGroupLink());
+        }
+        if (StringUtils.isNotBlank(command.getGoogleMeetLink())) {
+            user.setGoogleMeetLink(command.getGoogleMeetLink());
+        }
+        UserEntity updatedUser = userRepository.save(user);
+        return (Entity) updatedUser;
     }
 }
