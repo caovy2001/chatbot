@@ -1,7 +1,6 @@
-Hostname: chatbot-zlma
-IP: 14.225.192.182
+IP: 14.225.207.19
 Username: root
-Password: Caodinhsyvy2001@
+Password: Thisispassword123@
 Port SSH: 22
 
 

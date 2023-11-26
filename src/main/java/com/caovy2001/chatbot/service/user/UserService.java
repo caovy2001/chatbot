@@ -81,6 +81,7 @@ public class UserService extends BaseService implements IUserService {
                 .token(userEntity.getToken())
                 .secretKey(userEntity.getSecretKey())
                 .role(userEntity.getRole())
+                .currentServicePack(userEntity.getCurrentServicePack())
                 .build();
     }
 
@@ -221,6 +222,7 @@ public class UserService extends BaseService implements IUserService {
                 .username(userEntity.getUsername())
                 .fullName(userEntity.getFullname())
                 .token(userEntity.getToken())
+                .currentServicePack(userEntity.getCurrentServicePack())
                 .build());
 
         restTemplate.postForLocation(url, new HttpEntity<>(body, headers));
@@ -229,6 +231,7 @@ public class UserService extends BaseService implements IUserService {
                 .userId(userEntity.getId())
                 .username(userEntity.getUsername())
                 .token(userEntity.getToken())
+                .currentServicePack(userEntity.getCurrentServicePack())
                 .build();
     }
 

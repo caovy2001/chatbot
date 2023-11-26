@@ -1,6 +1,7 @@
 package com.caovy2001.chatbot.entity;
 
 import com.caovy2001.chatbot.service.user.enumeration.UserRole;
+import com.caovy2001.chatbot.service.user.enumeration.UserServicePack;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -51,6 +52,10 @@ public class UserEntity extends BaseEntity{
     @Field("role")
     @Builder.Default()
     private UserRole role = UserRole.USER;
+
+    @Field("current_service-pack")
+    @Builder.Default()
+    private UserServicePack currentServicePack = UserServicePack.NORMAL;
 
     @Field("created_date")
     private Long createdDate;
