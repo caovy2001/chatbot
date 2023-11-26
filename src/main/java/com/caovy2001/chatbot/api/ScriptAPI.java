@@ -66,21 +66,21 @@ public class ScriptAPI {
         }
     }
 
-    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-    @GetMapping("/get_all/by_user_id")
-    public ResponseEntity<ResponseScriptGetByUserId> getScriptByUserId(){
-        try{
-            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
-                throw new Exception("auth_invalid");
-            }
-            ResponseScriptGetByUserId scripts = scriptService.getScriptByUserId(userEntity.getId());
-            return ResponseEntity.ok(scripts);
-        }
-        catch (Exception e){
-            return ResponseEntity.ok(scriptService.returnException(e.getMessage(), ResponseScriptGetByUserId.class));
-        }
-    }
+//    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+//    @GetMapping("/get_all/by_user_id")
+//    public ResponseEntity<ResponseScriptGetByUserId> getScriptByUserId(){
+//        try{
+//            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+//            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
+//                throw new Exception("auth_invalid");
+//            }
+//            ResponseScriptGetByUserId scripts = scriptService.getScriptByUserId(userEntity.getId());
+//            return ResponseEntity.ok(scripts);
+//        }
+//        catch (Exception e){
+//            return ResponseEntity.ok(scriptService.returnException(e.getMessage(), ResponseScriptGetByUserId.class));
+//        }
+//    }
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @GetMapping("/get_pagination/by_user_id")
