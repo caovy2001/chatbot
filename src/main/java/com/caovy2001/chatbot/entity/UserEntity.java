@@ -53,7 +53,7 @@ public class UserEntity extends BaseEntity{
     @Builder.Default()
     private UserRole role = UserRole.USER;
 
-    @Field("current_service-pack")
+    @Field("current_service_pack")
     @Builder.Default()
     private UserServicePack currentServicePack = UserServicePack.NORMAL;
 

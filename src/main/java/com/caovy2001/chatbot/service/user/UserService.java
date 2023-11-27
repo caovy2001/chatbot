@@ -356,6 +356,9 @@ public class UserService extends BaseService implements IUserService {
         if (StringUtils.isNotBlank(command.getGoogleMeetLink())) {
             user.setGoogleMeetLink(command.getGoogleMeetLink());
         }
+        if (command.getCurrentServicePack() != null) {
+            user.setCurrentServicePack(command.getCurrentServicePack());
+        }
         UserEntity updatedUser = userRepository.save(user);
         return (Entity) updatedUser;
     }
