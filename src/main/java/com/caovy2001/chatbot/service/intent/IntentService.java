@@ -2,10 +2,7 @@ package com.caovy2001.chatbot.service.intent;
 
 import com.caovy2001.chatbot.constant.Constant;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
-import com.caovy2001.chatbot.entity.BaseEntity;
-import com.caovy2001.chatbot.entity.IntentEntity;
-import com.caovy2001.chatbot.entity.PatternEntity;
-import com.caovy2001.chatbot.entity.ScriptIntentMappingEntity;
+import com.caovy2001.chatbot.entity.*;
 import com.caovy2001.chatbot.model.DateFilter;
 import com.caovy2001.chatbot.repository.IntentRepository;
 import com.caovy2001.chatbot.repository.es.IntentRepositoryES;
@@ -14,8 +11,13 @@ import com.caovy2001.chatbot.service.common.command.CommandAddBase;
 import com.caovy2001.chatbot.service.common.command.CommandAddManyBase;
 import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
 import com.caovy2001.chatbot.service.common.command.CommandUpdateBase;
+import com.caovy2001.chatbot.service.entity.command.CommandEntityAddMany;
+import com.caovy2001.chatbot.service.entity_type.IEntityTypeService;
+import com.caovy2001.chatbot.service.entity_type.command.CommandEntityTypeAddMany;
+import com.caovy2001.chatbot.service.entity_type.command.CommandGetListEntityType;
 import com.caovy2001.chatbot.service.intent.command.*;
 import com.caovy2001.chatbot.service.intent.es.IIntentServiceES;
+import com.caovy2001.chatbot.service.intent.response.ResponseIntentAskGpt;
 import com.caovy2001.chatbot.service.kafka.KafkaConsumer;
 import com.caovy2001.chatbot.service.pattern.IPatternService;
 import com.caovy2001.chatbot.service.pattern.command.CommandGetListPattern;
@@ -23,6 +25,7 @@ import com.caovy2001.chatbot.service.pattern.command.CommandPatternAddMany;
 import com.caovy2001.chatbot.service.pattern.command.CommandProcessAfterCUDIntentPatternEntityEntityType;
 import com.caovy2001.chatbot.service.script_intent_mapping.IScriptIntentMappingService;
 import com.caovy2001.chatbot.service.script_intent_mapping.command.CommandGetListScriptIntentMapping;
+import com.caovy2001.chatbot.service.training.response.ResponseTrainingPredictFromAI;
 import com.caovy2001.chatbot.utils.ChatbotStringUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,8 +38,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.util.*;
@@ -71,6 +78,9 @@ public class IntentService extends BaseService implements IIntentService {
 
     @Autowired
     private KafkaConsumer kafkaConsumer;
+
+    @Autowired
+    private IEntityTypeService entityTypeService;
 
     @Override
     public <Entity extends BaseEntity, CommandAdd extends CommandAddBase> Entity add(CommandAdd commandAddBase) throws Exception {
@@ -409,6 +419,152 @@ public class IntentService extends BaseService implements IIntentService {
             kafkaConsumer.processIndexingIntentES(objectMapper.writeValueAsString(command));
         } catch (IOException e) {
             log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
+        }
+    }
+
+    @Override
+    public Boolean suggestPattern(CommandIntentSuggestPattern command) throws Exception {
+        if (StringUtils.isAnyBlank(command.getIntentId(), command.getUserId(), command.getExamplePattern()) || command.getNumOfPatterns() <= 0) {
+            throw new Exception(ExceptionConstant.missing_param);
+        }
+
+        // Tìm intent theo intentId và userId
+        List<IntentEntity> intents = this.getList(CommandGetListIntent.builder()
+                .userId(command.getUserId())
+                .ids(List.of(command.getIntentId()))
+                .build(), IntentEntity.class);
+        if (CollectionUtils.isEmpty(intents)) {
+            throw new Exception(ExceptionConstant.Intent.intent_not_found);
+        }
+        IntentEntity intent = intents.get(0);
+
+        // Generate message
+        String message = "Liệt kê NUM_OF_PATTERNS patterns thuộc intent \"INTENT_NAME\".\nví dụ: \"1. EXAMPLE_PATTERN\"\nTrả lời theo các tiêu chí sau:\n- Câu trả lời không chứa các ký tự đặc biệt như ngoặc đơn hoặc ngoặc kép, hoặc ngoặc nhọn. \n- Trích xuất các entity ra trong câu, giá trị các entity trong câu có thể lấy random và gán thẳng giá trị của nó vào trong câu, có phân biệt chữ hoa và chữ thường, ví dụ: \"1: Tôi tên là Minh và tôi 21 tuổi | Tên: Minh | Tuổi: 21 | ... \"\n- Trả lời theo mẫu sau và không cần giải thích gì thêm:\n- {{số thứ tự}}: {{giá trị của pattern}} | {{entity1}}: {{giá trị của entity1}} | {{entity2}}: {{giá trị của entity2}} | ...";
+//        String message = "liệt kê NUM_OF_PATTERNS patterns thuộc intent \"INTENT_NAME\".\nví dụ: \"1: EXAMPLE_PATTERN\"\ntrả lời theo mẫu sau; không cần giải thích gì thêm; không chứa các ký tự đặc biệt như ngoặc đơn hoặc ngoặc kép; có thể lấy giá trị random cho các entity trong câu:\n- {{số thứ tự}}: {{giá trị của pattern}} | {{entity1}}: {{giá trị của entity1}} | {{entity2}}: {{giá trị của entity2}} | ...";
+        message = message.replace("NUM_OF_PATTERNS", command.getNumOfPatterns().toString());
+        message = message.replace("INTENT_NAME", intent.getName());
+        message = message.replace("EXAMPLE_PATTERN", command.getExamplePattern());
+        System.out.println(message);
+
+        // Send request sang api chat gpt và nhận được response:
+//        String response = "1: Tôi là Minh, 25 tuổi đấy | Tên: Minh | Tuổi: 25\n2: Chào bạn, mình là Hương, 30 tuổi đây | Tên: Hương | Tuổi: 30\n3: Mình tên là Đức, mình 28 tuổi nhé | Tên: Đức | Tuổi: 28 <br>";
+        String response = this.askGpt(message);
+        if (StringUtils.isBlank(response)) {
+            throw new Exception(ExceptionConstant.error_occur);
+        }
+        response = response.replace("<br>", "");
+
+        String[] patternStrs = response.split("\n");
+        List<PatternEntity> patternEntities = new ArrayList<>();
+        List<EntityEntity> entityEntities = new ArrayList<>();
+        for (String patternStr : patternStrs) {
+            String pattern = null;
+            if (patternStr.contains("|")) {
+                pattern = patternStr.split("\\|")[0].split(":")[1];
+            } else {
+                pattern = new String(patternStr);
+            }
+            pattern = pattern.trim();
+            PatternEntity patternEntity = PatternEntity.builder()
+                    .userId(command.getUserId())
+                    .content(pattern)
+                    .intentId(command.getIntentId())
+                    .uuid(UUID.randomUUID().toString())
+                    .build();
+            patternEntities.add(patternEntity);
+
+            // Lấy entity
+            Map<String, EntityTypeEntity> entityTypeByName = new HashMap<>();
+            if (patternStr.contains("|") && patternStr.split("\\|").length > 1 && StringUtils.isNotBlank(patternStr.split("\\|")[1].trim())) {
+                for (int i = 1; i < patternStr.split("\\|").length; i++) {
+                    String entityStr = patternStr.split("\\|")[i];
+                    if (!entityStr.contains(":") || entityStr.split(":").length <= 1) {
+                        continue;
+                    }
+
+                    entityStr = entityStr.trim();
+                    String entityTypeName = entityStr.split(":")[0];
+                    entityTypeName = entityTypeName.trim();
+                    String entityValue = entityStr.split(":")[1];
+                    entityValue = entityValue.trim();
+                    if (StringUtils.isBlank(entityValue)) {
+                        continue;
+                    }
+
+                    EntityTypeEntity entityType = entityTypeByName.get(entityTypeName);
+                    if (entityType == null) {
+                        // Tìm entity type theo tên
+                        List<EntityTypeEntity> existEntityTypesByLowerCaseName = entityTypeService.getList(CommandGetListEntityType.builder()
+                                .userId(command.getUserId())
+                                .lowerCaseName(entityTypeName.trim().toLowerCase())
+                                .returnFields(List.of("id", "lower_case_name"))
+                                .build(), EntityTypeEntity.class);
+                        if (CollectionUtils.isNotEmpty(existEntityTypesByLowerCaseName)) {
+                            entityType = existEntityTypesByLowerCaseName.get(0);
+                        } else {
+                            List<EntityTypeEntity> savedEntityTypes = entityTypeService.add(CommandEntityTypeAddMany.builder()
+                                    .userId(command.getUserId())
+                                    .entityTypes(List.of(EntityTypeEntity.builder()
+                                            .userId(command.getUserId())
+                                            .uuid(UUID.randomUUID().toString())
+                                            .name(entityTypeName)
+                                            .build()))
+                                    .build());
+                            entityType = savedEntityTypes.get(0);
+                        }
+                        entityTypeByName.put(entityTypeName, entityType);
+                    }
+
+                    int startPos = patternEntity.getContent().indexOf(entityValue);
+                    if (startPos == -1) {
+                        continue;
+                    }
+                    int endPos = startPos + entityValue.length() - 1;
+                    EntityEntity entityEntity = EntityEntity.builder()
+                            .userId(command.getUserId())
+                            .value(entityValue)
+                            .patternUuid(patternEntity.getUuid())
+                            .entityTypeId(entityTypeByName.get(entityTypeName).getId())
+                            .startPosition(startPos)
+                            .endPosition(endPos)
+                            .build();
+                    entityEntities.add(entityEntity);
+                }
+            }
+        }
+
+        // Lưu pattern và entity xuống db
+        patternService.add(CommandPatternAddMany.builder()
+                .userId(command.getUserId())
+                .patterns(patternEntities)
+                .commandEntityAddMany(CommandEntityAddMany.builder()
+                        .userId(command.getUserId())
+                        .entities(entityEntities)
+                        .build())
+                .build());
+        return true;
+    }
+
+    private String askGpt(String message) {
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            Map<String, Object> commandRequest = new HashMap<>();
+            commandRequest.put("message", message);
+
+            HttpEntity<String> request =
+                    new HttpEntity<>(objectMapper.writeValueAsString(commandRequest), headers);
+
+            ResponseIntentAskGpt responseIntentAskGpt = restTemplate.postForObject("https://feb7-113-185-75-195.ngrok-free.app/api/ask", request, ResponseIntentAskGpt.class);
+            if (responseIntentAskGpt == null) {
+                return null;
+            }
+
+            return responseIntentAskGpt.getResult();
+        } catch (Exception e) {
+            log.error("[{}]: {}", e.getStackTrace()[0], e.getMessage());
+            return null;
         }
     }
 }

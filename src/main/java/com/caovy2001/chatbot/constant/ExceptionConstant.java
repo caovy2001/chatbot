@@ -11,4 +11,8 @@ public class ExceptionConstant {
         public static final String user_not_found = "user_not_found";
         public static final String user_have_premium_already = "user_have_premium_already";
     }
+
+    public static class Intent {
+        public static final String intent_not_found = "intent_not_found";
+    }
 }

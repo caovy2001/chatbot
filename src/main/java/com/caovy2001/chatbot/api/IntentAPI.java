@@ -166,4 +166,23 @@ public class IntentAPI {
             return ResponseEntity.ok(intentService.returnException(e.getMessage(), ResponseIntents.class));
         }
     }
+
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @PostMapping("/suggest_pattern")
+    public ResponseEntity<?> suggestPattern(@RequestBody CommandIntentSuggestPattern command) {
+        try {
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
+                throw new Exception("auth_invalid");
+
+            command.setUserId(userEntity.getId());
+            if (BooleanUtils.isFalse(intentService.suggestPattern(command))) {
+                throw new Exception(ExceptionConstant.error_occur);
+            }
+
+            return ResponseEntity.ok(ResponseIntents.builder().build());
+        } catch (Exception e) {
+            return ResponseEntity.ok(intentService.returnException(e.getMessage(), ResponseIntents.class));
+        }
+    }
 }

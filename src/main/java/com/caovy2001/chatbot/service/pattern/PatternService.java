@@ -1140,15 +1140,17 @@ public class PatternService extends BaseService implements IPatternService {
                     .hasEntityType(command.getHasEntityTypeOfEntities())
                     .build(), EntityEntity.class);
 
-            entities.forEach(e -> {
-                List<EntityEntity> entitiesItem = new ArrayList<>();
-                if (entitiesByPatternId.get(e.getPatternId()) != null) {
-                    entitiesItem = entitiesByPatternId.get(e.getPatternId());
-                }
+            if (CollectionUtils.isNotEmpty(entities)) {
+                entities.forEach(e -> {
+                    List<EntityEntity> entitiesItem = new ArrayList<>();
+                    if (entitiesByPatternId.get(e.getPatternId()) != null) {
+                        entitiesItem = entitiesByPatternId.get(e.getPatternId());
+                    }
 
-                entitiesItem.add(e);
-                entitiesByPatternId.put(e.getPatternId(), entitiesItem);
-            });
+                    entitiesItem.add(e);
+                    entitiesByPatternId.put(e.getPatternId(), entitiesItem);
+                });
+            }
         }
 
         for (PatternEntity pattern : patterns) {

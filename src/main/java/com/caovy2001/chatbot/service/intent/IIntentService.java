@@ -14,4 +14,5 @@ import com.caovy2001.chatbot.service.intent.response.ResponseIntents;
 import java.util.List;
 
 public interface IIntentService extends IBaseService {
+    Boolean suggestPattern(CommandIntentSuggestPattern command) throws Exception;
 }
