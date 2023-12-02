@@ -48,27 +48,27 @@ public class IntentAPI {
         }
     }
 
-    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-    @PostMapping("/add_many")
-    public ResponseEntity<ResponseIntentAdd> addMany(@RequestBody CommandIntentAddMany command) {
-        try {
-            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
-                throw new Exception("auth_invalid");
-
-            command.setUserId(userEntity.getId());
-            List<IntentEntity> intents = intentService.add(command);
-            if (CollectionUtils.isEmpty(intents)) {
-                throw new Exception(ExceptionConstant.error_occur);
-            }
-
-            return ResponseEntity.ok(ResponseIntentAdd.builder()
-                    .ids(intents.stream().map(IntentEntity::getId).toList())
-                    .build());
-        } catch (Exception e) {
-            return ResponseEntity.ok(intentService.returnException(e.getMessage(), ResponseIntentAdd.class));
-        }
-    }
+//    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+//    @PostMapping("/add_many")
+//    public ResponseEntity<ResponseIntentAdd> addMany(@RequestBody CommandIntentAddMany command) {
+//        try {
+//            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+//            if (userEntity == null || StringUtils.isBlank(userEntity.getId()))
+//                throw new Exception("auth_invalid");
+//
+//            command.setUserId(userEntity.getId());
+//            List<IntentEntity> intents = intentService.add(command);
+//            if (CollectionUtils.isEmpty(intents)) {
+//                throw new Exception(ExceptionConstant.error_occur);
+//            }
+//
+//            return ResponseEntity.ok(ResponseIntentAdd.builder()
+//                    .ids(intents.stream().map(IntentEntity::getId).toList())
+//                    .build());
+//        } catch (Exception e) {
+//            return ResponseEntity.ok(intentService.returnException(e.getMessage(), ResponseIntentAdd.class));
+//        }
+//    }
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
     @GetMapping("/get_all/by_user_id")
