@@ -26,7 +26,7 @@ public class UserAdminAPI {
     @Autowired
     private IUserService userService;
 
-    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @PreAuthorize("hasAnyAuthority('ADMIN')")
     @PostMapping("/get_pagination")
     public ResponseEntity<Paginated<UserEntity>> getByPagination(@RequestBody CommandGetListUser command) {
         try {
@@ -39,7 +39,7 @@ public class UserAdminAPI {
         }
     }
 
-    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @PreAuthorize("hasAnyAuthority('ADMIN')")
     @PostMapping("/update-user-info")
     public ResponseEntity<ResponseUserAdminUpdate> updateUser(@RequestBody CommandUserUpdate command) {
         try {

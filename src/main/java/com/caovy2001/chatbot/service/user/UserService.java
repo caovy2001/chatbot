@@ -289,7 +289,6 @@ public class UserService extends BaseService implements IUserService {
             List<Criteria> keywordOrCriteriaList = new ArrayList<>();
             keywordOrCriteriaList.add(Criteria.where("username").regex(".*" + command.getKeyword() + ".*", "i"));
             keywordOrCriteriaList.add(Criteria.where("fullname").regex(".*" + command.getKeyword() + ".*", "i"));
-            keywordOrCriteriaList.add(Criteria.where("username").regex(".*" + command.getKeyword() + ".*", "i"));
             keywordOrCriteriaList.add(Criteria.where("id").regex(".*" + command.getKeyword() + ".*", "i"));
             Criteria keywordCriteria = new Criteria();
             keywordCriteria.orOperator(keywordOrCriteriaList);
@@ -358,6 +357,9 @@ public class UserService extends BaseService implements IUserService {
         }
         if (command.getCurrentServicePack() != null) {
             user.setCurrentServicePack(command.getCurrentServicePack());
+        }
+        if (StringUtils.isNotBlank(command.getToken())) {
+            user.setToken(command.getToken());
         }
         UserEntity updatedUser = userRepository.save(user);
         return (Entity) updatedUser;

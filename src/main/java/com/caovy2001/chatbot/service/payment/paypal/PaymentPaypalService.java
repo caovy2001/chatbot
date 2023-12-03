@@ -13,6 +13,7 @@ import com.caovy2001.chatbot.service.user.IUserService;
 import com.caovy2001.chatbot.service.user.command.CommandGetListUser;
 import com.caovy2001.chatbot.service.user.command.CommandUserUpdate;
 import com.caovy2001.chatbot.service.user.enumeration.UserServicePack;
+import com.caovy2001.chatbot.utils.JWTUtil;
 import com.paypal.api.payments.*;
 import com.paypal.base.rest.APIContext;
 import lombok.NonNull;
@@ -126,10 +127,26 @@ public class PaymentPaypalService extends BaseService implements IPaymentPaypalS
             throw new Exception("payment_process_fail");
         }
 
+        List<UserEntity> userEntities = userService.getList(CommandGetListUser.builder()
+                .id(command.getUserId())
+                .build());
+        if (CollectionUtils.isEmpty(userEntities)) {
+            throw new Exception(ExceptionConstant.User.user_not_found);
+        }
+
+        // Tạo lại token cho user
+        UserEntity userEntityToRecreateToken = UserEntity.builder()
+                .username(userEntities.get(0).getUsername())
+                .fullname(userEntities.get(0).getFullname())
+                .currentServicePack(UserServicePack.PREMIUM)
+                .token(String.valueOf(System.currentTimeMillis()))
+                .build();
+
         // Update userEntity.currentServicePack
         userService.update(CommandUserUpdate.builder()
                 .userId(command.getUserId())
                 .currentServicePack(UserServicePack.PREMIUM)
+                .token(JWTUtil.generateToken(userEntityToRecreateToken))
                 .build());
 
         return PaymentPaypalResponse.builder().build();

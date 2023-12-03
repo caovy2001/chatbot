@@ -16,4 +16,5 @@ public class CommandUserUpdate extends CommandUpdateBase {
     private String zaloGroupLink;
     private String googleMeetLink;
     private UserServicePack currentServicePack;
+    private String token;
 }
