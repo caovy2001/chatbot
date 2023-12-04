@@ -56,8 +56,9 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                                             authorities);
                                 } else if (userEntityHeader.getRole() == UserRole.ADMIN) {
                                     Collection<GrantedAuthority> authorities = new ArrayList<>();
+                                    authorities.add(new SimpleGrantedAuthority("ALLOW_ACCESS"));
                                     authorities.add(new SimpleGrantedAuthority("ADMIN"));
-                                    authentication = new UsernamePasswordAuthenticationToken(null, null,
+                                    authentication = new UsernamePasswordAuthenticationToken(userEntityHeader, null,
                                             authorities);
                                 }
                             }
