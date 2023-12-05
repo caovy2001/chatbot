@@ -556,7 +556,7 @@ public class IntentService extends BaseService implements IIntentService {
             HttpEntity<String> request =
                     new HttpEntity<>(objectMapper.writeValueAsString(commandRequest), headers);
 
-            ResponseIntentAskGpt responseIntentAskGpt = restTemplate.postForObject("https://c6d1-113-185-75-195.ngrok-free.app/api/ask", request, ResponseIntentAskGpt.class);
+            ResponseIntentAskGpt responseIntentAskGpt = restTemplate.postForObject("https://b7ce-2001-ee0-4f83-2bc0-ae9a-ddd1-c342-360d.ngrok-free.app/api/ask", request, ResponseIntentAskGpt.class);
             if (responseIntentAskGpt == null) {
                 return null;
             }
