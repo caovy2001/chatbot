@@ -2,7 +2,9 @@ package com.caovy2001.chatbot.api;
 
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.UserEntity;
+import com.caovy2001.chatbot.service.ResponseBase;
 import com.caovy2001.chatbot.service.training.ITrainingService;
+import com.caovy2001.chatbot.service.training.command.CommandTrainingAnswerMessage;
 import com.caovy2001.chatbot.service.training.command.CommandTrainingPredict;
 import com.caovy2001.chatbot.service.training.command.CommandTrainingTrain;
 import com.caovy2001.chatbot.service.training.response.ResponseTrainingPredict;
@@ -73,6 +75,28 @@ public class TrainingAPI {
             }
 
             ResponseTrainingPredict response = trainingService.predict(command);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.ok(trainingService.returnException(e.getMessage(), ResponseTrainingPredict.class));
+        }
+    }
+
+    @PostMapping("/answer-message/{sessionId}")
+    public ResponseEntity<ResponseBase> answerMessage(@PathVariable() String sessionId,
+                                                      @RequestBody CommandTrainingAnswerMessage command) {
+        try {
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))) {
+                throw new Exception("auth_invalid");
+            }
+            command.setUserId(userEntity.getId());
+            command.setSessionId(sessionId);
+
+            if (StringUtils.isAnyBlank(command.getMessage(), command.getCurrentNodeId(), command.getScriptId())) {
+                throw new Exception(ExceptionConstant.missing_param);
+            }
+
+            ResponseBase response = trainingService.answerMessage(command);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.ok(trainingService.returnException(e.getMessage(), ResponseTrainingPredict.class));

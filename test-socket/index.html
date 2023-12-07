@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+</head>
+<body>
+    <h1>Login</h1><br>
+    <div>
+        <button onclick="logInWithChatbot();">Log in with Chatbot account</button>
+    </div>
+    <br>
+    <div>
+        <label for="">Username: </label>
+        <input name="username" id="username" value=""> 
+    </div>
+    <div>
+        <label for="">Password: </label>
+        <input name="password" id="password" value=""> 
+    </div>
+    <div>
+        <input type="button" name="submit" value="Submit" onclick="logIn();"> 
+    </div>
+    
+</body>
+<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script> -->
+<script src="base.js"></script>
+<script src="webjars/jquery/jquery.min.js"></script>
+<script src="webjars/sockjs-client/sockjs.min.js"></script>
+<script src="webjars/stomp-websocket/stomp.min.js"></script>
+<script src="main.js"></script>
+</html>
