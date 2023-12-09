@@ -206,7 +206,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                         .build()));
             }
 
-            responseMessageMap.put("current_node_id", firstNode.getMessage());
+            responseMessageMap.put("current_node_id", firstNode.getNodeId());
             responseMessageMap.put("message", firstNode.getMessage());
             messagingTemplate.convertAndSend(
                     "/chat/" + command.getSessionId() + "/receive-from-bot", responseMessageMap);

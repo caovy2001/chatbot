@@ -185,4 +185,14 @@ public class IntentAPI {
             return ResponseEntity.ok(intentService.returnException(e.getMessage(), ResponseIntents.class));
         }
     }
+
+    @PostMapping("/group_entity_type/{userId}")
+    public ResponseEntity<?> groupEntityType(@PathVariable("userId") String userId) {
+        try {
+            intentService.groupEntityType(userId);
+            return ResponseEntity.ok(ResponseIntents.builder().build());
+        } catch (Exception e) {
+            return ResponseEntity.ok(intentService.returnException(e.getMessage(), ResponseIntents.class));
+        }
+    }
 }

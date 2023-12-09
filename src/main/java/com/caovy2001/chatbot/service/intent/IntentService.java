@@ -439,7 +439,7 @@ public class IntentService extends BaseService implements IIntentService {
         IntentEntity intent = intents.get(0);
 
         // Generate message
-        String message = "Liệt kê NUM_OF_PATTERNS patterns thuộc intent \"INTENT_NAME\".\nví dụ: \"1. EXAMPLE_PATTERN\"\nTrả lời theo các tiêu chí sau:\n- Câu trả lời không chứa các ký tự đặc biệt như ngoặc đơn hoặc ngoặc kép, hoặc ngoặc nhọn. \n- Trích xuất các entity ra trong câu, giá trị các entity trong câu có thể lấy random và gán thẳng giá trị của nó vào trong câu, có phân biệt chữ hoa và chữ thường, ví dụ: \"1: Tôi tên là Minh và tôi 21 tuổi | Tên: Minh | Tuổi: 21 | ... \"\n- Trả lời theo mẫu sau và không cần giải thích gì thêm:\n- {{số thứ tự}}: {{giá trị của pattern}} | {{entity1}}: {{giá trị của entity1}} | {{entity2}}: {{giá trị của entity2}} | ...";
+        String message = "Liệt kê NUM_OF_PATTERNS patterns thuộc intent \"INTENT_NAME\".\nví dụ: \"1. EXAMPLE_PATTERN\"\nTrả lời theo các tiêu chí sau:\n- Trả lời theo mẫu sau và không cần giải thích gì thêm:\n+ {{số thứ tự}}: {{giá trị của pattern}} | {{entity1}}: {{giá trị của entity1}} | {{entity2}}: {{giá trị của entity2}} | ...\n- Câu trả lời không chứa các ký tự đặc biệt như ngoặc đơn, ngoặc kép, ngoặc nhọn. Không chứa dấu chấm ở cuối câu. \n- Nếu không trích xuất được entity thì chỉ cần trả lời như sau:\n+ {{số thứ tự}}: {{giá trị của pattern}}\n- Trích xuất các entity ra trong câu, giá trị các entity trong câu có thể lấy random và gán thẳng giá trị của nó vào trong câu, không để dấu ngoặc nhọn như {{aa}}, có phân biệt chữ hoa và chữ thường, {{giá trị entity}} phải lấy từ trong câu, ví dụ: \"1: Tôi tên là Minh và tôi 21 tuổi | Tên: Minh | Tuổi: 21 | ... \".\n- Làm như sau là sai: \"Tôi là {{tên}} | Tên: {{tên}}\", \"Bạn sống ở đâu? | Địa chỉ: {{địa chỉ}}\", \"Tôi là {{Hùng}} | Tên: Hùng\".";
 //        String message = "liệt kê NUM_OF_PATTERNS patterns thuộc intent \"INTENT_NAME\".\nví dụ: \"1: EXAMPLE_PATTERN\"\ntrả lời theo mẫu sau; không cần giải thích gì thêm; không chứa các ký tự đặc biệt như ngoặc đơn hoặc ngoặc kép; có thể lấy giá trị random cho các entity trong câu:\n- {{số thứ tự}}: {{giá trị của pattern}} | {{entity1}}: {{giá trị của entity1}} | {{entity2}}: {{giá trị của entity2}} | ...";
         message = message.replace("NUM_OF_PATTERNS", command.getNumOfPatterns().toString());
         message = message.replace("INTENT_NAME", intent.getName());
@@ -567,4 +567,24 @@ public class IntentService extends BaseService implements IIntentService {
             return null;
         }
     }
+
+    public void groupEntityType(String userId) {
+        List<EntityTypeEntity> allEntityTypes = entityTypeService.getList(CommandGetListEntityType.builder()
+                .userId(userId)
+                .build(), EntityTypeEntity.class);
+        if (CollectionUtils.isEmpty(allEntityTypes)) {
+            return;
+        }
+
+        List<String> allEntityTypeNames = allEntityTypes.stream().map(EntityTypeEntity::getName).toList();
+        Map<String, EntityTypeEntity> entityTypeMapByName = new HashMap<>();
+        allEntityTypes.forEach(entityType -> {
+            entityTypeMapByName.put(entityType.getName(), entityType);
+        });
+
+        String message = "Tôi có các tên entity: ENTITY_TYPE_NAMES. Gộp các tên entity gần đồng nghĩa lại với nhau.\nTrả lời theo các tiêu chí sau:\n- Không cần giải thích gì và chỉ cần trả lời theo mẫu sau: \"{{số thứ tự}}: {{tên entity}}, {{tên enitty}}, ... | {{tên entity mới}}\". \n- Các {{tên entity}} chỉ lấy ở các entity có sẵn, {{tên entity mới}} thì có thể tạo ra tên mới có ý nghĩa bao quát các tên entity được gộp, nếu chỉ có 1 entity được gộp thì giữ lại tên của entity đó.\n- Mỗi tên entity chỉ được gộp một lần.\n- Không chứa các dấu ngoặc nhọn, ngoặc đơn, ngoặc kép.";
+        String result = this.askGpt(message);
+        System.out.println(result);
+    }
+
 }

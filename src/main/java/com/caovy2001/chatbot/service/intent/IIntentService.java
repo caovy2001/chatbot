@@ -15,4 +15,5 @@ import java.util.List;
 
 public interface IIntentService extends IBaseService {
     Boolean suggestPattern(CommandIntentSuggestPattern command) throws Exception;
+    void groupEntityType(String userId);
 }

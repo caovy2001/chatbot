@@ -97,8 +97,8 @@ function connectSocket() {
     console.log("Connected: " + frame);
     socketConnected = true;
 
-    // stompClient.subscribe("/chat-listener/652a98842a247b032b3d0707", function (result) {
-    stompClient.subscribe("/chat/169535484916/receive-from-bot", function (result) {
+    stompClient.subscribe("/chat-listener/652a98842a247b032b3d0707", function (result) {
+    // stompClient.subscribe("/chat/1404859550458/receive-from-bot", function (result) {
       console.log(result);
       // socketListener(result);
     });
