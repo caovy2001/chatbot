@@ -693,14 +693,14 @@ public class TrainingService extends BaseService implements ITrainingService {
                     .userId(command.getUser().getId())
                     .intentId(intent.getId())
                     .page(1)
-                    .size(1)
+                    .size(5)
                     .returnFields(List.of("id", "content"))
                     .build(), PatternEntity.class, CommandGetListPattern.class);
             if (CollectionUtils.isEmpty(patterns.getItems())) {
                 continue;
             }
 
-            examplePatterns += "- " + intent.getName() + ": " + patterns.getItems().get(0).getContent() + "\n";
+            examplePatterns += "- " + intent.getName() + ": " + String.join(", ", patterns.getItems().stream().map(PatternEntity::getContent).toList()) + "\n";
         }
         message = message.replace("INTENT_WITH_PATTERN_EXAMPLES", examplePatterns);
 
