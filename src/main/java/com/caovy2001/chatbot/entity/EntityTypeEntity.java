@@ -52,4 +52,8 @@ public class EntityTypeEntity extends BaseEntity {
     @Field("last_updated_date")
     @Builder.Default
     private long lastUpdatedDate = System.currentTimeMillis();
+
+    @Field("is_hided")
+    @Builder.Default
+    private Boolean isHided = false;
 }

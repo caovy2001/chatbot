@@ -157,6 +157,7 @@ public class IntentAPI {
             if (BooleanUtils.isFalse(intentService.delete(CommandGetListIntent.builder()
                     .userId(userEntity.getId())
                     .ids(List.of(command.getId()))
+                    .hasPatterns(true)
                     .build()))) {
                 throw new Exception(ExceptionConstant.error_occur);
             }
@@ -186,10 +187,10 @@ public class IntentAPI {
         }
     }
 
-    @PostMapping("/group_entity_type/{userId}")
-    public ResponseEntity<?> groupEntityType(@PathVariable("userId") String userId) {
+    @PostMapping("/group_entity_type/{userId}/{intentId}")
+    public ResponseEntity<?> groupEntityType(@PathVariable("userId") String userId, @PathVariable("intentId") String intentId) {
         try {
-            intentService.groupEntityType(userId);
+            intentService.groupEntityType(userId, intentId);
             return ResponseEntity.ok(ResponseIntents.builder().build());
         } catch (Exception e) {
             return ResponseEntity.ok(intentService.returnException(e.getMessage(), ResponseIntents.class));

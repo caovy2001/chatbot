@@ -4,6 +4,7 @@ import com.caovy2001.chatbot.constant.Constant;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.*;
 import com.caovy2001.chatbot.enumeration.EMessageHistoryFrom;
+import com.caovy2001.chatbot.model.Paginated;
 import com.caovy2001.chatbot.service.BaseService;
 import com.caovy2001.chatbot.service.ResponseBase;
 import com.caovy2001.chatbot.service.common.command.CommandGetListBase;
@@ -17,6 +18,8 @@ import com.caovy2001.chatbot.service.kafka.KafkaConsumer;
 import com.caovy2001.chatbot.service.message_history.IMessageHistoryService;
 import com.caovy2001.chatbot.service.message_history.command.CommandAddMessageHistory;
 import com.caovy2001.chatbot.service.node.INodeService;
+import com.caovy2001.chatbot.service.pattern.IPatternService;
+import com.caovy2001.chatbot.service.pattern.command.CommandGetListPattern;
 import com.caovy2001.chatbot.service.script.IScriptService;
 import com.caovy2001.chatbot.service.script.command.CommandGetListScript;
 import com.caovy2001.chatbot.service.training.command.*;
@@ -90,6 +93,9 @@ public class TrainingService extends BaseService implements ITrainingService {
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
+
+    @Autowired
+    private IPatternService patternService;
 
     private final ResourceBundle resourceBundle = ResourceBundle.getBundle("application");
 
@@ -543,7 +549,8 @@ public class TrainingService extends BaseService implements ITrainingService {
             if (StringUtils.isNotBlank(conditionMapping.getIntentId())) {
                 try {
                     if (responseTrainingPredictFromAI == null) {
-                        responseTrainingPredictFromAI = this.sendPredictRequest(CommandSendPredictRequest.builder()
+//                        responseTrainingPredictFromAI = this.sendPredictRequest(CommandSendPredictRequest.builder()
+                        responseTrainingPredictFromAI = this.askGptToGetResult(CommandSendPredictRequest.builder()
                                 .user(command.getUser())
                                 .message(command.getMessage())
                                 .intentIds(intentIds)
@@ -645,6 +652,116 @@ public class TrainingService extends BaseService implements ITrainingService {
             log.error("[{}]: {}", e.getStackTrace()[0], e.getMessage());
             return null;
         }
+    }
+
+    private ResponseTrainingPredictFromAI askGptToGetResult(CommandSendPredictRequest command) throws Exception {
+        ResponseTrainingPredictFromAI responseTrainingPredictFromAI = ResponseTrainingPredictFromAI.builder().build();
+        String message = "câu \"CLIENT_PATTERN \" gần thuộc intent nào trong những intent sau: INTENT_NAMES.\n" +
+                "Ví dụ cho từng intent:\n" +
+                "INTENT_WITH_PATTERN_EXAMPLES" +
+                "Trả lời theo các tiêu chí sau:\n" +
+                "- Trả lời theo mẫu và không cần giải thích gì thêm: \n" +
+                "1: Intent: {{tên intent}} | {{tên entity}}: {{giá trị của entity}} | {{tên entity}}: {{giá trị của entity}} | ...\n" +
+                "- Nếu nó không thuộc 1 trong các intent trên, trả lời theo mẫu: \n" +
+                "1: Intent: không thuộc intent nào\n" +
+                "- Chỉ trích xuất các entity có tên sau: ENTITY_NAMES. Không trích xuất các entity không có tên với các entity tôi đã liệt kê.\n" +
+                "- Nếu không trích xuất được entity nào, trả lời theo mẫu sau:\n" +
+                "1: Intent: {{tên intent}} | {{tên entity được liệt kê}}: không_có | {{tên entity được liệt kê}}: không_có | ...\n" +
+                "- Câu trả lời không chứa các dấu ngoặc nhọn, ngoặc đơn, ngoặc kép và dấu nháy kép\n" +
+                "- Chỉ trả lời 1 dòng";
+
+        message = message.replace("CLIENT_PATTERN", command.getMessage());
+
+        // Get all intent names
+        List<IntentEntity> intents = intentService.getList(CommandGetListIntent.builder()
+                .userId(command.getUser().getId())
+                .ids(command.getIntentIds())
+                .returnFields(List.of("id", "name"))
+                .build(), IntentEntity.class);
+        if (CollectionUtils.isEmpty(intents)) {
+            return ResponseTrainingPredictFromAI.builder()
+                    .intentId("-1")
+                    .build();
+        }
+        List<String> intentNames = intents.stream().map(IntentEntity::getName).toList();
+        message = message.replace("INTENT_NAMES", String.join(", ", intentNames));
+
+        // Add example patterns
+        String examplePatterns = "";
+        for (IntentEntity intent : intents) {
+            Paginated<PatternEntity> patterns = patternService.getPaginatedList(CommandGetListPattern.builder()
+                    .userId(command.getUser().getId())
+                    .intentId(intent.getId())
+                    .page(1)
+                    .size(1)
+                    .returnFields(List.of("id", "content"))
+                    .build(), PatternEntity.class, CommandGetListPattern.class);
+            if (CollectionUtils.isEmpty(patterns.getItems())) {
+                continue;
+            }
+
+            examplePatterns += "- " + intent.getName() + ": " + patterns.getItems().get(0).getContent() + "\n";
+        }
+        message = message.replace("INTENT_WITH_PATTERN_EXAMPLES", examplePatterns);
+
+        // Get all entity types
+        List<EntityTypeEntity> entityTypes = entityTypeService.getList(CommandGetListEntityType.builder()
+                .userId(command.getUser().getId())
+                .build(), EntityTypeEntity.class);
+        if (CollectionUtils.isEmpty(entityTypes)) {
+            message = message.replace("ENTITY_NAMES", "");
+        } else {
+            List<String> entityTypeNames = entityTypes.stream().map(EntityTypeEntity::getName).toList();
+            message = message.replace("ENTITY_NAMES", String.join(", ", entityTypeNames));
+        }
+
+        String result = intentService.askGpt(message);
+        result = result.replace("<br>", "");
+        System.out.println(result);
+//         String result = "1: Intent: Nói địa chỉ | Địa chỉ: Hải Phòng";
+        if (result.contains("không thuộc intent nào")) {
+            return ResponseTrainingPredictFromAI.builder()
+                    .intentId("-1")
+                    .build();
+        }
+
+        List<EntityEntity> entities = new ArrayList<>();
+        String resIntentStr = result.split("\\|")[0].split(":")[2].trim();
+        if (result.split("\\|").length > 1) {
+            for (int i = 1; i < result.split("\\|").length; i++) {
+                String resEntityStr = result.split("\\|")[i]; // Địa chỉ: Hải Phòng
+
+                if (resEntityStr.split(":").length <= 1 || resEntityStr.split(":")[1].contains("không_có")) {
+                    continue;
+                }
+
+                String entityName = resEntityStr.split(":")[0].trim();
+                String entityValue = resEntityStr.split(":")[1].trim();
+                EntityTypeEntity entityType = entityTypes.stream().filter(entityTypeEntity -> entityTypeEntity.getName().equals(entityName)).findFirst().orElse(null);
+                if (entityType == null) {
+                    continue;
+                }
+
+                EntityEntity entity = EntityEntity.builder()
+                        .entityTypeId(entityType.getId())
+                        .startPosition(command.getMessage().toLowerCase().indexOf(entityValue.toLowerCase()))
+                        .endPosition(command.getMessage().toLowerCase().indexOf(entityValue.toLowerCase()) + entityValue.length() - 1)
+                        .build();
+                entity.setValue(command.getMessage().substring(entity.getStartPosition(), entity.getEndPosition() + 1));
+                entities.add(entity);
+
+            }
+            responseTrainingPredictFromAI.setEntities(entities);
+        }
+
+        IntentEntity resIntentEntity = intents.stream().filter(intentEntity -> resIntentStr.contains(intentEntity.getName())).findFirst().orElse(null);
+        if (resIntentEntity == null) {
+            return ResponseTrainingPredictFromAI.builder()
+                    .intentId("-1")
+                    .build();
+        }
+        responseTrainingPredictFromAI.setIntentId(resIntentEntity.getId());
+        return responseTrainingPredictFromAI;
     }
 
     @Override

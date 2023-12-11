@@ -5,6 +5,7 @@ import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.BaseEntity;
 import com.caovy2001.chatbot.entity.EntityEntity;
 import com.caovy2001.chatbot.entity.EntityTypeEntity;
+import com.caovy2001.chatbot.entity.PatternEntity;
 import com.caovy2001.chatbot.model.DateFilter;
 import com.caovy2001.chatbot.repository.EntityTypeRepository;
 import com.caovy2001.chatbot.service.BaseService;
@@ -36,6 +37,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -269,6 +271,14 @@ public class EntityTypeService extends BaseService implements IEntityTypeService
 
         andCriteriaList.add(Criteria.where("user_id").is(command.getUserId()));
 
+        // Is Hided
+        List<Criteria> orCriteriaListForIsHided = new ArrayList<>();
+        orCriteriaListForIsHided.add(Criteria.where("is_hided").is(false));
+        orCriteriaListForIsHided.add(Criteria.where("is_hided").is(null));
+        Criteria isHidedCriteria = new Criteria();
+        isHidedCriteria.orOperator(orCriteriaListForIsHided);
+        andCriteriaList.add(isHidedCriteria);
+
         if (StringUtils.isNotBlank(command.getKeyword())) {
             orCriteriaList.add(Criteria.where("searchable_name").regex(ChatbotStringUtils.stripAccents(command.getKeyword().trim().toLowerCase())));
         }
@@ -297,6 +307,26 @@ public class EntityTypeService extends BaseService implements IEntityTypeService
                     andCriteriaList.add(Criteria.where(dateFilter.getFieldName()).gte(dateFilter.getFromDate()).lte(dateFilter.getToDate()));
                 }
             }
+        }
+
+        if (StringUtils.isNotBlank(command.getIntentId())) {
+            Query patternQuery = new Query(Criteria.where("intent_id").is(command.getIntentId()));
+            patternQuery.fields().include("id");
+            List<PatternEntity> patternEntities = mongoTemplate.find(patternQuery, PatternEntity.class);
+            List<String> patternEntityIds = patternEntities.stream().map(PatternEntity::getId).toList();
+            if (CollectionUtils.isEmpty(patternEntityIds)) {
+                return null;
+            }
+
+            Query entityQuery = new Query(Criteria.where("pattern_id").in(patternEntityIds));
+            entityQuery.fields().include("id", "entity_type_id");
+            List<EntityEntity> entities = mongoTemplate.find(entityQuery, EntityEntity.class);
+            Set<String> entityTypeIds = entities.stream().map(EntityEntity::getEntityTypeId).collect(Collectors.toSet());
+            if (CollectionUtils.isEmpty(entityTypeIds)) {
+                return null;
+            }
+
+            andCriteriaList.add(Criteria.where("id").in(entityTypeIds));
         }
 
         if (CollectionUtils.isNotEmpty(orCriteriaList)) {
@@ -375,7 +405,7 @@ public class EntityTypeService extends BaseService implements IEntityTypeService
         Update update = new Update();
         boolean hasValue = false;
         Field[] fields = command.getValue().getClass().getDeclaredFields();
-        for (String field: command.getFieldsToUpdate()) {
+        for (String field : command.getFieldsToUpdate()) {
             if (StringUtils.isBlank(field)) {
                 continue;
             }

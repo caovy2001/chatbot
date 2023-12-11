@@ -29,4 +29,5 @@ public class CommandGetListEntityType extends CommandGetListBase {
     @Builder.Default
     private boolean hasPatternOfEntities = false;
     public List<DateFilter> dateFilters;
+    public String intentId;
 }

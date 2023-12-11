@@ -4,7 +4,9 @@ import com.caovy2001.chatbot.constant.Constant;
 import com.caovy2001.chatbot.constant.ExceptionConstant;
 import com.caovy2001.chatbot.entity.*;
 import com.caovy2001.chatbot.model.DateFilter;
+import com.caovy2001.chatbot.repository.EntityRepository;
 import com.caovy2001.chatbot.repository.IntentRepository;
+import com.caovy2001.chatbot.repository.MessageHistoryRepository;
 import com.caovy2001.chatbot.repository.es.IntentRepositoryES;
 import com.caovy2001.chatbot.service.BaseService;
 import com.caovy2001.chatbot.service.common.command.CommandAddBase;
@@ -15,6 +17,7 @@ import com.caovy2001.chatbot.service.entity.command.CommandEntityAddMany;
 import com.caovy2001.chatbot.service.entity_type.IEntityTypeService;
 import com.caovy2001.chatbot.service.entity_type.command.CommandEntityTypeAddMany;
 import com.caovy2001.chatbot.service.entity_type.command.CommandGetListEntityType;
+import com.caovy2001.chatbot.service.entity_type.command.CommandUpdateEntityType;
 import com.caovy2001.chatbot.service.intent.command.*;
 import com.caovy2001.chatbot.service.intent.es.IIntentServiceES;
 import com.caovy2001.chatbot.service.intent.response.ResponseIntentAskGpt;
@@ -34,10 +37,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -81,6 +86,9 @@ public class IntentService extends BaseService implements IIntentService {
 
     @Autowired
     private IEntityTypeService entityTypeService;
+
+    @Autowired
+    private MessageHistoryRepository messageHistoryRepository;
 
     @Override
     public <Entity extends BaseEntity, CommandAdd extends CommandAddBase> Entity add(CommandAdd commandAddBase) throws Exception {
@@ -438,12 +446,25 @@ public class IntentService extends BaseService implements IIntentService {
         }
         IntentEntity intent = intents.get(0);
 
+        List<EntityTypeEntity> allEntityTypes = entityTypeService.getList(CommandGetListEntityType.builder()
+                .userId(command.getUserId())
+                .build(), EntityTypeEntity.class);
+        List<String> allEntityTypeNames = null;
+        if (CollectionUtils.isNotEmpty(allEntityTypes)) {
+            allEntityTypeNames = allEntityTypes.stream().map(EntityTypeEntity::getName).toList();
+        }
+
         // Generate message
-        String message = "Liệt kê NUM_OF_PATTERNS patterns thuộc intent \"INTENT_NAME\".\nví dụ: \"1. EXAMPLE_PATTERN\"\nTrả lời theo các tiêu chí sau:\n- Trả lời theo mẫu sau và không cần giải thích gì thêm:\n+ {{số thứ tự}}: {{giá trị của pattern}} | {{entity1}}: {{giá trị của entity1}} | {{entity2}}: {{giá trị của entity2}} | ...\n- Câu trả lời không chứa các ký tự đặc biệt như ngoặc đơn, ngoặc kép, ngoặc nhọn. Không chứa dấu chấm ở cuối câu. \n- Nếu không trích xuất được entity thì chỉ cần trả lời như sau:\n+ {{số thứ tự}}: {{giá trị của pattern}}\n- Trích xuất các entity ra trong câu, giá trị các entity trong câu có thể lấy random và gán thẳng giá trị của nó vào trong câu, không để dấu ngoặc nhọn như {{aa}}, có phân biệt chữ hoa và chữ thường, {{giá trị entity}} phải lấy từ trong câu, ví dụ: \"1: Tôi tên là Minh và tôi 21 tuổi | Tên: Minh | Tuổi: 21 | ... \".\n- Làm như sau là sai: \"Tôi là {{tên}} | Tên: {{tên}}\", \"Bạn sống ở đâu? | Địa chỉ: {{địa chỉ}}\", \"Tôi là {{Hùng}} | Tên: Hùng\".";
+        String message = "Liệt kê NUM_OF_PATTERNS patterns thuộc intent \"INTENT_NAME\".\nví dụ: \"1. EXAMPLE_PATTERN\"\nTrả lời theo các tiêu chí sau:\n- Trả lời theo mẫu sau và không cần giải thích gì thêm:\n+ {{số thứ tự}}: {{giá trị của pattern}} | {{entity1}}: {{giá trị của entity1}} | {{entity2}}: {{giá trị của entity2}} | ...\n- Câu trả lời không chứa các ký tự đặc biệt như ngoặc đơn, ngoặc kép, ngoặc nhọn. Không chứa dấu chấm ở cuối câu. \n- Trích xuất các entityALL_ENTITY_TYPE_NAMES. Hạn chế tạo ra entity mới với ý nghĩa tương đồng. Nếu không có các entity này thì có thể tạo ra entity mới.\n- Giá trị các entity trong câu có thể lấy random và gán thẳng giá trị của nó vào trong câu, không để dấu ngoặc nhọn như {{aa}}, có phân biệt chữ hoa và chữ thường, {{giá trị entity}} phải lấy từ trong câu, ví dụ: \"1: Tôi tên là Minh và tôi 21 tuổi | Tên: Minh | Tuổi: 21 | ... \".\n- Nếu không trích xuất được entity thì chỉ cần trả lời như sau:\n+ {{số thứ tự}}: {{giá trị của pattern}}\n- Làm như sau là sai: \"Tôi là {{tên}} | Tên: {{tên}}\", \"Bạn sống ở đâu? | Địa chỉ: {{địa chỉ}}\", \"Tôi là {{Hùng}} | Tên: Hùng\".";
 //        String message = "liệt kê NUM_OF_PATTERNS patterns thuộc intent \"INTENT_NAME\".\nví dụ: \"1: EXAMPLE_PATTERN\"\ntrả lời theo mẫu sau; không cần giải thích gì thêm; không chứa các ký tự đặc biệt như ngoặc đơn hoặc ngoặc kép; có thể lấy giá trị random cho các entity trong câu:\n- {{số thứ tự}}: {{giá trị của pattern}} | {{entity1}}: {{giá trị của entity1}} | {{entity2}}: {{giá trị của entity2}} | ...";
         message = message.replace("NUM_OF_PATTERNS", command.getNumOfPatterns().toString());
         message = message.replace("INTENT_NAME", intent.getName());
         message = message.replace("EXAMPLE_PATTERN", command.getExamplePattern());
+        if (CollectionUtils.isNotEmpty(allEntityTypes)) {
+            message = message.replace("ALL_ENTITY_TYPE_NAMES", ": " + String.join(", ", allEntityTypeNames));
+        } else {
+            message = message.replace("ALL_ENTITY_TYPE_NAMES", "");
+        }
         System.out.println(message);
 
         // Send request sang api chat gpt và nhận được response:
@@ -533,6 +554,9 @@ public class IntentService extends BaseService implements IIntentService {
             }
         }
 
+        // Group entity type
+        this.groupEntityType(command.getUserId(), command.getIntentId());
+
         // Lưu pattern và entity xuống db
         patternService.add(CommandPatternAddMany.builder()
                 .userId(command.getUserId())
@@ -545,7 +569,7 @@ public class IntentService extends BaseService implements IIntentService {
         return true;
     }
 
-    private String askGpt(String message) {
+    public String askGpt(String message) {
         try {
             RestTemplate restTemplate = new RestTemplate();
             HttpHeaders headers = new HttpHeaders();
@@ -568,23 +592,103 @@ public class IntentService extends BaseService implements IIntentService {
         }
     }
 
-    public void groupEntityType(String userId) {
+    public void groupEntityType(String userId, String intentId) throws Exception {
         List<EntityTypeEntity> allEntityTypes = entityTypeService.getList(CommandGetListEntityType.builder()
                 .userId(userId)
+                .intentId(intentId)
                 .build(), EntityTypeEntity.class);
-        if (CollectionUtils.isEmpty(allEntityTypes)) {
+        if (CollectionUtils.isEmpty(allEntityTypes) || allEntityTypes.size() <= 3) {
             return;
         }
 
         List<String> allEntityTypeNames = allEntityTypes.stream().map(EntityTypeEntity::getName).toList();
         Map<String, EntityTypeEntity> entityTypeMapByName = new HashMap<>();
         allEntityTypes.forEach(entityType -> {
-            entityTypeMapByName.put(entityType.getName(), entityType);
+            entityTypeMapByName.put(entityType.getName().toLowerCase().trim(), entityType);
         });
 
-        String message = "Tôi có các tên entity: ENTITY_TYPE_NAMES. Gộp các tên entity gần đồng nghĩa lại với nhau.\nTrả lời theo các tiêu chí sau:\n- Không cần giải thích gì và chỉ cần trả lời theo mẫu sau: \"{{số thứ tự}}: {{tên entity}}, {{tên enitty}}, ... | {{tên entity mới}}\". \n- Các {{tên entity}} chỉ lấy ở các entity có sẵn, {{tên entity mới}} thì có thể tạo ra tên mới có ý nghĩa bao quát các tên entity được gộp, nếu chỉ có 1 entity được gộp thì giữ lại tên của entity đó.\n- Mỗi tên entity chỉ được gộp một lần.\n- Không chứa các dấu ngoặc nhọn, ngoặc đơn, ngoặc kép.";
-        String result = this.askGpt(message);
-        System.out.println(result);
+        Map<String, EntityTypeEntity> entityTypeMapById = new HashMap<>();
+        allEntityTypes.forEach(entityType -> {
+            entityTypeMapById.put(entityType.getId(), entityType);
+        });
+
+        Map<String, EntityTypeEntity> entityTypeAfterMapById = new HashMap<>();
+
+        String message = "Tôi có các tên entity: ENTITY_TYPE_NAMES. Gộp các tên entity gần đồng nghĩa lại với nhau.\nTrả lời theo các tiêu chí sau:\n- Không cần giải thích gì và chỉ cần trả lời theo mẫu sau: \"{{số thứ tự}}: {{tên entity}}, {{tên enitty}}, ... | {{tên entity mới}}\". \n- Các tên entity chỉ lấy ở các tên entity mà tôi đã đưa, {{tên entity mới}} thì có thể tạo ra tên mới có ý nghĩa bao quát các tên entity được gộp, nếu chỉ có 1 entity được gộp thì giữ lại tên của entity đó.\n- Mỗi tên entity chỉ được gộp một lần.\n- Không chứa các dấu ngoặc nhọn, ngoặc đơn, ngoặc kép.";
+        message = message.replace("ENTITY_TYPE_NAMES", String.join(", ", allEntityTypeNames));
+        String resultFromGpt = this.askGpt(message);
+        resultFromGpt = resultFromGpt.replace("<br>", "");
+//        String resultFromGpt = "1: Tên, Địa chỉ, Đường, Số nhà, Quê | Địa chỉ\n2: Thành phố, Khu vực, Quận, Tỉnh | Địa phương\n3: Cư trú, Thị trấn, Phường | Địa bàn\n4: Sinh ra | Ngày sinh <br>";
+//        System.out.println(result);
+
+        List<String> results = List.of(resultFromGpt.split("\\n"));
+        Map<String, String> entityNameHistoryById = new HashMap<>();
+        Map<String, String> entityTypeAfterById = new HashMap<>();
+        for (String result : results) {
+            List<String> entityNamesBefore = List.of(result.split("\\|")[0].trim().split(": ")[1].trim().split(", "));
+            String entityNameAfter = result.split("\\|")[1].trim();
+            EntityTypeEntity entityTypeAfter = entityTypeMapByName.get(entityNameAfter.toLowerCase().trim());
+            if (entityTypeAfter == null) {
+                List<EntityTypeEntity> savedEntityTypes = entityTypeService.add(CommandEntityTypeAddMany.builder()
+                        .userId(userId)
+                        .entityTypes(List.of(EntityTypeEntity.builder()
+                                .userId(userId)
+                                .uuid(UUID.randomUUID().toString())
+                                .name(entityNameAfter)
+                                .build()))
+                        .build());
+                entityTypeAfter = savedEntityTypes.get(0);
+            }
+            entityTypeAfterMapById.put(entityTypeAfter.getId(), entityTypeAfter);
+
+            for (String entityNameBefore : entityNamesBefore) {
+                EntityTypeEntity entityType = entityTypeMapByName.get(entityNameBefore.trim().toLowerCase());
+                if (entityType != null && !entityType.getId().equals(entityTypeAfter.getId())) {
+                    entityNameHistoryById.put(entityType.getId(), entityTypeAfter.getId());
+                }
+            }
+        }
+
+        // Update
+        List<MessageHistoryEntity> messageHistoryEntitiesToUpdate = new ArrayList<>();
+        for (String oldEntityTypeId : entityNameHistoryById.keySet()) {
+            String newEntityTypeId = entityNameHistoryById.get(oldEntityTypeId);
+            // Update many entity/message entity history
+            Criteria criteria = Criteria.where("entity_type_id").is(oldEntityTypeId);
+            Query queryUpdate1 = new Query(criteria);
+
+            Update update = new Update();
+            update.set("entity_type_id", newEntityTypeId);
+
+            mongoTemplate.updateMulti(queryUpdate1, update, EntityEntity.class);
+            mongoTemplate.updateMulti(queryUpdate1, update, MessageEntityHistoryEntity.class);
+
+            // Update message history
+            Criteria criteria2 = Criteria.where("entities").elemMatch(Criteria.where("entity_type_id").regex("(?i)" + oldEntityTypeId));
+            Query queryUpdate2 = new Query(criteria2);
+            List<MessageHistoryEntity> messageHistoryEntities = mongoTemplate.find(queryUpdate2, MessageHistoryEntity.class);
+            for (MessageHistoryEntity messageHistoryEntity : messageHistoryEntities) {
+                for (Document docEntity : messageHistoryEntity.getEntities()) {
+                    docEntity.put("entity_type_id", newEntityTypeId);
+                    Document docEntityType = (Document) docEntity.get("entity_type");
+                    docEntityType.put("id", newEntityTypeId);
+                    docEntityType.put("name", entityTypeMapById.get(newEntityTypeId).getName());
+                    docEntity.put("entity_type", docEntityType);
+                }
+            }
+            messageHistoryEntitiesToUpdate.addAll(messageHistoryEntities);
+
+            // Update is_hided of entity types
+            Criteria criteria3 = Criteria.where("id").is(oldEntityTypeId);
+            Query queryUpdate3 = new Query(criteria3);
+
+            Update update3 = new Update();
+            update.set("is_hided", true);
+
+            mongoTemplate.updateMulti(queryUpdate3, update3, EntityTypeEntity.class);
+
+        }
+        messageHistoryRepository.saveAll(messageHistoryEntitiesToUpdate);
     }
 
 }
