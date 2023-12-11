@@ -9,7 +9,7 @@ COPY src/main/resources/application.properties ./application.properties
 
 RUN cat ./build-file/splited-app-* > ./app.jar
 RUN rm -r build-file
-RUN mkdir mkdir -p src/main/resources/file_data
+RUN mkdir -p src/main/resources/file_data
 
 EXPOSE 8085
 
