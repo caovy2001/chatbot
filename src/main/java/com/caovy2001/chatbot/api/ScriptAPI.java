@@ -152,6 +152,25 @@ public class ScriptAPI {
         }
     }
 
+    @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
+    @PutMapping("/{id}/update_name")
+    public ResponseEntity<?> updateName(@PathVariable("id") String id, @RequestBody CommandScriptUpdate command){
+        try{
+            UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (userEntity == null || StringUtils.isBlank((userEntity.getId()))){
+                throw new Exception("auth_invalid");
+            }
+            if (StringUtils.isBlank(id)) {
+                throw new Exception(ExceptionConstant.missing_param);
+            }
+            command.setUserId(userEntity.getId());
+            command.setId(id);
 
+            return ResponseEntity.ok(scriptService.updateName(command));
+        }
+        catch (Exception e){
+            return ResponseEntity.ok(scriptService.returnException(e.getMessage(), ResponseScriptGetByUserId.class));
+        }
+    }
 
 }

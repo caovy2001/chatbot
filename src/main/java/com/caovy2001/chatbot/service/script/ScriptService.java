@@ -148,6 +148,11 @@ public class ScriptService extends BaseService implements IScriptService {
         if (script == null) {
             return returnException(ExceptionConstant.item_not_found, ResponseScript.class);
         }
+
+        if (StringUtils.isBlank(command.getName())) {
+            return returnException(ExceptionConstant.missing_param, ResponseScript.class);
+        }
+
         script.setName(command.getName());
         return ResponseScript.builder().script(scriptRepository.save(script)).build();
     }
