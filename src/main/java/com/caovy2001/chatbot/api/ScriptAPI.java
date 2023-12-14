@@ -153,7 +153,7 @@ public class ScriptAPI {
     }
 
     @PreAuthorize("hasAnyAuthority('ALLOW_ACCESS')")
-    @PutMapping("/{id}/update_name")
+    @PostMapping("/{id}/update_name")
     public ResponseEntity<?> updateName(@PathVariable("id") String id, @RequestBody CommandScriptUpdate command){
         try{
             UserEntity userEntity = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();

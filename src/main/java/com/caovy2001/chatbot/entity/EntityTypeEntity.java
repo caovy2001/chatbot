@@ -42,8 +42,8 @@ public class EntityTypeEntity extends BaseEntity {
     @Transient
     private List<EntityEntity> entities;
 
-    @Field("in_message_history_group_list_title")
-    private Boolean inMessageHistoryGroupListTitle = false;
+//    @Field("in_message_history_group_list_title")
+//    private Boolean inMessageHistoryGroupListTitle = false;
 
     @Field("created_date")
     @Builder.Default

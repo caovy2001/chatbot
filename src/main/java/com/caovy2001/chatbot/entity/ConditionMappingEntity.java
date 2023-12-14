@@ -21,8 +21,8 @@ public class ConditionMappingEntity extends BaseEntity {
     @Id
     private String id;
 
-    @Field("condition_mapping_id")
-    private String conditionMappingId;
+//    @Field("condition_mapping_id")
+//    private String conditionMappingId;
 
     @Field("predict_type")
     private EPredictType predictType = EPredictType.INTENT;
