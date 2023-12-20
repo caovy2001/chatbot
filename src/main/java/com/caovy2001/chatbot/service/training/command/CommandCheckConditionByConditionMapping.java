@@ -15,5 +15,6 @@ public class CommandCheckConditionByConditionMapping {
     private String message;
     private UserEntity user;
     private NodeEntity currentNode;
+    private String sessionId;
 
 }

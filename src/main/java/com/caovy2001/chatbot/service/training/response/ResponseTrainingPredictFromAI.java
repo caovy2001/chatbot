@@ -17,6 +17,7 @@ import java.util.Map;
 public class ResponseTrainingPredictFromAI extends ResponseBase {
     private String accuracy;
     private String intentCode;
-    private String intentId;
+//    private String intentId;
+    private List<String> intentIds;
     private List<EntityEntity> entities;
 }

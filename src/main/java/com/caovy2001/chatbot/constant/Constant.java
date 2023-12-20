@@ -12,6 +12,7 @@ public class Constant {
         public static class Pattern {
             public static final String importExcelSessionIdPrefix_ = "importExcelSessionIdPrefix_";
             public static final String exportExcelSessionIdPrefix_ = "exportExcelSessionIdPrefix_";
+            public static final String chatHistorySessionIdPrefix_ = "chatHistorySessionIdPrefix_";
         }
     }
 

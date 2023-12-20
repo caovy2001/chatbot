@@ -31,7 +31,6 @@ import com.caovy2001.chatbot.service.training_history.response.ResponseTrainingH
 import com.caovy2001.chatbot.service.training_history.response.ResponseTrainingHistoryAdd;
 import com.caovy2001.chatbot.service.user.IUserService;
 import com.caovy2001.chatbot.service.user.command.CommandGetListUser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NonNull;
@@ -165,6 +164,16 @@ public class TrainingService extends BaseService implements ITrainingService {
         command.setUserId(userEntity.getId());
         //endregion
 
+        String chatSessionJedisKey = Constant.JedisPrefix.userIdPrefix_ + command.getUserId() +
+                Constant.JedisPrefix.COLON +
+                Constant.JedisPrefix.Pattern.chatHistorySessionIdPrefix_ + command.getSessionId();
+        String chatHistoryFromRedisStr = this.jedisService.get(chatSessionJedisKey);
+        List<Map<String, Object>> chatHistoryFromRedis =
+                StringUtils.isNotBlank(chatHistoryFromRedisStr) ?
+                        this.objectMapper.readValue(chatHistoryFromRedisStr, List.class) :
+                        new ArrayList<>();
+        Map<String, Object> chatHistoryFromRedisItem = new HashMap<>();
+
         //region Lấy script
         ScriptEntity script = this.getScriptForPredictSession(userEntity.getId(), command.getScriptId());
         if (script == null) {
@@ -197,6 +206,11 @@ public class TrainingService extends BaseService implements ITrainingService {
         clientMessageToUser.put("message", command.getMessage());
         messagingTemplate.convertAndSend(
                 "/chat/" + command.getSessionId() + "/receive-from-client", clientMessageToUser);
+        chatHistoryFromRedisItem = new HashMap<>();
+        chatHistoryFromRedisItem.put("from", "USER");
+        chatHistoryFromRedisItem.put("message", command.getMessage());
+        chatHistoryFromRedis.add(chatHistoryFromRedisItem);
+        this.jedisService.setWithExpired(chatSessionJedisKey, this.objectMapper.writeValueAsString(chatHistoryFromRedis), 30 * 60);
 
         //region Nếu đây là câu bắt đầu thì trả về message của node đầu tiên
         if ("_BEGIN".equals(command.getCurrentNodeId())) {
@@ -216,6 +230,11 @@ public class TrainingService extends BaseService implements ITrainingService {
             responseMessageMap.put("message", firstNode.getMessage());
             messagingTemplate.convertAndSend(
                     "/chat/" + command.getSessionId() + "/receive-from-bot", responseMessageMap);
+            chatHistoryFromRedisItem = new HashMap<>();
+            chatHistoryFromRedisItem.put("from", "BOT");
+            chatHistoryFromRedisItem.put("message", firstNode.getMessage());
+            chatHistoryFromRedis.add(chatHistoryFromRedisItem);
+            this.jedisService.setWithExpired(chatSessionJedisKey, this.objectMapper.writeValueAsString(chatHistoryFromRedis), 30 * 60);
             return ResponseTrainingPredict.builder().build();
         }
         //endregion
@@ -232,13 +251,14 @@ public class TrainingService extends BaseService implements ITrainingService {
                 .currentNode(currNode)
                 .user(userEntity)
                 .message(command.getMessage())
+                .sessionId(command.getSessionId())
                 .build());
-        final String nextNodeId = responseCheckConditionByConditionMapping.getNextNodeId();
+        final List<String> nextNodeIds = responseCheckConditionByConditionMapping.getNextNodeIds();
         final ResponseTrainingPredictFromAI responseTrainingPredictFromAI = responseCheckConditionByConditionMapping.getResponseTrainingPredictFromAI();
         this.saveUserMessage(command, responseTrainingPredictFromAI);
 
         // Không thỏa đk nào => Trả về wrongMessage
-        if (StringUtils.isBlank(nextNodeId)) {
+        if (nextNodeIds.size() == 1 && nextNodeIds.contains("-1")) {
             // Gửi tín hiệu đến socket topic của user để báo cho user biết có message out khỏi kịch bản
             Map<String, Object> clientMessageToUserToShowPopUp = new HashMap<>();
             clientMessageToUserToShowPopUp.put("current_node_id", command.getCurrentNodeId());
@@ -246,64 +266,46 @@ public class TrainingService extends BaseService implements ITrainingService {
             clientMessageToUserToShowPopUp.put("script_id", command.getScriptId());
             messagingTemplate.convertAndSend(
                     "/chat-listener/" + command.getUserId(), clientMessageToUserToShowPopUp);
+            chatHistoryFromRedisItem = new HashMap<>();
+            chatHistoryFromRedisItem.put("from", "USER");
+            chatHistoryFromRedisItem.put("message", command.getMessage());
+            chatHistoryFromRedis.add(chatHistoryFromRedisItem);
+            this.jedisService.setWithExpired(chatSessionJedisKey, this.objectMapper.writeValueAsString(chatHistoryFromRedis), 30 * 60);
             return ResponseTrainingPredict.builder().build();
-        }
-
-        // Node cuối
-        if (nextNodeId.equals("_END")) {
-            //region Lưu message mà bot gửi đi
-            if (BooleanUtils.isFalse(command.getIsTrying())) {
-                kafkaConsumer.processSaveMessageWhenPredictConsumer(objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
-                        .nodeId("_END")
-                        .message(endMessage)
-                        .from(EMessageHistoryFrom.BOT)
-//                        .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
-                        .checkAddMessageHistoryGroup(true)
-                        .saveMessageEntityHistory(true)
-                        .build()));
-            }
-
-            responseMessageMap.put("current_node_id", "_END");
-            responseMessageMap.put("message", endMessage);
-            messagingTemplate.convertAndSend(
-                    "/chat/" + command.getSessionId() + "/receive-from-bot", responseMessageMap);
-            return ResponseTrainingPredict.builder().build();
-            //endregion
-        }
-
-        // Chuyển node tiếp theo
-        NodeEntity nextNode = nodesByNodeId.get(nextNodeId);
-        if (nextNode == null) {
-            // Nếu không có node tiếp theo thì đây là node cuối cùng
-            //region Lưu message mà bot gửi đi
-            if (BooleanUtils.isFalse(command.getIsTrying())) {
-                kafkaConsumer.processSaveMessageWhenPredictConsumer(objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
-                        .nodeId("_END")
-                        .message(endMessage)
-                        .from(EMessageHistoryFrom.BOT)
-//                        .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
-                        .checkAddMessageHistoryGroup(true)
-                        .saveMessageEntityHistory(true)
-                        .build()));
-            }
-
-            responseMessageMap.put("current_node_id", "_END");
-            responseMessageMap.put("message", endMessage);
-            messagingTemplate.convertAndSend(
-                    "/chat/" + command.getSessionId() + "/receive-from-bot", responseMessageMap);
-            return ResponseTrainingPredict.builder().build();
-            //endregion
         }
 
         List<EntityEntity> redisEntities = this.updateRedisEntities(userEntity.getId(), command.getSessionId(), responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null); // Cập nhật entities cho session này trên redis
         Map<String, String> variableMap = this.convertEntitiesToVariableMap(redisEntities);
-        String returnMessage = this.variableMapping(variableMap, nextNode.getMessage());
+        List<String> returnMessages = new ArrayList<>();
+        for (String nextNodeId : nextNodeIds) {
+            if (nextNodeId.equals("-1")) {
+                continue;
+            }
+            NodeEntity nextNode = nodesByNodeId.get(nextNodeId);
+            String returnMessage = this.variableMapping(variableMap, nextNode.getMessage());
+            returnMessages.add(returnMessage);
+        }
+
+        // Get response message from gpt
+        String responseMessage = this.askGptToGetResponseMessage(returnMessages, userEntity.getId(), command.getSessionId());
+
+        // Get acceptable next node ids
+        List<String> acceptableNextNodeIds = new ArrayList<>();
+        for (String nextNodeId: nextNodeIds) {
+            if (nextNodeId.equals("-1")) {
+                continue;
+            }
+            NodeEntity node = nodesByNodeId.get(nextNodeId);
+            if (CollectionUtils.isNotEmpty(node.getConditionMappings())) {
+                acceptableNextNodeIds.add(nextNodeId);
+            }
+        }
 
         // Lưu message mà bot gửi đi
         if (BooleanUtils.isFalse(command.getIsTrying())) {
             kafkaConsumer.processSaveMessageWhenPredictConsumer(objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
-                    .nodeId(nextNodeId)
-                    .message(returnMessage)
+                    .nodeId(CollectionUtils.isNotEmpty(acceptableNextNodeIds)? acceptableNextNodeIds.get(0) :firstNode.getNodeId())
+                    .message(responseMessage)
                     .from(EMessageHistoryFrom.BOT)
 //                    .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
                     .checkAddMessageHistoryGroup(true)
@@ -311,12 +313,68 @@ public class TrainingService extends BaseService implements ITrainingService {
                     .build()));
         }
 
-        responseMessageMap.put("current_node_id", nextNodeId);
-        responseMessageMap.put("message", returnMessage);
+        responseMessageMap.put("current_node_id", CollectionUtils.isNotEmpty(acceptableNextNodeIds)? acceptableNextNodeIds.get(0) :firstNode.getNodeId());
+        responseMessageMap.put("message", responseMessage);
         messagingTemplate.convertAndSend(
                 "/chat/" + command.getSessionId() + "/receive-from-bot", responseMessageMap);
+        chatHistoryFromRedisItem = new HashMap<>();
+        chatHistoryFromRedisItem.put("from", "BOT");
+        chatHistoryFromRedisItem.put("message", responseMessage);
+        chatHistoryFromRedis.add(chatHistoryFromRedisItem);
+        this.jedisService.setWithExpired(chatSessionJedisKey, this.objectMapper.writeValueAsString(chatHistoryFromRedis), 30 * 60);
         return ResponseTrainingPredict.builder().build();
         //endregion
+    }
+
+    private String askGptToGetResponseMessage(List<String> listMessages, String userId, String sessionId) throws Exception {
+        String prompt = "Bạn là một Chatbot tuyệt vời và có thể hỗ trợ người dùng ở hầu hết các lĩnh vực. Bạn có khả năng trả lời người dùng một cách rất tự nhiên thông qua những thông tin được cung cấp. \n" +
+                "Tôi có đoạn hội thoại sau:\n" +
+                "CONVERSATION " +
+                "Chatbot: ... \n" +
+                "- Những thông tin hoặc câu trả lời mà Chatbot biết: \n" +
+                "INFORMATION" +
+                "- Hãy tổng hợp các thông tin trên thành một câu trả lời hoàn hảo và hợp với ngữ cảnh nhất cho Chatbot, những thông tin không liên quan hoặc không cần thiết thì có thể lược bỏ.\n" +
+                "- Trả lời ngắn gọn, không lan man. \n" +
+                "- Nếu người dùng có hỏi thì hãy đáp lại một cách tự nhiên.\n" +
+                "- Nếu người dùng trả lời hoặc hỏi những thứ không liên quan, hãy trả lời lại một cách tự nhiên mà không cần phải dựa vào dữ liệu có sẵn.\n" +
+                "- Trả lời theo mẫu sau và không cần phải giải thích gì thêm, chỉ trả lời 1 dòng duy nhất:\n" +
+                "Chatbot: {{câu trả lời}}";
+
+        // Generate CONVERSATION
+        String chatSessionJedisKey = Constant.JedisPrefix.userIdPrefix_ + userId +
+                Constant.JedisPrefix.COLON +
+                Constant.JedisPrefix.Pattern.chatHistorySessionIdPrefix_ + sessionId;
+        String chatHistoryFromRedisStr = this.jedisService.get(chatSessionJedisKey);
+        List<Map<String, Object>> chatHistoryFromRedis =
+                StringUtils.isNotBlank(chatHistoryFromRedisStr) ?
+                        this.objectMapper.readValue(chatHistoryFromRedisStr, List.class) :
+                        new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(chatHistoryFromRedis)) {
+            String conversation = "";
+            for (Map<String, Object> chatHistoryFromRedisItem : chatHistoryFromRedis) {
+                if (((String) chatHistoryFromRedisItem.get("from")).equals("USER")) {
+                    conversation += "User: " + chatHistoryFromRedisItem.get("message") + " \n";
+                } else if (((String) chatHistoryFromRedisItem.get("from")).equals("BOT")) {
+                    conversation += "Chatbot: " + chatHistoryFromRedisItem.get("message") + " \n";
+                }
+            }
+            prompt = prompt.replace("CONVERSATION", conversation);
+        } else {
+            prompt = prompt.replace("CONVERSATION", "");
+        }
+
+        // Generate information
+        String info = "";
+        for (String message : listMessages) {
+            info += "   + " + message + " \n";
+        }
+        prompt = prompt.replace("INFORMATION", info);
+
+        // Get result
+        String result = intentService.askGpt(prompt);
+        result = result.replace("<br>", "");
+        System.out.println(result);
+        return result.split(":")[1].trim();
     }
 
     @Override
@@ -496,37 +554,54 @@ public class TrainingService extends BaseService implements ITrainingService {
         if (command.getCurrentNode() == null) {
             log.error("[{}]: {}", new Exception().getStackTrace()[0], "condition_mappings_empty");
             return ResponseCheckConditionByConditionMapping.builder()
-                    .nextNodeId(null)
+                    .nextNodeIds(List.of("-1"))
                     .responseTrainingPredictFromAI(null)
                     .build();
         }
 
-        // Nếu k có condition mapping nào thì trả về "_END"
-        if (CollectionUtils.isEmpty(command.getCurrentNode().getConditionMappings())) {
-            return ResponseCheckConditionByConditionMapping.builder()
-                    .nextNodeId("_END")
-                    .responseTrainingPredictFromAI(null)
-                    .build();
-        }
+        // Nếu k có condition mapping nào thì trả về "_BEGIN"
+//        if (CollectionUtils.isEmpty(command.getCurrentNode().getConditionMappings())) {
+//            return ResponseCheckConditionByConditionMapping.builder()
+//                    .nextNodeIds(List.of("_BEGIN"))
+//                    .responseTrainingPredictFromAI(null)
+//                    .build();
+//        }
 
-        // Nếu condition mapping không có next node nào cả thì trả về "_END"
-        List<String> totalNextNodeIds = new ArrayList<>();
-        command.getCurrentNode().getConditionMappings().forEach(cm -> {
-            if (CollectionUtils.isNotEmpty(cm.getNext_node_ids())) {
-                totalNextNodeIds.addAll(cm.getNext_node_ids());
+        // Nếu condition mapping không có next node nào cả thì trả về "_BEGIN"
+//        List<String> totalNextNodeIds = new ArrayList<>();
+//        command.getCurrentNode().getConditionMappings().forEach(cm -> {
+//            if (CollectionUtils.isNotEmpty(cm.getNext_node_ids())) {
+//                totalNextNodeIds.addAll(cm.getNext_node_ids());
+//            }
+//        });
+//        if (CollectionUtils.isEmpty(totalNextNodeIds)) {
+//            return ResponseCheckConditionByConditionMapping.builder()
+//                    .nextNodeIds(List.of("_BEGIN"))
+//                    .responseTrainingPredictFromAI(null)
+//                    .build();
+//        }
+
+        ResponseTrainingPredictFromAI responseTrainingPredictFromAI = null;
+
+        // Check intent
+        List<String> intentIds = command.getCurrentNode().getConditionMappings().stream()
+                .map(ConditionMappingEntity::getIntentId).toList();
+        try {
+            if (responseTrainingPredictFromAI == null) {
+//                        responseTrainingPredictFromAI = this.sendPredictRequest(CommandSendPredictRequest.builder()
+                responseTrainingPredictFromAI = this.askGptToGetIntents(CommandSendPredictRequest.builder()
+                        .user(command.getUser())
+                        .message(command.getMessage())
+                        .intentIds(intentIds)
+                        .sessionId(command.getSessionId())
+                        .build());
             }
-        });
-        if (CollectionUtils.isEmpty(totalNextNodeIds)) {
-            return ResponseCheckConditionByConditionMapping.builder()
-                    .nextNodeId("_END")
-                    .responseTrainingPredictFromAI(null)
-                    .build();
+        } catch (Exception e) {
+            log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
         }
 
         // Check điều kiện của từng condition mapping
-        List<String> intentIds = command.getCurrentNode().getConditionMappings().stream()
-                .map(ConditionMappingEntity::getIntentId).toList();
-        ResponseTrainingPredictFromAI responseTrainingPredictFromAI = null;
+        List<String> nextNodeIds = new ArrayList<>();
         for (ConditionMappingEntity conditionMapping : command.getCurrentNode().getConditionMappings()) {
             // Check đầu vào của condition mapping
             if (CollectionUtils.isEmpty(conditionMapping.getNext_node_ids())) {
@@ -545,78 +620,33 @@ public class TrainingService extends BaseService implements ITrainingService {
                 }
             }
 
-            // Check intent
             if (StringUtils.isNotBlank(conditionMapping.getIntentId())) {
-                try {
-                    if (responseTrainingPredictFromAI == null) {
-//                        responseTrainingPredictFromAI = this.sendPredictRequest(CommandSendPredictRequest.builder()
-                        responseTrainingPredictFromAI = this.askGptToGetResult(CommandSendPredictRequest.builder()
-                                .user(command.getUser())
-                                .message(command.getMessage())
-                                .intentIds(intentIds)
-                                .build());
-                        if (responseTrainingPredictFromAI == null) {
-                            continue;
-                        }
-
-                        String intentId = responseTrainingPredictFromAI.getIntentId();
-                        if (StringUtils.isBlank(intentId) || intentId.equals("-1")) {
-                            continue;
-                        }
-                    }
-
-                    if (!conditionMapping.getIntentId().equals(responseTrainingPredictFromAI.getIntentId())) {
-                        continue;
-                    }
-                } catch (Exception e) {
-                    log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
+                if (responseTrainingPredictFromAI == null) {
                     continue;
                 }
-            }
 
-            // Check entity
-//            if (CollectionUtils.isNotEmpty(conditionMapping.getEntities())) {
-//                if (responseTrainingPredictFromAI == null) {
-//                    responseTrainingPredictFromAI = this.sendPredictRequest(CommandSendPredictRequest.builder()
-//                            .user(command.getUser())
-//                            .message(command.getMessage())
-//                            .intentIds(intentIds)
-//                            .build());
-//                    if (responseTrainingPredictFromAI == null) {
-//                        continue;
-//                    }
-//                }
-//
-//                if (CollectionUtils.isEmpty(responseTrainingPredictFromAI.getEntities())) {
-//                    continue;
-//                }
-//
-//                boolean isEntityPass = true;
-//                for (EntityEntity entity : conditionMapping.getEntities()) {
-//                    EntityEntity responseEntity = responseTrainingPredictFromAI.getEntities().stream()
-//                            .filter(e -> e.getEntityTypeId().equals(entity.getEntityTypeId())).findFirst().orElse(null);
-//                    if (responseEntity == null) {
-//                        isEntityPass = false;
-//                        break;
-//                    }
-//                }
-//                if (BooleanUtils.isFalse(isEntityPass)) {
-//                    continue;
-//                }
-//            }
+                if (responseTrainingPredictFromAI.getIntentIds().size() == 1 &&
+                        responseTrainingPredictFromAI.getIntentIds().contains("-1")) {
+                    nextNodeIds.add("-1");
+                    continue;
+                }
+
+                if (!responseTrainingPredictFromAI.getIntentIds().contains(conditionMapping.getIntentId())) {
+                    continue;
+                }
+
+            }
 
             if (responseTrainingPredictFromAI != null && CollectionUtils.isNotEmpty(responseTrainingPredictFromAI.getEntities())) {
                 this.setEntityTypeForListEntity(command.getUser().getId(), responseTrainingPredictFromAI.getEntities()); // Khi predict từ training server về thì entity sẽ không có sẵn entity type mà chỉ có entity_type_id => Hàm này để set chi tiết entity_type cho từng entity
             }
-            return ResponseCheckConditionByConditionMapping.builder()
-                    .nextNodeId(conditionMapping.getNext_node_ids().get(0))
-                    .responseTrainingPredictFromAI(responseTrainingPredictFromAI)
-                    .build();
+
+            nextNodeIds.add(conditionMapping.getNext_node_ids().get(0));
         }
 
         return ResponseCheckConditionByConditionMapping.builder()
-                .nextNodeId(null)
-                .responseTrainingPredictFromAI(null)
+                .nextNodeIds(nextNodeIds)
+                .responseTrainingPredictFromAI(responseTrainingPredictFromAI)
                 .build();
     }
 
@@ -654,21 +684,51 @@ public class TrainingService extends BaseService implements ITrainingService {
         }
     }
 
-    private ResponseTrainingPredictFromAI askGptToGetResult(CommandSendPredictRequest command) throws Exception {
+    private ResponseTrainingPredictFromAI askGptToGetIntents(CommandSendPredictRequest command) throws Exception {
         ResponseTrainingPredictFromAI responseTrainingPredictFromAI = ResponseTrainingPredictFromAI.builder().build();
-        String message = "câu \"CLIENT_PATTERN \" gần thuộc intent nào trong những intent sau: INTENT_NAMES.\n" +
-                "Ví dụ cho từng intent:\n" +
+        String message = "- Tôi có đoạn hội thoại sau:\n" +
+                "CONVERSATION" +
+                "- Tôi có những ví dụ về những intents có những pattern thuộc nó:\n" +
                 "INTENT_WITH_PATTERN_EXAMPLES" +
-                "Trả lời theo các tiêu chí sau:\n" +
-                "- Trả lời theo mẫu và không cần giải thích gì thêm: \n" +
-                "1: Intent: {{tên intent}} | {{tên entity}}: {{giá trị của entity}} | {{tên entity}}: {{giá trị của entity}} | ...\n" +
-                "- Nếu nó không thuộc 1 trong các intent trên, trả lời theo mẫu: \n" +
-                "1: Intent: không thuộc intent nào\n" +
-                "- Chỉ trích xuất các entity có tên sau: ENTITY_NAMES. Không trích xuất các entity không có tên với các entity tôi đã liệt kê.\n" +
-                "- Nếu không trích xuất được entity nào, trả lời theo mẫu sau:\n" +
-                "1: Intent: {{tên intent}} | {{tên entity được liệt kê}}: không_có | {{tên entity được liệt kê}}: không_có | ...\n" +
-                "- Câu trả lời không chứa các dấu ngoặc nhọn, ngoặc đơn, ngoặc kép và dấu nháy kép\n" +
-                "- Chỉ trả lời 1 dòng";
+                "- Câu nói cuối của User là \"CLIENT_PATTERN\". Hãy dự đoán xem nó thuộc những intent nào trong những intent sau: INTENT_NAMES | Không thuộc intent nào hoặc user nói bậy hoặc không muốn tiếp tục cuộc trò chuyện.\n" +
+                "- Trả lời theo các tiêu chí sau:\n" +
+                "   + Trả lời theo mẫu và không cần giải thích gì thêm: \n" +
+                "{{số thứ tự}}: Intent {{mức độ chính xác từ 0-1 với 1 là cao nhất}} : {{tên intent}} | {{tên entity}}: {{giá trị của entity}} | {{tên entity}}: {{giá trị của entity}} | ...  \n" +
+                "   + Chỉ trích xuất các entity có tên sau: ENTITY_NAMES. \n" +
+                "   + Không trích xuất các entity không có tên với các entity tôi đã liệt kê. Giá trị của entity có phân biệt chữ thường và hoa.\n" +
+                "   + Chỉ trích xuất các entity trong câu nói cuối của User.\n" +
+                "   + Chỉ dự đoán intent của câu nói cuối của User.\n" +
+                "   + Một câu có thể có nhiều intent. \n" +
+                "   + Dự đoán ít nhất 3 intent. \n" +
+                "   + Sau mỗi câu trả lời thì phải luôn xuống dòng bằng ký tự \\n. \n" +
+                "   + Nếu không trích xuất được entity nào, trả lời theo mẫu sau:\n" +
+                "{{số thứ tự}}: Intent {{mức độ chính xác từ 0-1 với 1 là cao nhất}}: {{tên intent}} | {{tên entity được liệt kê}}: không_có | {{tên entity được liệt kê}}: không_có | ... \n" +
+                "   + Câu trả lời không chứa các dấu ngoặc nhọn, ngoặc đơn, ngoặc kép và dấu nháy kép\n" +
+                "   + Hãy suy nghĩ từng bước thật kỹ trước khi trả lời.\n" +
+                "   + Nếu câu trên của client không thuộc các intent trên hoặc client tỏ ý không muốn nói, không muốn trả lời hoặc trả lời sai, nó thuộc intent: Không thuộc intent nào hoặc user nói bậy hoặc không muốn tiếp tục cuộc trò chuyện.";
+
+        // Generate CONVERSATION
+        String chatSessionJedisKey = Constant.JedisPrefix.userIdPrefix_ + command.getUser().getId() +
+                Constant.JedisPrefix.COLON +
+                Constant.JedisPrefix.Pattern.chatHistorySessionIdPrefix_ + command.getSessionId();
+        String chatHistoryFromRedisStr = this.jedisService.get(chatSessionJedisKey);
+        List<Map<String, Object>> chatHistoryFromRedis =
+                StringUtils.isNotBlank(chatHistoryFromRedisStr) ?
+                        this.objectMapper.readValue(chatHistoryFromRedisStr, List.class) :
+                        new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(chatHistoryFromRedis)) {
+            String conversation = "";
+            for (Map<String, Object> chatHistoryFromRedisItem : chatHistoryFromRedis) {
+                if (((String) chatHistoryFromRedisItem.get("from")).equals("USER")) {
+                    conversation += "   + User: " + chatHistoryFromRedisItem.get("message") + " \n";
+                } else if (((String) chatHistoryFromRedisItem.get("from")).equals("BOT")) {
+                    conversation += "   + Chatbot: " + chatHistoryFromRedisItem.get("message") + " \n";
+                }
+            }
+            message = message.replace("CONVERSATION", conversation);
+        } else {
+            message = message.replace("CONVERSATION", "");
+        }
 
         message = message.replace("CLIENT_PATTERN", command.getMessage());
 
@@ -680,11 +740,11 @@ public class TrainingService extends BaseService implements ITrainingService {
                 .build(), IntentEntity.class);
         if (CollectionUtils.isEmpty(intents)) {
             return ResponseTrainingPredictFromAI.builder()
-                    .intentId("-1")
+                    .intentIds(List.of("-1"))
                     .build();
         }
         List<String> intentNames = intents.stream().map(IntentEntity::getName).toList();
-        message = message.replace("INTENT_NAMES", String.join(", ", intentNames));
+        message = message.replace("INTENT_NAMES", String.join(" | ", intentNames));
 
         // Add example patterns
         String examplePatterns = "";
@@ -693,14 +753,14 @@ public class TrainingService extends BaseService implements ITrainingService {
                     .userId(command.getUser().getId())
                     .intentId(intent.getId())
                     .page(1)
-                    .size(5)
+                    .size(10)
                     .returnFields(List.of("id", "content"))
                     .build(), PatternEntity.class, CommandGetListPattern.class);
             if (CollectionUtils.isEmpty(patterns.getItems())) {
                 continue;
             }
 
-            examplePatterns += "- " + intent.getName() + ": " + String.join(", ", patterns.getItems().stream().map(PatternEntity::getContent).toList()) + "\n";
+            examplePatterns += "   + " + intent.getName() + ": " + String.join(" | ", patterns.getItems().stream().map(PatternEntity::getContent).toList()) + "\n";
         }
         message = message.replace("INTENT_WITH_PATTERN_EXAMPLES", examplePatterns);
 
@@ -712,55 +772,83 @@ public class TrainingService extends BaseService implements ITrainingService {
             message = message.replace("ENTITY_NAMES", "");
         } else {
             List<String> entityTypeNames = entityTypes.stream().map(EntityTypeEntity::getName).toList();
-            message = message.replace("ENTITY_NAMES", String.join(", ", entityTypeNames));
+            message = message.replace("ENTITY_NAMES", String.join(" | ", entityTypeNames));
         }
 
-        String result = intentService.askGpt(message);
-        result = result.replace("<br>", "");
-        System.out.println(result);
-//         String result = "1: Intent: Nói địa chỉ | Địa chỉ: Hải Phòng";
-        if (result.contains("không thuộc intent nào")) {
-            return ResponseTrainingPredictFromAI.builder()
-                    .intentId("-1")
-                    .build();
-        }
+        String results = intentService.askGpt(message);
+        results = results.replace("<br>", "");
+        System.out.println(results);
+        //1: Intent 0.9: Nói tên | Tên: Vỹ | Tuổi: không_có | Địa chỉ: không_có \n
+        //2: Intent 0.1: Không thuộc intent nào hoặc user nói bậy
 
-        List<EntityEntity> entities = new ArrayList<>();
-        String resIntentStr = result.split("\\|")[0].split(":")[2].trim();
-        if (result.split("\\|").length > 1) {
-            for (int i = 1; i < result.split("\\|").length; i++) {
-                String resEntityStr = result.split("\\|")[i]; // Địa chỉ: Hải Phòng
-
-                if (resEntityStr.split(":").length <= 1 || resEntityStr.split(":")[1].contains("không_có")) {
-                    continue;
-                }
-
-                String entityName = resEntityStr.split(":")[0].trim();
-                String entityValue = resEntityStr.split(":")[1].trim();
-                EntityTypeEntity entityType = entityTypes.stream().filter(entityTypeEntity -> entityTypeEntity.getName().equals(entityName)).findFirst().orElse(null);
-                if (entityType == null) {
-                    continue;
-                }
-
-                EntityEntity entity = EntityEntity.builder()
-                        .entityTypeId(entityType.getId())
-                        .startPosition(command.getMessage().toLowerCase().indexOf(entityValue.toLowerCase()))
-                        .endPosition(command.getMessage().toLowerCase().indexOf(entityValue.toLowerCase()) + entityValue.length() - 1)
-                        .build();
-                entity.setValue(command.getMessage().substring(entity.getStartPosition(), entity.getEndPosition() + 1));
-                entities.add(entity);
-
+        List<IntentEntity> resIntents = new ArrayList<>();
+        for (String result : results.split("\n")) {
+            result = result.replace("\\n", "");
+            List<EntityEntity> entities = new ArrayList<>();
+            if (result.split("\\|")[0].split(":").length < 3) {
+                continue;
             }
-            responseTrainingPredictFromAI.setEntities(entities);
+            String resIntentStr = result.split("\\|")[0].split(":")[2].trim();
+            if (result.split("\\|").length > 1) {
+                for (int i = 1; i < result.split("\\|").length; i++) {
+                    String resEntityStr = result.split("\\|")[i]; // Địa chỉ: Hải Phòng
+
+                    if (resEntityStr.split(":").length <= 1 || resEntityStr.split(":")[1].contains("không_có")) {
+                        continue;
+                    }
+
+                    String entityName = resEntityStr.split(":")[0].trim();
+                    String entityValue = resEntityStr.split(":")[1].trim();
+                    EntityTypeEntity entityType = entityTypes.stream().filter(entityTypeEntity -> entityTypeEntity.getName().equals(entityName)).findFirst().orElse(null);
+                    if (entityType == null) {
+                        continue;
+                    }
+
+                    if (command.getMessage().toLowerCase().contains(entityValue.toLowerCase())) {
+                        EntityEntity entity = EntityEntity.builder()
+                                .entityTypeId(entityType.getId())
+                                .startPosition(command.getMessage().toLowerCase().indexOf(entityValue.toLowerCase()))
+                                .endPosition(command.getMessage().toLowerCase().indexOf(entityValue.toLowerCase()) + entityValue.length() - 1)
+                                .build();
+                        entity.setValue(command.getMessage().substring(entity.getStartPosition(), entity.getEndPosition() + 1));
+                        entities.add(entity);
+                    }
+
+                }
+                responseTrainingPredictFromAI.setEntities(entities);
+            }
+
+            if (result.split("\\|")[0].split(":")[1].trim().split(" ").length < 2) {
+                continue;
+            }
+//            String intentAccuracy = result.split("\\|")[0].split(":")[1].trim().split(" ")[1];
+//            try {
+//                Float.parseFloat(intentAccuracy);
+//            } catch (Exception e) {
+//                continue;
+//            }
+//
+//            if (Float.valueOf(intentAccuracy) < 0.69) {
+//                continue;
+//            }
+            if (resIntents.size() == 3) {
+                continue;
+            }
+            IntentEntity resIntentEntity = intents.stream().filter(intentEntity -> resIntentStr.trim().toLowerCase().contains(intentEntity.getName().trim().toLowerCase())).findFirst().orElse(null);
+            if (resIntentEntity != null) {
+                resIntents.add(resIntentEntity);
+            }
+            else if (resIntentStr.contains("Không thuộc intent nào")) {
+                resIntents.add(IntentEntity.builder().id("-1").build());
+            }
         }
 
-        IntentEntity resIntentEntity = intents.stream().filter(intentEntity -> resIntentStr.contains(intentEntity.getName())).findFirst().orElse(null);
-        if (resIntentEntity == null) {
-            return ResponseTrainingPredictFromAI.builder()
-                    .intentId("-1")
-                    .build();
+        if (resIntents.size() > 0 && resIntents.get(0).getId().equals("-1")) {
+            resIntents = new ArrayList<>();
+            resIntents.add(IntentEntity.builder().id("-1").build());
         }
-        responseTrainingPredictFromAI.setIntentId(resIntentEntity.getId());
+
+        responseTrainingPredictFromAI.setIntentIds(resIntents.stream().map(IntentEntity::getId).toList());
         return responseTrainingPredictFromAI;
     }
 

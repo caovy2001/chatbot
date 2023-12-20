@@ -16,4 +16,5 @@ public class CommandSendPredictRequest {
     private String message;
     private UserEntity user;
     private List<String> intentIds;
+    private String sessionId;
 }
