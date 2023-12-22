@@ -338,6 +338,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                 "- Nếu người dùng có hỏi thì hãy đáp lại một cách tự nhiên.\n" +
                 "- Nếu người dùng trả lời hoặc hỏi những thứ không liên quan, hãy trả lời lại một cách tự nhiên mà không cần phải dựa vào dữ liệu có sẵn.\n" +
                 "- Chatbot luôn xưng hô là 'tôi'.\n" +
+                "- Nếu User có ý tạm biệt và không cần hỗ trợ nữa, hãy chào tạm biệt họ và không cần nói gì thêm về dịch vụ.\n" +
                 "- Trả lời theo mẫu sau và không cần phải giải thích gì thêm, chỉ trả lời 1 dòng duy nhất:\n" +
                 "Chatbot: {{câu trả lời}}";
 
