@@ -828,7 +828,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                 continue;
             }
 
-            if (Float.valueOf(intentAccuracy) < 0.69) {
+            if (Float.valueOf(intentAccuracy) < 0.79) {
                 continue;
             }
             if (resIntents.size() == 3) {
