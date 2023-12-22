@@ -7,4 +7,4 @@ mv target/splited-app-* build-file/
 git add .
 git commit -m 'update'
 git push origin main
-#ssh root@14.225.207.19 'cd chatbot && git pull origin main && docker compose up -d --build && docker system prune -a'
+ssh root@14.225.207.19 'cd chatbot && git pull origin main && docker compose up -d --build && docker system prune -a'
