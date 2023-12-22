@@ -51,6 +51,7 @@ import org.springframework.web.client.RestTemplate;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static com.caovy2001.chatbot.service.jedis.JedisService.PrefixRedisKey.COLON;
 
@@ -253,7 +254,8 @@ public class TrainingService extends BaseService implements ITrainingService {
                 .message(command.getMessage())
                 .sessionId(command.getSessionId())
                 .build());
-        final List<String> nextNodeIds = responseCheckConditionByConditionMapping.getNextNodeIds();
+//        final List<String> nextNodeIds = responseCheckConditionByConditionMapping.getNextNodeIds();
+        final List<String> nextNodeIds = currNode.getConditionMappings().stream().map(conditionMappingEntity -> conditionMappingEntity.getNext_node_ids().get(0)).toList();
         final ResponseTrainingPredictFromAI responseTrainingPredictFromAI = responseCheckConditionByConditionMapping.getResponseTrainingPredictFromAI();
         this.saveUserMessage(command, responseTrainingPredictFromAI);
 
