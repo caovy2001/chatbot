@@ -699,7 +699,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                 "   + Chỉ trích xuất các entity trong câu nói cuối của User.\n" +
                 "   + Chỉ dự đoán intent của câu nói cuối của User.\n" +
                 "   + Một câu có thể có nhiều intent. \n" +
-                "   + Dự đoán ít nhất 3 intent. \n" +
+//                "   + Dự đoán ít nhất 3 intent. \n" +
                 "   + Sau mỗi câu trả lời thì phải luôn xuống dòng bằng ký tự \\n. \n" +
                 "   + Nếu không trích xuất được entity nào, trả lời theo mẫu sau:\n" +
                 "{{số thứ tự}}: Intent {{mức độ chính xác từ 0-1 với 1 là cao nhất}}: {{tên intent}} | {{tên entity được liệt kê}}: không_có | {{tên entity được liệt kê}}: không_có | ... \n" +
@@ -828,12 +828,12 @@ public class TrainingService extends BaseService implements ITrainingService {
                 continue;
             }
 
-            if (Float.valueOf(intentAccuracy) < 0.79) {
-                continue;
-            }
-            if (resIntents.size() == 3) {
-                continue;
-            }
+//            if (Float.valueOf(intentAccuracy) < 0.79) {
+//                continue;
+//            }
+//            if (resIntents.size() == 3) {
+//                continue;
+//            }
             IntentEntity resIntentEntity = intents.stream().filter(intentEntity -> resIntentStr.trim().toLowerCase().contains(intentEntity.getName().trim().toLowerCase())).findFirst().orElse(null);
             if (resIntentEntity != null) {
                 resIntents.add(resIntentEntity);
