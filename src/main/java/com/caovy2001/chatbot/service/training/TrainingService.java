@@ -821,16 +821,16 @@ public class TrainingService extends BaseService implements ITrainingService {
             if (result.split("\\|")[0].split(":")[1].trim().split(" ").length < 2) {
                 continue;
             }
-//            String intentAccuracy = result.split("\\|")[0].split(":")[1].trim().split(" ")[1];
-//            try {
-//                Float.parseFloat(intentAccuracy);
-//            } catch (Exception e) {
-//                continue;
-//            }
-//
-//            if (Float.valueOf(intentAccuracy) < 0.69) {
-//                continue;
-//            }
+            String intentAccuracy = result.split("\\|")[0].split(":")[1].trim().split(" ")[1];
+            try {
+                Float.parseFloat(intentAccuracy);
+            } catch (Exception e) {
+                continue;
+            }
+
+            if (Float.valueOf(intentAccuracy) < 0.69) {
+                continue;
+            }
             if (resIntents.size() == 3) {
                 continue;
             }
