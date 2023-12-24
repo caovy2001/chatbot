@@ -48,7 +48,11 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.*;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -136,23 +140,94 @@ public class TrainingService extends BaseService implements ITrainingService {
             String commandBody = objectMapper.writeValueAsString(command);
 //            log.info("[train]: Send training request: {}", commandBody);
 
-            CompletableFuture.runAsync(() -> {
-                try {
-                    jedisService.set(command.getUserId() + COLON + JedisService.PrefixRedisKey.trainingServerStatus, "busy");
-                    HttpEntity<String> request =
-                            new HttpEntity<>(commandBody, headers);
-                    restTemplate.postForLocation(new URI(resourceBundle.getString("training.server") + "/train"), request);
+//            CompletableFuture.runAsync(() -> {
+//                try {
+//                    jedisService.set(command.getUserId() + COLON + JedisService.PrefixRedisKey.trainingServerStatus, "busy");
+//                    HttpEntity<String> request =
+//                            new HttpEntity<>(commandBody, headers);
+//                    this.saveModel(command);
+////                    restTemplate.postForLocation(new URI(resourceBundle.getString("training.server") + "/train"), request);
+//
+//
+//
+//                } catch (Exception e) {
+//                    log.error(e.getMessage());
+//                }
+//            });
 
-                } catch (Exception e) {
-                    log.error(e.getMessage());
-                }
-            });
+            try {
+                jedisService.set(command.getUserId() + COLON + JedisService.PrefixRedisKey.trainingServerStatus, "busy");
+                HttpEntity<String> request =
+                        new HttpEntity<>(commandBody, headers);
+                this.saveModel(command);
+//                    restTemplate.postForLocation(new URI(resourceBundle.getString("training.server") + "/train"), request);
+
+
+            } catch (Exception e) {
+                log.error(e.getMessage());
+            }
         } catch (Throwable throwable) {
             log.error("[{}|train]: {}", command.getUserId(), throwable.getMessage());
         }
         return ResponseTrainingTrain.builder()
                 .trainingHistoryId(responseTrainingHistoryAdd.getId())
                 .build();
+    }
+
+    private void saveModel(CommandTrainingTrain command) {
+        // { "pattern_id": {"patern content", "intent_id"}}
+        Map<String, Map<String, String>> patternWithIdMap = new HashMap<>();
+
+        // {"word": ["pattern_id", "pattern_id"]}
+        Map<String, List<String>> uniqueWordWithPatternIdMap = new HashMap<>();
+
+        for (IntentEntity intent : command.getIntents()) {
+            for (PatternEntity pattern : intent.getPatterns()) {
+                Map<String, String> map = new HashMap<>();
+                map.put(pattern.getContent(), intent.getId());
+                patternWithIdMap.put(pattern.getId(), map);
+
+                String[] splitedPattern = pattern.getContent().toLowerCase().split(" ");
+                for (String word : splitedPattern) {
+                    int length = splitedPattern.length;
+                    if (uniqueWordWithPatternIdMap.get(word) != null && !uniqueWordWithPatternIdMap.get(word).contains(pattern.getId() + "_" + length)) {
+                        List<String> patternIds = uniqueWordWithPatternIdMap.get(word);
+                        patternIds.add(pattern.getId() + "_" + length);
+                        uniqueWordWithPatternIdMap.put(word, patternIds);
+                    } else {
+                        uniqueWordWithPatternIdMap.put(word, new ArrayList<>(List.of(pattern.getId() + "_" + length)));
+                    }
+                }
+
+                System.out.println(pattern.getContent());
+            }
+        }
+
+        // Write the object to a file
+        // Specify the folder path
+        String folderPath = "model/" + command.getUserId();
+        String filePath = folderPath + "/uniqueWordWithPatternIdMap.model";
+        // Create a Path object
+        Path path = Paths.get(folderPath);
+
+        // Check if the folder exists
+        if (!Files.exists(path)) {
+            try {
+                Files.createDirectories(path);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath))) {
+            // Write the content to the file
+            String content = objectMapper.writeValueAsString(uniqueWordWithPatternIdMap);
+            bw.write(content);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        jedisService.set(command.getUserId() + COLON + JedisService.PrefixRedisKey.trainingServerStatus, "free");
     }
 
     @Override
@@ -254,8 +329,8 @@ public class TrainingService extends BaseService implements ITrainingService {
                 .message(command.getMessage())
                 .sessionId(command.getSessionId())
                 .build());
-//        final List<String> nextNodeIds = responseCheckConditionByConditionMapping.getNextNodeIds();
-        final List<String> nextNodeIds = currNode.getConditionMappings().stream().map(conditionMappingEntity -> conditionMappingEntity.getNext_node_ids().get(0)).toList();
+        final List<String> nextNodeIds = responseCheckConditionByConditionMapping.getNextNodeIds();
+//        final List<String> nextNodeIds = currNode.getConditionMappings().stream().map(conditionMappingEntity -> conditionMappingEntity.getNext_node_ids().get(0)).toList();
         final ResponseTrainingPredictFromAI responseTrainingPredictFromAI = responseCheckConditionByConditionMapping.getResponseTrainingPredictFromAI();
         this.saveUserMessage(command, responseTrainingPredictFromAI);
 
@@ -289,11 +364,11 @@ public class TrainingService extends BaseService implements ITrainingService {
         }
 
         // Get response message from gpt
-        String responseMessage = this.askGptToGetResponseMessage(returnMessages, userEntity.getId(), command.getSessionId());
+//        String responseMessage = this.askGptToGetResponseMessage(returnMessages, userEntity.getId(), command.getSessionId());
 
         // Get acceptable next node ids
         List<String> acceptableNextNodeIds = new ArrayList<>();
-        for (String nextNodeId: nextNodeIds) {
+        for (String nextNodeId : nextNodeIds) {
             if (nextNodeId.equals("-1")) {
                 continue;
             }
@@ -306,8 +381,9 @@ public class TrainingService extends BaseService implements ITrainingService {
         // Lưu message mà bot gửi đi
         if (BooleanUtils.isFalse(command.getIsTrying())) {
             kafkaConsumer.processSaveMessageWhenPredictConsumer(objectMapper.writeValueAsString(CommandAddMessageHistory.builder().userId(userEntity.getId()).sessionId(command.getSessionId()).scriptId(command.getScriptId())
-                    .nodeId(CollectionUtils.isNotEmpty(acceptableNextNodeIds)? acceptableNextNodeIds.get(0) :firstNode.getNodeId())
-                    .message(responseMessage)
+                    .nodeId(CollectionUtils.isNotEmpty(acceptableNextNodeIds) ? acceptableNextNodeIds.get(0) : firstNode.getNodeId())
+//                    .message(responseMessage)
+                    .message(returnMessages.get(0))
                     .from(EMessageHistoryFrom.BOT)
 //                    .entities(responseTrainingPredictFromAI != null ? responseTrainingPredictFromAI.getEntities() : null)
                     .checkAddMessageHistoryGroup(true)
@@ -315,13 +391,15 @@ public class TrainingService extends BaseService implements ITrainingService {
                     .build()));
         }
 
-        responseMessageMap.put("current_node_id", CollectionUtils.isNotEmpty(acceptableNextNodeIds)? acceptableNextNodeIds.get(0) :firstNode.getNodeId());
-        responseMessageMap.put("message", responseMessage);
+        responseMessageMap.put("current_node_id", CollectionUtils.isNotEmpty(acceptableNextNodeIds) ? acceptableNextNodeIds.get(0) : firstNode.getNodeId());
+//        responseMessageMap.put("message", responseMessage);
+        responseMessageMap.put("message", returnMessages.get(0));
         messagingTemplate.convertAndSend(
                 "/chat/" + command.getSessionId() + "/receive-from-bot", responseMessageMap);
         chatHistoryFromRedisItem = new HashMap<>();
         chatHistoryFromRedisItem.put("from", "BOT");
-        chatHistoryFromRedisItem.put("message", responseMessage);
+//        chatHistoryFromRedisItem.put("message", responseMessage);
+        chatHistoryFromRedisItem.put("message", returnMessages.get(0));
         chatHistoryFromRedis.add(chatHistoryFromRedisItem);
         this.jedisService.setWithExpired(chatSessionJedisKey, this.objectMapper.writeValueAsString(chatHistoryFromRedis), 30 * 60);
         return ResponseTrainingPredict.builder().build();
@@ -586,6 +664,7 @@ public class TrainingService extends BaseService implements ITrainingService {
 //        }
 
         ResponseTrainingPredictFromAI responseTrainingPredictFromAI = null;
+        ResponseTrainingPredictFromAI responseTrainingPredictFromAI2 = null;
 
         // Check intent
         List<String> intentIds = command.getCurrentNode().getConditionMappings().stream()
@@ -599,6 +678,13 @@ public class TrainingService extends BaseService implements ITrainingService {
                         .intentIds(intentIds)
                         .sessionId(command.getSessionId())
                         .build());
+                responseTrainingPredictFromAI2 = this.predictFromSavedModel(CommandSendPredictRequest.builder()
+                        .user(command.getUser())
+                        .message(command.getMessage())
+                        .intentIds(intentIds)
+                        .sessionId(command.getSessionId())
+                        .build());
+
             }
         } catch (Exception e) {
             log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
@@ -607,6 +693,12 @@ public class TrainingService extends BaseService implements ITrainingService {
         // Check điều kiện của từng condition mapping
         List<String> nextNodeIds = new ArrayList<>();
         for (ConditionMappingEntity conditionMapping : command.getCurrentNode().getConditionMappings()) {
+            if (responseTrainingPredictFromAI.getIntentIds().size() == 1 &&
+                    responseTrainingPredictFromAI.getIntentIds().contains("-1")) {
+                nextNodeIds.add("-1");
+                break;
+            }
+
             // Check đầu vào của condition mapping
             if (CollectionUtils.isEmpty(conditionMapping.getNext_node_ids())) {
                 continue;
@@ -628,12 +720,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                 if (responseTrainingPredictFromAI == null) {
                     continue;
                 }
-
-                if (responseTrainingPredictFromAI.getIntentIds().size() == 1 &&
-                        responseTrainingPredictFromAI.getIntentIds().contains("-1")) {
-                    nextNodeIds.add("-1");
-                    continue;
-                }
+                responseTrainingPredictFromAI.setIntentIds(responseTrainingPredictFromAI2.getIntentIds());
 
                 if (!responseTrainingPredictFromAI.getIntentIds().contains(conditionMapping.getIntentId())) {
                     continue;
@@ -697,18 +784,19 @@ public class TrainingService extends BaseService implements ITrainingService {
                 "- Câu nói cuối của User là \"CLIENT_PATTERN\". Hãy dự đoán xem nó thuộc những intent nào trong những intent sau: INTENT_NAMES | Không thuộc intent nào hoặc user nói bậy hoặc không muốn tiếp tục cuộc trò chuyện.\n" +
                 "- Trả lời theo các tiêu chí sau:\n" +
                 "   + Trả lời theo mẫu và không cần giải thích gì thêm: \n" +
-                "{{số thứ tự}}: Intent {{mức độ chính xác từ 0-1 với 1 là cao nhất}} : {{tên intent}} | {{tên entity}}: {{giá trị của entity}} | {{tên entity}}: {{giá trị của entity}} | ...  \n" +
+                "Intent: {{tên intent}} | {{tên entity}}: {{giá trị của entity}} | {{tên entity}}: {{giá trị của entity}} | ...  \n" +
                 "   + Chỉ trích xuất các entity có tên sau: ENTITY_NAMES. \n" +
                 "   + Không trích xuất các entity không có tên với các entity tôi đã liệt kê. Giá trị của entity có phân biệt chữ thường và hoa.\n" +
                 "   + Chỉ trích xuất các entity trong câu nói cuối của User.\n" +
                 "   + Chỉ dự đoán intent của câu nói cuối của User.\n" +
-                "   + Một câu có thể có nhiều intent. \n" +
+//                "   + Một câu có thể có nhiều intent. \n" +
 //                "   + Dự đoán ít nhất 3 intent. \n" +
-                "   + Sau mỗi câu trả lời thì phải luôn xuống dòng bằng ký tự \\n. \n" +
+                "   + Chỉ dự đoán 1 intent có độ chính xác cao nhất. \n" +
+//                "   + Sau mỗi câu trả lời thì phải luôn xuống dòng bằng ký tự \\n. \n" +
                 "   + Nếu không trích xuất được entity nào, trả lời theo mẫu sau:\n" +
-                "{{số thứ tự}}: Intent {{mức độ chính xác từ 0-1 với 1 là cao nhất}}: {{tên intent}} | {{tên entity được liệt kê}}: không_có | {{tên entity được liệt kê}}: không_có | ... \n" +
-                "   + Câu trả lời không chứa các dấu ngoặc nhọn, ngoặc đơn, ngoặc kép và dấu nháy kép\n" +
-                "   + Hãy suy nghĩ từng bước thật kỹ trước khi trả lời.\n" +
+                "Intent: {{tên intent}} | {{tên entity được liệt kê}}: không_có | {{tên entity được liệt kê}}: không_có | ... \n" +
+                "   + Câu trả lời không chứa các dấu ngoặc nhọn, ngoặc đơn, ngoặc kép và dấu nháy kép. \n" +
+                "   + Hãy suy nghĩ từng bước thật kỹ trước khi trả lời. \n" +
                 "   + Nếu câu trên của client không thuộc các intent trên hoặc client tỏ ý không muốn nói, không muốn trả lời hoặc trả lời sai, nó thuộc intent: Không thuộc intent nào hoặc user nói bậy hoặc không muốn tiếp tục cuộc trò chuyện.";
 
         // Generate CONVERSATION
@@ -789,10 +877,10 @@ public class TrainingService extends BaseService implements ITrainingService {
         for (String result : results.split("\n")) {
             result = result.replace("\\n", "");
             List<EntityEntity> entities = new ArrayList<>();
-            if (result.split("\\|")[0].split(":").length < 3) {
-                continue;
+            if (result.split("\\|")[0].split(":").length < 2) {
+                break;
             }
-            String resIntentStr = result.split("\\|")[0].split(":")[2].trim();
+            String resIntentStr = result.split("\\|")[0].split(":")[1].trim();
             if (result.split("\\|").length > 1) {
                 for (int i = 1; i < result.split("\\|").length; i++) {
                     String resEntityStr = result.split("\\|")[i]; // Địa chỉ: Hải Phòng
@@ -822,15 +910,15 @@ public class TrainingService extends BaseService implements ITrainingService {
                 responseTrainingPredictFromAI.setEntities(entities);
             }
 
-            if (result.split("\\|")[0].split(":")[1].trim().split(" ").length < 2) {
+            if (result.split("\\|")[0].split(":").length < 2) {
                 continue;
             }
-            String intentAccuracy = result.split("\\|")[0].split(":")[1].trim().split(" ")[1];
-            try {
-                Float.parseFloat(intentAccuracy);
-            } catch (Exception e) {
-                continue;
-            }
+//            String intentAccuracy = result.split("\\|")[0].split(":")[1].trim().split(" ")[1];
+//            try {
+//                Float.parseFloat(intentAccuracy);
+//            } catch (Exception e) {
+//                continue;
+//            }
 
 //            if (Float.valueOf(intentAccuracy) < 0.79) {
 //                continue;
@@ -841,10 +929,10 @@ public class TrainingService extends BaseService implements ITrainingService {
             IntentEntity resIntentEntity = intents.stream().filter(intentEntity -> resIntentStr.trim().toLowerCase().contains(intentEntity.getName().trim().toLowerCase())).findFirst().orElse(null);
             if (resIntentEntity != null) {
                 resIntents.add(resIntentEntity);
-            }
-            else if (resIntentStr.contains("Không thuộc intent nào")) {
+            } else if (resIntentStr.contains("Không thuộc intent nào")) {
                 resIntents.add(IntentEntity.builder().id("-1").build());
             }
+            break;
         }
 
         if (resIntents.size() > 0 && resIntents.get(0).getId().equals("-1")) {
@@ -854,6 +942,98 @@ public class TrainingService extends BaseService implements ITrainingService {
 
         responseTrainingPredictFromAI.setIntentIds(resIntents.stream().map(IntentEntity::getId).toList());
         return responseTrainingPredictFromAI;
+    }
+
+    private ResponseTrainingPredictFromAI predictFromSavedModel(CommandSendPredictRequest command) {
+        // Specify the file path
+        String filePath = "model/" + command.getUser().getId() + "/uniqueWordWithPatternIdMap.model";
+        // Create a Path object
+//        Path path = Paths.get(filePath);
+        String strContent = "";
+        try {
+            // Read all lines from the file into a List of Strings
+            try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+                String line;
+
+                // Read lines from the file until the end of the file is reached
+                while ((line = br.readLine()) != null) {
+                    strContent += line;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+//            List<String> lines = Files.readAllLines(path);
+//            String strContent = String.join("", lines);
+            Map<String, List<String>> uniqueWordWithPatternIdMap = this.objectMapper.readValue(strContent, Map.class);
+            double percentagePerWord = 1.0 / command.getMessage().split(" ").length;
+            Map<String, Double> patternPercentage = new HashMap<>();
+//            List<Object> resPatternIdWithPercentage = new ArrayList<>();
+            List<List<Object>> resPatternIdWithPercentage = new ArrayList<>();
+            for (String word : command.getMessage().split(" ")) {
+                List<String> resPatternIds = uniqueWordWithPatternIdMap.get(word);
+                if (CollectionUtils.isEmpty(resPatternIds)) {
+                    continue;
+                }
+
+                for (String resPatternId : resPatternIds) {
+                    int lengthOfResPattern = Integer.valueOf(resPatternId.split("_")[1]);
+
+                    if (patternPercentage.get(resPatternId) != null) {
+                        patternPercentage.put(resPatternId, patternPercentage.get(resPatternId) + percentagePerWord + (1.0 / lengthOfResPattern));
+                    } else {
+                        patternPercentage.put(resPatternId, percentagePerWord + (1.0 / lengthOfResPattern));
+                    }
+
+                    if (resPatternIdWithPercentage.isEmpty()) {
+                        List<Object> arr = new ArrayList<>();
+                        arr.add(resPatternId);
+                        arr.add(patternPercentage.get(resPatternId));
+                        resPatternIdWithPercentage.add(arr);
+                    }
+
+                    for (int i = 0; i < resPatternIdWithPercentage.size(); i++) {
+                        if (((Double) resPatternIdWithPercentage.get(i).get(1)) < patternPercentage.get(resPatternId) &&
+                                !((String) resPatternIdWithPercentage.get(i).get(0)).equals(resPatternId)) {
+                            List<Object> arr = new ArrayList<>();
+                            arr.add(resPatternId);
+                            arr.add(patternPercentage.get(resPatternId));
+                            resPatternIdWithPercentage.add(i, arr);
+                            if (resPatternIdWithPercentage.size() > 4) {
+                                resPatternIdWithPercentage.remove(resPatternIdWithPercentage.size() - 1);
+                            }
+                            break;
+                        }
+
+//                        if (resPatternIdWithPercentage.size() < 4 && !resPatternIdWithPercentage.stream().map(a -> a.get(0)).toList().contains(resPatternId)) {
+//                            List<Object> arr = new ArrayList<>();
+//                            arr.add(resPatternId);
+//                            arr.add(patternPercentage.get(resPatternId));
+//                            resPatternIdWithPercentage.add(arr);
+//                        }
+                    }
+                }
+            }
+
+            System.out.println(resPatternIdWithPercentage);
+            List<PatternEntity> resPatterns = this.patternService.getList(CommandGetListPattern.builder()
+                            .userId(command.getUser().getId())
+                    .ids(resPatternIdWithPercentage.stream().map(arr -> ((String) arr.get(0)).split("_")[0]).toList())
+                    .build(), PatternEntity.class);
+            List<String> intentIds = resPatterns.stream().map(PatternEntity::getIntentId).toList();
+            intentIds = intentIds.stream().filter(intentId -> command.getIntentIds().contains(intentId)).toList();
+            if (CollectionUtils.isEmpty(intentIds)) {
+                intentIds = new ArrayList<>();
+                intentIds.add("-1");
+            }
+            return ResponseTrainingPredictFromAI.builder()
+                    .intentIds(intentIds)
+                    .build();
+
+        } catch (IOException e) {
+            // Handle exceptions, e.g., file not found or permission issues
+            System.err.println("Error reading file: " + e.getMessage());
+            return null;
+        }
     }
 
     @Override
