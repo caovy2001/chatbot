@@ -275,7 +275,7 @@ public class PatternService extends BaseService implements IPatternService {
         if (BooleanUtils.isTrue(command.isHasEntities())) {
             entityService.delete(CommandGetListEntity.builder()
                     .userId(command.getUserId())
-                    .patternId(command.getId())
+                    .patternIds(patternIds)
                     .build());
         }
 
