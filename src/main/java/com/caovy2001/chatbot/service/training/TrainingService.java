@@ -672,13 +672,13 @@ public class TrainingService extends BaseService implements ITrainingService {
         try {
             if (responseTrainingPredictFromAI == null) {
 //                        responseTrainingPredictFromAI = this.sendPredictRequest(CommandSendPredictRequest.builder()
-                responseTrainingPredictFromAI = this.askGptToGetIntents(CommandSendPredictRequest.builder()
-                        .user(command.getUser())
-                        .message(command.getMessage())
-                        .intentIds(intentIds)
-                        .sessionId(command.getSessionId())
-                        .build());
-                responseTrainingPredictFromAI2 = this.predictFromSavedModel(CommandSendPredictRequest.builder()
+//                responseTrainingPredictFromAI = this.askGptToGetIntents(CommandSendPredictRequest.builder()
+//                        .user(command.getUser())
+//                        .message(command.getMessage())
+//                        .intentIds(intentIds)
+//                        .sessionId(command.getSessionId())
+//                        .build());
+                responseTrainingPredictFromAI = this.predictFromSavedModel(CommandSendPredictRequest.builder()
                         .user(command.getUser())
                         .message(command.getMessage())
                         .intentIds(intentIds)
@@ -948,7 +948,6 @@ public class TrainingService extends BaseService implements ITrainingService {
         // Specify the file path
         String filePath = "model/" + command.getUser().getId() + "/uniqueWordWithPatternIdMap.model";
         // Create a Path object
-//        Path path = Paths.get(filePath);
         String strContent = "";
         try {
             // Read all lines from the file into a List of Strings
@@ -962,13 +961,12 @@ public class TrainingService extends BaseService implements ITrainingService {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-//            List<String> lines = Files.readAllLines(path);
-//            String strContent = String.join("", lines);
+
             Map<String, List<String>> uniqueWordWithPatternIdMap = this.objectMapper.readValue(strContent, Map.class);
             double percentagePerWord = 1.0 / command.getMessage().split(" ").length;
             Map<String, Double> patternPercentage = new HashMap<>();
-//            List<Object> resPatternIdWithPercentage = new ArrayList<>();
             List<List<Object>> resPatternIdWithPercentage = new ArrayList<>();
+            List<Object> highestPattern = new ArrayList<>();
             for (String word : command.getMessage().split(" ")) {
                 List<String> resPatternIds = uniqueWordWithPatternIdMap.get(word);
                 if (CollectionUtils.isEmpty(resPatternIds)) {
@@ -984,37 +982,27 @@ public class TrainingService extends BaseService implements ITrainingService {
                         patternPercentage.put(resPatternId, percentagePerWord + (1.0 / lengthOfResPattern));
                     }
 
+                    if (CollectionUtils.isEmpty(highestPattern)) {
+                        highestPattern.add(resPatternId);
+                        highestPattern.add(patternPercentage.get(resPatternId));
+                    }
+
+                    if (((Double) highestPattern.get(1)) < patternPercentage.get(resPatternId)) {
+                        highestPattern = new ArrayList<>();
+                        highestPattern.add(resPatternId);
+                        highestPattern.add(patternPercentage.get(resPatternId));
+                    }
+
                     if (resPatternIdWithPercentage.isEmpty()) {
                         List<Object> arr = new ArrayList<>();
                         arr.add(resPatternId);
                         arr.add(patternPercentage.get(resPatternId));
                         resPatternIdWithPercentage.add(arr);
                     }
-
-                    for (int i = 0; i < resPatternIdWithPercentage.size(); i++) {
-                        if (((Double) resPatternIdWithPercentage.get(i).get(1)) < patternPercentage.get(resPatternId) &&
-                                !((String) resPatternIdWithPercentage.get(i).get(0)).equals(resPatternId)) {
-                            List<Object> arr = new ArrayList<>();
-                            arr.add(resPatternId);
-                            arr.add(patternPercentage.get(resPatternId));
-                            resPatternIdWithPercentage.add(i, arr);
-                            if (resPatternIdWithPercentage.size() > 4) {
-                                resPatternIdWithPercentage.remove(resPatternIdWithPercentage.size() - 1);
-                            }
-                            break;
-                        }
-
-//                        if (resPatternIdWithPercentage.size() < 4 && !resPatternIdWithPercentage.stream().map(a -> a.get(0)).toList().contains(resPatternId)) {
-//                            List<Object> arr = new ArrayList<>();
-//                            arr.add(resPatternId);
-//                            arr.add(patternPercentage.get(resPatternId));
-//                            resPatternIdWithPercentage.add(arr);
-//                        }
-                    }
                 }
             }
 
-            System.out.println(resPatternIdWithPercentage);
+            System.out.println(highestPattern);
             List<PatternEntity> resPatterns = this.patternService.getList(CommandGetListPattern.builder()
                             .userId(command.getUser().getId())
                     .ids(resPatternIdWithPercentage.stream().map(arr -> ((String) arr.get(0)).split("_")[0]).toList())
