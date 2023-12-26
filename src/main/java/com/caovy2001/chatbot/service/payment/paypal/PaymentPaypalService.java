@@ -80,7 +80,7 @@ public class PaymentPaypalService extends BaseService implements IPaymentPaypalS
         Item item = new Item();
         item.setCurrency("USD");
         item.setName("Chatbot Premium");
-        item.setPrice(String.valueOf(30000));
+        item.setPrice(String.valueOf("299.99"));
         item.setQuantity("1");
         itemList.getItems().add(item);
         transaction.setItemList(itemList);
