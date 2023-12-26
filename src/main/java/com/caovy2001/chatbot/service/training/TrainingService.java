@@ -672,13 +672,13 @@ public class TrainingService extends BaseService implements ITrainingService {
         try {
             if (responseTrainingPredictFromAI == null) {
 //                        responseTrainingPredictFromAI = this.sendPredictRequest(CommandSendPredictRequest.builder()
-//                responseTrainingPredictFromAI = this.askGptToGetIntents(CommandSendPredictRequest.builder()
-//                        .user(command.getUser())
-//                        .message(command.getMessage())
-//                        .intentIds(intentIds)
-//                        .sessionId(command.getSessionId())
-//                        .build());
-                responseTrainingPredictFromAI = this.predictFromSavedModel(CommandSendPredictRequest.builder()
+                responseTrainingPredictFromAI = this.askGptToGetIntents(CommandSendPredictRequest.builder()
+                        .user(command.getUser())
+                        .message(command.getMessage())
+                        .intentIds(intentIds)
+                        .sessionId(command.getSessionId())
+                        .build());
+                responseTrainingPredictFromAI2 = this.predictFromSavedModel(CommandSendPredictRequest.builder()
                         .user(command.getUser())
                         .message(command.getMessage())
                         .intentIds(intentIds)
