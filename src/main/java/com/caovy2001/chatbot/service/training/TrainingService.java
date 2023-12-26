@@ -1004,7 +1004,7 @@ public class TrainingService extends BaseService implements ITrainingService {
 
             System.out.println(highestPattern);
             List<String> intentIds = new ArrayList<>();
-            if (((Double) highestPattern.get(1)) > 1.09) {
+            if (CollectionUtils.isNotEmpty(highestPattern) && ((Double) highestPattern.get(1)) > 1.09) {
                 List<PatternEntity> resPatterns = this.patternService.getList(CommandGetListPattern.builder()
                         .userId(command.getUser().getId())
                         .ids(List.of(((String)highestPattern.get(0)).split("_")[0]))
