@@ -10,6 +10,7 @@ COPY src/main/resources/application.properties ./application.properties
 RUN cat ./build-file/splited-app-* > ./app.jar
 RUN rm -r build-file
 RUN mkdir -p src/main/resources/file_data
+RUN mkdir -p model
 
 EXPOSE 8085
 
