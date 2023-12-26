@@ -133,11 +133,11 @@ public class TrainingService extends BaseService implements ITrainingService {
         try {
             command.setIntents(intentEntities);
             command.setTrainingHistoryId(responseTrainingHistoryAdd.getId());
-            RestTemplate restTemplate = new RestTemplate();
+//            RestTemplate restTemplate = new RestTemplate();
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            String commandBody = objectMapper.writeValueAsString(command);
+//            String commandBody = objectMapper.writeValueAsString(command);
 //            log.info("[train]: Send training request: {}", commandBody);
 
 //            CompletableFuture.runAsync(() -> {
@@ -157,8 +157,8 @@ public class TrainingService extends BaseService implements ITrainingService {
 
             try {
                 jedisService.set(command.getUserId() + COLON + JedisService.PrefixRedisKey.trainingServerStatus, "busy");
-                HttpEntity<String> request =
-                        new HttpEntity<>(commandBody, headers);
+//                HttpEntity<String> request =
+//                        new HttpEntity<>(commandBody, headers);
                 this.saveModel(command);
 //                    restTemplate.postForLocation(new URI(resourceBundle.getString("training.server") + "/train"), request);
 
@@ -182,6 +182,10 @@ public class TrainingService extends BaseService implements ITrainingService {
         Map<String, List<String>> uniqueWordWithPatternIdMap = new HashMap<>();
 
         for (IntentEntity intent : command.getIntents()) {
+            if (CollectionUtils.isEmpty(intent.getPatterns())) {
+                continue;
+            }
+
             for (PatternEntity pattern : intent.getPatterns()) {
                 Map<String, String> map = new HashMap<>();
                 map.put(pattern.getContent(), intent.getId());
@@ -1011,7 +1015,7 @@ public class TrainingService extends BaseService implements ITrainingService {
             if (CollectionUtils.isNotEmpty(highestPattern) && ((Double) highestPattern.get(1)) > 1.09) {
                 List<PatternEntity> resPatterns = this.patternService.getList(CommandGetListPattern.builder()
                         .userId(command.getUser().getId())
-                        .ids(List.of(((String)highestPattern.get(0)).split("_")[0]))
+                        .ids(List.of(((String) highestPattern.get(0)).split("_")[0]))
                         .build(), PatternEntity.class);
                 intentIds = resPatterns.stream().map(PatternEntity::getIntentId).toList();
                 intentIds = intentIds.stream().filter(intentId -> command.getIntentIds().contains(intentId)).toList();
