@@ -1003,12 +1003,16 @@ public class TrainingService extends BaseService implements ITrainingService {
             }
 
             System.out.println(highestPattern);
-            List<PatternEntity> resPatterns = this.patternService.getList(CommandGetListPattern.builder()
-                            .userId(command.getUser().getId())
-                    .ids(List.of(((String)highestPattern.get(0)).split("_")[0]))
-                    .build(), PatternEntity.class);
-            List<String> intentIds = resPatterns.stream().map(PatternEntity::getIntentId).toList();
-            intentIds = intentIds.stream().filter(intentId -> command.getIntentIds().contains(intentId)).toList();
+            List<String> intentIds = new ArrayList<>();
+            if (((Double) highestPattern.get(1)) > 1.09) {
+                List<PatternEntity> resPatterns = this.patternService.getList(CommandGetListPattern.builder()
+                        .userId(command.getUser().getId())
+                        .ids(List.of(((String)highestPattern.get(0)).split("_")[0]))
+                        .build(), PatternEntity.class);
+                intentIds = resPatterns.stream().map(PatternEntity::getIntentId).toList();
+                intentIds = intentIds.stream().filter(intentId -> command.getIntentIds().contains(intentId)).toList();
+            }
+
             if (CollectionUtils.isEmpty(intentIds)) {
                 intentIds = new ArrayList<>();
                 intentIds.add("-1");
