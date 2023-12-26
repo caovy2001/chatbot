@@ -52,11 +52,6 @@ public class PaymentPaypalService extends BaseService implements IPaymentPaypalS
             throw new Exception(ExceptionConstant.User.user_have_premium_already);
         }
 
-        //region Tính tổng đơn hàng
-        AtomicLong atomicTotal = new AtomicLong(30000L);
-        long total = atomicTotal.get();
-        //endregion
-
         //region Tạo Payer
         Payer payer = new Payer();
         payer.setPaymentMethod("paypal");
@@ -73,7 +68,7 @@ public class PaymentPaypalService extends BaseService implements IPaymentPaypalS
         Details details = new Details();
         Amount amount = new Amount();
         amount.setCurrency("USD");
-        amount.setTotal(String.valueOf(total));
+        amount.setTotal(String.valueOf("299.99"));
         amount.setDetails(details);
 
         Transaction transaction = new Transaction();
