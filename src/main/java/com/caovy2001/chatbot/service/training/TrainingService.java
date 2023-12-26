@@ -868,6 +868,11 @@ public class TrainingService extends BaseService implements ITrainingService {
         }
 
         String results = intentService.askGpt(message);
+        if (StringUtils.isBlank(results)) {
+            return ResponseTrainingPredictFromAI.builder()
+                    .intentIds(new ArrayList<>(List.of("-1")))
+                    .build();
+        }
         results = results.replace("<br>", "");
         System.out.println(results);
         //1: Intent 0.9: Nói tên | Tên: Vỹ | Tuổi: không_có | Địa chỉ: không_có \n
