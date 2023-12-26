@@ -965,7 +965,7 @@ public class TrainingService extends BaseService implements ITrainingService {
             Map<String, List<String>> uniqueWordWithPatternIdMap = this.objectMapper.readValue(strContent, Map.class);
             double percentagePerWord = 1.0 / command.getMessage().split(" ").length;
             Map<String, Double> patternPercentage = new HashMap<>();
-            List<List<Object>> resPatternIdWithPercentage = new ArrayList<>();
+//            List<List<Object>> resPatternIdWithPercentage = new ArrayList<>();
             List<Object> highestPattern = new ArrayList<>();
             for (String word : command.getMessage().split(" ")) {
                 List<String> resPatternIds = uniqueWordWithPatternIdMap.get(word);
@@ -993,19 +993,19 @@ public class TrainingService extends BaseService implements ITrainingService {
                         highestPattern.add(patternPercentage.get(resPatternId));
                     }
 
-                    if (resPatternIdWithPercentage.isEmpty()) {
-                        List<Object> arr = new ArrayList<>();
-                        arr.add(resPatternId);
-                        arr.add(patternPercentage.get(resPatternId));
-                        resPatternIdWithPercentage.add(arr);
-                    }
+//                    if (resPatternIdWithPercentage.isEmpty()) {
+//                        List<Object> arr = new ArrayList<>();
+//                        arr.add(resPatternId);
+//                        arr.add(patternPercentage.get(resPatternId));
+//                        resPatternIdWithPercentage.add(arr);
+//                    }
                 }
             }
 
             System.out.println(highestPattern);
             List<PatternEntity> resPatterns = this.patternService.getList(CommandGetListPattern.builder()
                             .userId(command.getUser().getId())
-                    .ids(resPatternIdWithPercentage.stream().map(arr -> ((String) arr.get(0)).split("_")[0]).toList())
+                    .ids(List.of(((String)highestPattern.get(0)).split("_")[0]))
                     .build(), PatternEntity.class);
             List<String> intentIds = resPatterns.stream().map(PatternEntity::getIntentId).toList();
             intentIds = intentIds.stream().filter(intentId -> command.getIntentIds().contains(intentId)).toList();
