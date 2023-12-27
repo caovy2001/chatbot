@@ -191,13 +191,18 @@ public class TrainingService extends BaseService implements ITrainingService {
                 map.put(pattern.getContent(), intent.getId());
                 patternWithIdMap.put(pattern.getId(), map);
 
-                String[] splitedPattern = pattern.getContent().toLowerCase().split(" ");
+                String[] splitedPattern = pattern.getContent().toLowerCase().trim().split(" ");
                 for (String word : splitedPattern) {
+                    if (StringUtils.isBlank(word)) {
+                        continue;
+                    }
                     int length = splitedPattern.length;
-                    if (uniqueWordWithPatternIdMap.get(word) != null && !uniqueWordWithPatternIdMap.get(word).contains(pattern.getId() + "_" + length)) {
-                        List<String> patternIds = uniqueWordWithPatternIdMap.get(word);
-                        patternIds.add(pattern.getId() + "_" + length);
-                        uniqueWordWithPatternIdMap.put(word, patternIds);
+                    if (uniqueWordWithPatternIdMap.get(word) != null) {
+                        if (!uniqueWordWithPatternIdMap.get(word).contains(pattern.getId() + "_" + length)) {
+                            List<String> patternIds = uniqueWordWithPatternIdMap.get(word);
+                            patternIds.add(pattern.getId() + "_" + length);
+                            uniqueWordWithPatternIdMap.put(word, patternIds);
+                        }
                     } else {
                         uniqueWordWithPatternIdMap.put(word, new ArrayList<>(List.of(pattern.getId() + "_" + length)));
                     }
@@ -981,7 +986,7 @@ public class TrainingService extends BaseService implements ITrainingService {
 //            List<List<Object>> resPatternIdWithPercentage = new ArrayList<>();
             List<Object> highestPattern = new ArrayList<>();
             for (String word : command.getMessage().split(" ")) {
-                List<String> resPatternIds = uniqueWordWithPatternIdMap.get(word);
+                List<String> resPatternIds = uniqueWordWithPatternIdMap.get(word.toLowerCase().trim());
                 if (CollectionUtils.isEmpty(resPatternIds)) {
                     continue;
                 }
