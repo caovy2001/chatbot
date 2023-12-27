@@ -560,27 +560,26 @@ public class IntentService extends BaseService implements IIntentService {
     }
 
     public String askGpt(String message) {
-        return null;
-//        try {
-//            RestTemplate restTemplate = new RestTemplate();
-//            HttpHeaders headers = new HttpHeaders();
-//            headers.setContentType(MediaType.APPLICATION_JSON);
-//            Map<String, Object> commandRequest = new HashMap<>();
-//            commandRequest.put("message", message);
-//
-//            HttpEntity<String> request =
-//                    new HttpEntity<>(objectMapper.writeValueAsString(commandRequest), headers);
-//
-//            ResponseIntentAskGpt responseIntentAskGpt = restTemplate.postForObject("https://f1d0-113-185-74-57.ngrok-free.app/api/ask", request, ResponseIntentAskGpt.class);
-//            if (responseIntentAskGpt == null) {
-//                return null;
-//            }
-//
-//            return responseIntentAskGpt.getResult();
-//        } catch (Exception e) {
-//            log.error("[{}]: {}", e.getStackTrace()[0], e.getMessage());
-//            return null;
-//        }
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            Map<String, Object> commandRequest = new HashMap<>();
+            commandRequest.put("message", message);
+
+            HttpEntity<String> request =
+                    new HttpEntity<>(objectMapper.writeValueAsString(commandRequest), headers);
+
+            ResponseIntentAskGpt responseIntentAskGpt = restTemplate.postForObject("https://f1d0-113-185-74-57.ngrok-free.app/api/ask", request, ResponseIntentAskGpt.class);
+            if (responseIntentAskGpt == null) {
+                return null;
+            }
+
+            return responseIntentAskGpt.getResult();
+        } catch (Exception e) {
+            log.error("[{}]: {}", e.getStackTrace()[0], e.getMessage());
+            return null;
+        }
     }
 
     public void groupEntityType(String userId, String intentId) throws Exception {
