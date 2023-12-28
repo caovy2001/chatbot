@@ -6,7 +6,7 @@ WORKDIR /app
 
 COPY build-file/ ./build-file
 COPY src/main/resources/application.properties ./application.properties
-COPY keystore.p12 ./keystore.p12
+#COPY keystore.p12 ./keystore.p12
 
 RUN cat ./build-file/splited-app-* > ./app.jar
 RUN rm -r build-file
