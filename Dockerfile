@@ -13,7 +13,7 @@ RUN rm -r build-file
 RUN mkdir -p src/main/resources/file_data
 RUN mkdir -p model
 
-EXPOSE 8085
+EXPOSE 8443
 
 
 
