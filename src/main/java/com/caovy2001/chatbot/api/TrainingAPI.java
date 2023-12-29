@@ -38,7 +38,7 @@ public class TrainingAPI {
                     .username(userEntity.getUsername())
                     .build();
 
-            ResponseTrainingTrain response = trainingService.train(command);
+            ResponseTrainingTrain response = trainingService.train2(command);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.ok(trainingService.returnException(e.getMessage(), ResponseTrainingTrain.class));

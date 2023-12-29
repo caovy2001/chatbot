@@ -19,5 +19,6 @@ public class ResponseTrainingPredictFromAI extends ResponseBase {
     private String intentCode;
 //    private String intentId;
     private List<String> intentIds;
+    private String intentName;
     private List<EntityEntity> entities;
 }

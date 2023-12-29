@@ -11,6 +11,7 @@ import com.caovy2001.chatbot.service.training.response.ResponseTrainingTrain;
 
 public interface ITrainingService extends IBaseService {
     ResponseTrainingTrain train(CommandTrainingTrain command);
+    ResponseTrainingTrain train2(CommandTrainingTrain command) throws Exception;
 
     ResponseTrainingPredict predict(CommandTrainingPredict command) throws Exception;
 

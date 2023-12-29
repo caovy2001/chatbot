@@ -174,6 +174,76 @@ public class TrainingService extends BaseService implements ITrainingService {
                 .build();
     }
 
+    @Override
+    public ResponseTrainingTrain train2(CommandTrainingTrain command) throws Exception {
+        String status = jedisService.get(command.getUserId() + COLON + JedisService.PrefixRedisKey.trainingServerStatus);
+        if (StringUtils.isNotBlank(status) && status.equals(ResponseTrainingServerStatus.EStatus.BUSY.name().toLowerCase())) {
+            return returnException(ExceptionConstant.Intent.server_busy, ResponseTrainingTrain.class);
+        }
+        jedisService.set(command.getUserId() + COLON + JedisService.PrefixRedisKey.trainingServerStatus, "busy");
+
+        try {
+            List<IntentEntity> intentEntities = intentService.getList(CommandGetListIntent.builder()
+                    .userId(command.getUserId())
+                    .hasPatterns(true)
+                    .hasEntitiesOfPatterns(true)
+                    .hasEntityTypesOfEntitiesOfPatterns(true)
+                    .build(), IntentEntity.class);
+            if (CollectionUtils.isEmpty(intentEntities)) {
+                return returnException("intents_empty", ResponseTrainingTrain.class);
+            }
+
+            // Check if the file exists and delete
+            String filePath = "chatbot-training-service/training_data_" + command.getUserId() + ".txt";
+            if (Files.exists(Paths.get(filePath))) {
+                Files.delete(Paths.get(filePath));
+            }
+
+            try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath))) {
+                // Write the content to the file
+                for (IntentEntity intent : intentEntities) {
+                    if (CollectionUtils.isEmpty(intent.getPatterns())) {
+                        continue;
+                    }
+
+                    for (PatternEntity pattern : intent.getPatterns()) {
+                        bw.write(pattern.getContent() + " | " + intent.getName() + " \n");
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            // Lưu training history
+            ResponseTrainingHistoryAdd responseTrainingHistoryAdd = trainingHistoryService.add(CommandTrainingHistoryAdd.builder()
+                    .userId(command.getUserId())
+                    .username(command.getUsername())
+                    .build());
+
+            if (responseTrainingHistoryAdd == null || StringUtils.isBlank(responseTrainingHistoryAdd.getId())) {
+                return returnException("add_training_history_fail", ResponseTrainingTrain.class);
+            }
+
+            String commandBody = objectMapper.writeValueAsString(command);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<String> request =
+                    new HttpEntity<>(commandBody, headers);
+            RestTemplate restTemplate = new RestTemplate();
+            restTemplate.postForLocation(new URI(resourceBundle.getString("training.server") + "/train"), request);
+
+            jedisService.set(command.getUserId() + COLON + JedisService.PrefixRedisKey.trainingServerStatus, "free");
+
+            return ResponseTrainingTrain.builder()
+                    .trainingHistoryId(responseTrainingHistoryAdd.getId())
+                    .build();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            jedisService.set(command.getUserId() + COLON + JedisService.PrefixRedisKey.trainingServerStatus, "free");
+            return returnException(ex.getMessage(), ResponseTrainingTrain.class);
+        }
+    }
+
     private void saveModel(CommandTrainingTrain command) {
         // { "pattern_id": {"patern content", "intent_id"}}
         Map<String, Map<String, String>> patternWithIdMap = new HashMap<>();
@@ -687,7 +757,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                         .intentIds(intentIds)
                         .sessionId(command.getSessionId())
                         .build());
-                responseTrainingPredictFromAI2 = this.predictFromSavedModel(CommandSendPredictRequest.builder()
+                responseTrainingPredictFromAI2 = this.predictFromSavedModel2(CommandSendPredictRequest.builder()
                         .user(command.getUser())
                         .message(command.getMessage())
                         .intentIds(intentIds)
@@ -1044,6 +1114,41 @@ public class TrainingService extends BaseService implements ITrainingService {
             System.err.println("Error reading file: " + e.getMessage());
             return null;
         }
+    }
+
+    private ResponseTrainingPredictFromAI predictFromSavedModel2(CommandSendPredictRequest command) throws Exception {
+        // Get intent names
+        List<IntentEntity> intents = this.intentService.getList(CommandGetListIntent.builder()
+                .userId(command.getUser().getId())
+                .ids(command.getIntentIds())
+                .returnFields(List.of("id", "name"))
+                .build(), IntentEntity.class);
+
+
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        Map<String, Object> commandRequest = new HashMap<>();
+        commandRequest.put("userId", command.getUser().getId());
+        commandRequest.put("message", command.getMessage());
+        commandRequest.put("intentNames", intents.stream().map(IntentEntity::getName).toList());
+
+        HttpEntity<String> request =
+                new HttpEntity<>(objectMapper.writeValueAsString(commandRequest), headers);
+
+        ResponseTrainingPredictFromAI responseTrainingPredictFromAI = restTemplate.postForObject(resourceBundle.getString("training.server") + "/predict", request, ResponseTrainingPredictFromAI.class);
+        if (responseTrainingPredictFromAI == null) {
+            return null;
+        }
+
+        if (StringUtils.isBlank(responseTrainingPredictFromAI.getIntentName())) {
+            return ResponseTrainingPredictFromAI.builder().build();
+        }
+
+        IntentEntity resIntent = intents.stream().filter(i -> i.getName().equals(responseTrainingPredictFromAI.getIntentName())).findFirst().orElse(null);
+        return ResponseTrainingPredictFromAI.builder()
+                .intentIds(resIntent != null ? List.of(resIntent.getId()) : new ArrayList<>())
+                .build();
     }
 
     @Override

@@ -396,6 +396,8 @@ public class IntentService extends BaseService implements IIntentService {
             for (PatternEntity pattern : patterns) {
                 if (intentPatternsMap.get(pattern.getIntentId()) != null) {
                     patternsItem = intentPatternsMap.get(pattern.getIntentId());
+                } else {
+                    patternsItem = new ArrayList<>();
                 }
                 patternsItem.add(pattern);
                 intentPatternsMap.put(pattern.getIntentId(), patternsItem);

@@ -14,5 +14,6 @@ public class ExceptionConstant {
 
     public static class Intent {
         public static final String intent_not_found = "intent_not_found";
+        public static final String server_busy = "server_busy";
     }
 }
