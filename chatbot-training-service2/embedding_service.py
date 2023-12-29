@@ -24,6 +24,7 @@ def train(payload):
         
 def predict(payload):
     message = payload["message"]
+    print("Message: " + message, file=sys.stderr)
     userId = payload["userId"]
     intentNames = payload["intentNames"]
     
@@ -64,7 +65,7 @@ def predict(payload):
     
     # {"Nói tên": 2, "Nói tuổi": 3}
     resIntentsWithCount = {}
-    for resPatternId in resPatternIds: 
+    for resPatternId in resPatternIds:
         patternContent = patternWithId[int(resPatternId)]['content']
         intentName = patternContent.split('|')[1].strip()
         if (intentName in resIntentsWithCount):
