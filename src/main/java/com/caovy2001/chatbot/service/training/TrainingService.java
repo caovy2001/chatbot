@@ -932,7 +932,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                     .userId(command.getUser().getId())
                     .intentId(intent.getId())
                     .page(1)
-                    .size(100)
+                    .size(10)
                     .returnFields(List.of("id", "content"))
                     .build(), PatternEntity.class, CommandGetListPattern.class);
             if (CollectionUtils.isEmpty(patterns.getItems())) {
