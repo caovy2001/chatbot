@@ -855,11 +855,11 @@ public class TrainingService extends BaseService implements ITrainingService {
 
     private ResponseTrainingPredictFromAI askGptToGetIntents(CommandSendPredictRequest command) throws Exception {
         ResponseTrainingPredictFromAI responseTrainingPredictFromAI = ResponseTrainingPredictFromAI.builder().build();
-        if (responseTrainingPredictFromAI != null) {
-            return ResponseTrainingPredictFromAI.builder()
-                    .intentIds(new ArrayList<>(List.of("-1")))
-                    .build();
-        }
+//        if (responseTrainingPredictFromAI != null) {
+//            return ResponseTrainingPredictFromAI.builder()
+//                    .intentIds(new ArrayList<>(List.of("-1")))
+//                    .build();
+//        }
         String message = "- Tôi có đoạn hội thoại sau:\n" +
                 "CONVERSATION" +
                 "- Tôi có những ví dụ về những intents có những pattern thuộc nó:\n" +
