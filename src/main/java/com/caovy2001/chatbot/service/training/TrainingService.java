@@ -195,9 +195,13 @@ public class TrainingService extends BaseService implements ITrainingService {
 
             // Check if the file exists and delete
             String filePath = "chatbot-training-service2/training_data_" + command.getUserId() + ".txt";
-            if (Files.exists(Paths.get(filePath))) {
-                Files.delete(Paths.get(filePath));
+            try {
+                if (Files.exists(Paths.get(filePath))) {
+                    Files.delete(Paths.get(filePath));
+                }
+            } catch (Exception e) {
             }
+
 
             try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath))) {
                 // Write the content to the file
