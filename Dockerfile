@@ -12,7 +12,6 @@ RUN cat ./build-file/splited-app-* > ./app.jar
 RUN rm -r build-file
 RUN mkdir -p src/main/resources/file_data
 RUN mkdir -p model
-RUN mkdir -p chatbot-training-service
 
 EXPOSE 8085
 
