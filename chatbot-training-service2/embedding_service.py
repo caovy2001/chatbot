@@ -37,7 +37,7 @@ def predict(payload):
             'id': i,
             'content': response.page_content
         })
-        print(patternWithId[i])
+        print(patternWithId[i], file=sys.stderr)
         i += 1
     
     percentagePerWord = 1 / len(message.split(' '))
@@ -79,7 +79,7 @@ def predict(payload):
         if (resIntentsWithCount[intentName] > highestCount):
             resIntentName = intentName
             highestCount = resIntentsWithCount[intentName]
-    
+
     return {
         "intentName": resIntentName
     }
