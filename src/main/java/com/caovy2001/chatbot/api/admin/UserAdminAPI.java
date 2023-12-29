@@ -31,7 +31,7 @@ public class UserAdminAPI {
     public ResponseEntity<Paginated<UserEntity>> getByPagination(@RequestBody CommandGetListUser command) {
         try {
             command.setUserId("admin");
-            command.setReturnFields(List.of("id", "username", "fullname", "phone", "zalo_group_link", "google_meet_link"));
+            command.setReturnFields(List.of("id", "username", "fullname", "phone", "zalo_group_link", "google_meet_link", "secret_key"));
             command.setRole(UserRole.USER);
             return ResponseEntity.ok(userService.getPaginatedList(command, UserEntity.class, CommandGetListUser.class));
         } catch (Exception e) {
