@@ -763,7 +763,7 @@ public class TrainingService extends BaseService implements ITrainingService {
                         .intentIds(intentIds)
                         .sessionId(command.getSessionId())
                         .build());
-                responseTrainingPredictFromAI.setIntentIds(responseTrainingPredictFromAI2 != null? responseTrainingPredictFromAI2.getIntentIds(): new ArrayList<>(List.of("-1")));
+                responseTrainingPredictFromAI.setIntentIds(responseTrainingPredictFromAI2 != null && CollectionUtils.isNotEmpty(responseTrainingPredictFromAI2.getIntentIds()) ? responseTrainingPredictFromAI2.getIntentIds() : new ArrayList<>(List.of("-1")));
             }
         } catch (Exception e) {
             log.error("[{}]: {}", e.getStackTrace()[0], StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : ExceptionConstant.error_occur);
