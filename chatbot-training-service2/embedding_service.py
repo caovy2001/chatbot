@@ -5,6 +5,8 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.embeddings.openai import OpenAIEmbeddings
 import pickle
 from dotenv import load_dotenv
+import sys
+
 load_dotenv()
 # embeddings = OpenAIEmbeddings()
 embeddings = HuggingFaceEmbeddings(model_name="keepitreal/vietnamese-sbert")
@@ -18,7 +20,7 @@ def train(payload):
     db = FAISS.from_documents(documents, embeddings)
     with open("model/" + userId + ".model", "wb") as f:
         pickle.dump((db), f)
-    print("Train for user " + userId + " successfully!")
+    print("Train for user " + userId + " successfully!", file=sys.stderr)
         
 def predict(payload):
     message = payload["message"]
@@ -51,7 +53,7 @@ def predict(payload):
                     patternPercentage[str(content['id'])] = patternPercentage[str(content['id'])] + percentagePerWord + (1 / len(patternContent.split(' ')))                    
                 else:
                     patternPercentage[str(content['id'])] = percentagePerWord + (1 / len(patternContent.split(' ')))
-    print(patternPercentage)
+    print(patternPercentage, file=sys.stderr)
     
     resPatternIds = []
     for patternId in patternPercentage.keys():
@@ -69,7 +71,7 @@ def predict(payload):
             resIntentsWithCount[intentName] = resIntentsWithCount[intentName] + 1
         else:
             resIntentsWithCount[intentName] = 1
-    print(resIntentsWithCount)
+    print(resIntentsWithCount, file=sys.stderr)
     
     resIntentName = None
     highestCount = 0
