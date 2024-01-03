@@ -4,6 +4,7 @@ from langchain.chains import LLMChain
 import time
 from dotenv import load_dotenv
 import os
+import sys
 
 # Set an environment variable
 os.environ['OPENAI_API_KEY'] = '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'
@@ -40,7 +41,7 @@ def askGpt(payload):
     )
     chain = LLMChain(llm=llm, prompt=prompt)
     response = chain.run(message=message)
-    print('Response from GPT: ' + response)
+    print('Response from GPT: ' + response, file=sys.stderr)
     return {
         'result': response
     }
