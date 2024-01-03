@@ -1,125 +1,130 @@
-Tôi tên là Hải | Chỉ nói tên 
-Em tên Thảo | Chỉ nói tên 
-Mình là Minh tên | Chỉ nói tên 
-Chị tên Linh đây | Chỉ nói tên 
-Anh tên Tuấn | Chỉ nói tên 
-Tên mình là Đức | Chỉ nói tên 
-Bạn tên gì vậy? | Chỉ nói tên 
-Xin chào, mình là Ngọc | Chỉ nói tên 
-Gọi mình là Trang | Chỉ nói tên 
-Hôm nay, tôi muốn giới thiệu, tôi tên Nam | Chỉ nói tên 
-Tôi là Lan | Chỉ nói tên 
-Cậu tên là Hiếu đúng không? | Chỉ nói tên 
-Tên của tôi là Anh | Chỉ nói tên 
-Chào các bạn, mình tên Đông | Chỉ nói tên 
-Mình tên Ngân đây | Chỉ nói tên 
-Bạn biết tên tôi không? | Chỉ nói tên 
-Mọi người, tôi tên Khánh | Chỉ nói tên 
-Tôi tên là Phương đây | Chỉ nói tên 
-Gọi tôi là Bảo | Chỉ nói tên 
-Cứ gọi mình là An | Chỉ nói tên 
-An là tên của mình | Chỉ nói tên 
-Tên An | Chỉ nói tên 
-Anh là An nha em | Chỉ nói tên 
-Mình là An | Chỉ nói tên 
-An nha | Chỉ nói tên 
-Mình là Son Goku | Chỉ nói tên 
-Em tên An | Chỉ nói tên 
-em là Thiên An | Chỉ nói tên 
-Mình là Trang | Chỉ nói tên 
-Anh tên là Hải | Chỉ nói tên 
-Tớ là Linh | Chỉ nói tên 
-Chị là Lan | Chỉ nói tên 
-Bạn gọi tớ là Tuấn | Chỉ nói tên 
-Mình là Ngọc Anh | Chỉ nói tên 
-Em tên là Đức | Chỉ nói tên 
-Anh là Phong | Chỉ nói tên 
-Cô là Thảo | Chỉ nói tên 
-Bạn có thể gọi tôi là Khánh | Chỉ nói tên 
-Anh tên Thành | Chỉ nói tên 
-Chị là Diệu và chị đã 25 tuổi | Chỉ nói tên 
-Mình là Lan, mình ở Hà Nội | Chỉ nói tên 
-Tôi tên Hải và làm việc tại TP.HCM | Chỉ nói tên 
-Em là Bình, em sinh năm 1995 | Chỉ nói tên 
-Mình là Thu và mình sống ở Sài Gòn | Chỉ nói tên 
-Tên tôi là Trang và tôi là sinh viên | Chỉ nói tên 
-Mình tên Hiếu, mình ở Hải Phòng | Chỉ nói tên 
-Anh tên Tú, anh đến từ Đà Nẵng | Chỉ nói tên 
-Chị là Linh và chị sinh năm 1990 | Chỉ nói tên 
-Tôi tên Hạnh, tôi đang làm việc ở Hà Tĩnh | Chỉ nói tên 
-Em là Minh và em là học sinh | Chỉ nói tên 
-Mình tên Phương, mình làm việc tại Cần Thơ | Chỉ nói tên 
-Anh tên Dương và anh đã 30 tuổi | Chỉ nói tên 
-Tôi là Thùy và tôi đến từ Nha Trang | Chỉ nói tên 
-Mình tên Hoàng, mình sinh năm 1988 | Chỉ nói tên 
-Chị là Lan, chị đang sống ở Huế | Chỉ nói tên 
-Anh tên Việt và anh làm việc ở Đồng Nai | Chỉ nói tên 
-Tôi là Quân và tôi đến từ Quảng Ninh | Chỉ nói tên 
-Em tên Hiền, em đang học tại Đà Lạt | Chỉ nói tên 
-Mình là Linh | Chỉ nói tên 
-Anh ấy tên là Khánh | Chỉ nói tên 
-Tôi là Hải Anh | Chỉ nói tên 
-Em tên là Trang | Chỉ nói tên 
-Mình là Tuấn Anh | Chỉ nói tên 
-Bạn có biết, mình tên là Thảo không? | Chỉ nói tên 
-Anh ấy tên là Duy | Chỉ nói tên 
-Mình là Quỳnh Anh | Chỉ nói tên 
-Cô ấy tên là Linh Chi | Chỉ nói tên 
-Mình là Hoàng Nam | Chỉ nói tên 
-Tôi tên là Đức Anh | Chỉ nói tên 
-Em ấy tên là Ngọc Trâm | Chỉ nói tên 
-Tôi là Phương Thảo | Chỉ nói tên 
-Mình tên là Quang Huy | Chỉ nói tên 
-Cô ấy tên là Mai Anh | Chỉ nói tên 
-Anh ấy tên là Tuấn | Chỉ nói tên 
-Mình là Bảo An | Chỉ nói tên 
-Tôi tên là Hồng Ngọc | Chỉ nói tên 
-Cậu ấy tên là Long | Chỉ nói tên 
-Gọi anh là Hải | Chỉ nói tên 
-Gọi cô ấy là Linh | Chỉ nói tên 
-Tôi là Phương, hãy gọi tôi là Phương | Chỉ nói tên 
-Hãy gọi tôi là Đức | Chỉ nói tên 
-Anh ấy là Thành, gọi anh ấy là Thành | Chỉ nói tên 
-Gọi tôi là Hiền | Chỉ nói tên 
-Cô ấy tên là Mai, bạn có thể gọi cô ấy là Mai | Chỉ nói tên 
-Xin đừng gọi tôi là Trang | Chỉ nói tên 
-Tôi là Minh, hãy gọi tôi là Minh | Chỉ nói tên 
-Đừng gọi tôi là Nam | Chỉ nói tên 
-Gọi anh là Tiến | Chỉ nói tên 
-Hãy gọi cô ấy là Thảo | Chỉ nói tên 
-Tên tôi là Tuấn, bạn có thể gọi tôi là Tuấn | Chỉ nói tên 
-Gọi tôi là Bảo | Chỉ nói tên 
-Anh ấy tên là Quang, gọi anh ấy là Quang | Chỉ nói tên 
-Cô ấy là Ngọc, hãy gọi cô ấy là Ngọc | Chỉ nói tên 
-Hãy gọi tôi là Thắng | Chỉ nói tên 
-Xin đừng gọi tôi là Linh | Chỉ nói tên 
-Gọi tôi là Hương | Chỉ nói tên 
-Tên tôi là An, hãy gọi tôi là An | Chỉ nói tên 
-Cô ấy tên là Phượng, bạn có thể gọi cô ấy là Phượng | Chỉ nói tên 
-Gọi anh là Tuân | Chỉ nói tên 
-Xin đừng gọi tôi là Dũng | Chỉ nói tên 
-Tên Anh | Chỉ nói tên 
-Tên Linh | Chỉ nói tên 
-Mình là Hải | Chỉ nói tên 
-Gọi mình là Phương | Chỉ nói tên 
-Tên tôi là Tuấn | Chỉ nói tên 
-Gặp em là Hương | Chỉ nói tên 
-Mình là Đức | Chỉ nói tên 
-Tên tôi là Thảo | Chỉ nói tên 
-Gọi mình là Khánh | Chỉ nói tên 
-Mình là Bảo Anh | Chỉ nói tên 
-Gọi tôi là Nam | Chỉ nói tên 
-Tên mình là Ngọc | Chỉ nói tên 
-Tôi tên là Quang | Chỉ nói tên 
-Mình là Hà | Chỉ nói tên 
-Tên tôi là Linh Chi | Chỉ nói tên 
-Tôi là Xuân | Chỉ nói tên 
-Mình tên là Trang | Chỉ nói tên 
-Gọi mình là Đạt | Chỉ nói tên 
-Mình là Diệu | Chỉ nói tên 
-Tên tôi là Khôi | Chỉ nói tên 
-tôi tên An | Chỉ nói tên 
-Thien | Chỉ nói tên 
+Tôi tên là Hải | Nói tên 
+Em tên Thảo | Nói tên 
+Mình là Minh tên | Nói tên 
+Chị tên Linh đây | Nói tên 
+Anh tên Tuấn | Nói tên 
+Tên mình là Đức | Nói tên 
+Bạn tên gì vậy? | Nói tên 
+Xin chào, mình là Ngọc | Nói tên 
+Gọi mình là Trang | Nói tên 
+Hôm nay, tôi muốn giới thiệu, tôi tên Nam | Nói tên 
+Tôi là Lan | Nói tên 
+Cậu tên là Hiếu đúng không? | Nói tên 
+Tên của tôi là Anh | Nói tên 
+Chào các bạn, mình tên Đông | Nói tên 
+Mình tên Ngân đây | Nói tên 
+Bạn biết tên tôi không? | Nói tên 
+Mọi người, tôi tên Khánh | Nói tên 
+Tôi tên là Phương đây | Nói tên 
+Gọi tôi là Bảo | Nói tên 
+Cứ gọi mình là An | Nói tên 
+An là tên của mình | Nói tên 
+Tên An | Nói tên 
+Anh là An nha em | Nói tên 
+Mình là An | Nói tên 
+An nha | Nói tên 
+Mình là Son Goku | Nói tên 
+Em tên An | Nói tên 
+em là Thiên An | Nói tên 
+Mình là Trang | Nói tên 
+Anh tên là Hải | Nói tên 
+Tớ là Linh | Nói tên 
+Chị là Lan | Nói tên 
+Bạn gọi tớ là Tuấn | Nói tên 
+Mình là Ngọc Anh | Nói tên 
+Em tên là Đức | Nói tên 
+Anh là Phong | Nói tên 
+Cô là Thảo | Nói tên 
+Bạn có thể gọi tôi là Khánh | Nói tên 
+Anh tên Thành | Nói tên 
+Chị là Diệu và chị đã 25 tuổi | Nói tên 
+Mình là Lan, mình ở Hà Nội | Nói tên 
+Tôi tên Hải và làm việc tại TP.HCM | Nói tên 
+Em là Bình, em sinh năm 1995 | Nói tên 
+Mình là Thu và mình sống ở Sài Gòn | Nói tên 
+Tên tôi là Trang và tôi là sinh viên | Nói tên 
+Mình tên Hiếu, mình ở Hải Phòng | Nói tên 
+Anh tên Tú, anh đến từ Đà Nẵng | Nói tên 
+Chị là Linh và chị sinh năm 1990 | Nói tên 
+Tôi tên Hạnh, tôi đang làm việc ở Hà Tĩnh | Nói tên 
+Em là Minh và em là học sinh | Nói tên 
+Mình tên Phương, mình làm việc tại Cần Thơ | Nói tên 
+Anh tên Dương và anh đã 30 tuổi | Nói tên 
+Tôi là Thùy và tôi đến từ Nha Trang | Nói tên 
+Mình tên Hoàng, mình sinh năm 1988 | Nói tên 
+Chị là Lan, chị đang sống ở Huế | Nói tên 
+Anh tên Việt và anh làm việc ở Đồng Nai | Nói tên 
+Tôi là Quân và tôi đến từ Quảng Ninh | Nói tên 
+Em tên Hiền, em đang học tại Đà Lạt | Nói tên 
+Mình là Linh | Nói tên 
+Anh ấy tên là Khánh | Nói tên 
+Tôi là Hải Anh | Nói tên 
+Em tên là Trang | Nói tên 
+Mình là Tuấn Anh | Nói tên 
+Bạn có biết, mình tên là Thảo không? | Nói tên 
+Anh ấy tên là Duy | Nói tên 
+Mình là Quỳnh Anh | Nói tên 
+Cô ấy tên là Linh Chi | Nói tên 
+Mình là Hoàng Nam | Nói tên 
+Tôi tên là Đức Anh | Nói tên 
+Em ấy tên là Ngọc Trâm | Nói tên 
+Tôi là Phương Thảo | Nói tên 
+Mình tên là Quang Huy | Nói tên 
+Cô ấy tên là Mai Anh | Nói tên 
+Anh ấy tên là Tuấn | Nói tên 
+Mình là Bảo An | Nói tên 
+Tôi tên là Hồng Ngọc | Nói tên 
+Cậu ấy tên là Long | Nói tên 
+Gọi anh là Hải | Nói tên 
+Gọi cô ấy là Linh | Nói tên 
+Tôi là Phương, hãy gọi tôi là Phương | Nói tên 
+Hãy gọi tôi là Đức | Nói tên 
+Anh ấy là Thành, gọi anh ấy là Thành | Nói tên 
+Gọi tôi là Hiền | Nói tên 
+Cô ấy tên là Mai, bạn có thể gọi cô ấy là Mai | Nói tên 
+Xin đừng gọi tôi là Trang | Nói tên 
+Tôi là Minh, hãy gọi tôi là Minh | Nói tên 
+Đừng gọi tôi là Nam | Nói tên 
+Gọi anh là Tiến | Nói tên 
+Hãy gọi cô ấy là Thảo | Nói tên 
+Tên tôi là Tuấn, bạn có thể gọi tôi là Tuấn | Nói tên 
+Gọi tôi là Bảo | Nói tên 
+Anh ấy tên là Quang, gọi anh ấy là Quang | Nói tên 
+Cô ấy là Ngọc, hãy gọi cô ấy là Ngọc | Nói tên 
+Hãy gọi tôi là Thắng | Nói tên 
+Xin đừng gọi tôi là Linh | Nói tên 
+Gọi tôi là Hương | Nói tên 
+Tên tôi là An, hãy gọi tôi là An | Nói tên 
+Cô ấy tên là Phượng, bạn có thể gọi cô ấy là Phượng | Nói tên 
+Gọi anh là Tuân | Nói tên 
+Xin đừng gọi tôi là Dũng | Nói tên 
+Tên Anh | Nói tên 
+Tên Linh | Nói tên 
+Mình là Hải | Nói tên 
+Gọi mình là Phương | Nói tên 
+Tên tôi là Tuấn | Nói tên 
+Gặp em là Hương | Nói tên 
+Mình là Đức | Nói tên 
+Tên tôi là Thảo | Nói tên 
+Gọi mình là Khánh | Nói tên 
+Mình là Bảo Anh | Nói tên 
+Gọi tôi là Nam | Nói tên 
+Tên mình là Ngọc | Nói tên 
+Tôi tên là Quang | Nói tên 
+Mình là Hà | Nói tên 
+Tên tôi là Linh Chi | Nói tên 
+Tôi là Xuân | Nói tên 
+Mình tên là Trang | Nói tên 
+Gọi mình là Đạt | Nói tên 
+Mình là Diệu | Nói tên 
+Tên tôi là Khôi | Nói tên 
+tôi tên An | Nói tên 
+Thien | Nói tên 
+Tôi tên là An | Nói tên 
+Tôi tên là An | Nói tên 
+Tôi tên An | Nói tên 
+Tôi tên An | Nói tên 
+tôi tên Vỹ nha | Nói tên 
 Bác sĩ, nha khoa của bạn cung cấp những dịch vụ nào | Yêu cầu liệt kê dịch vụ nha khoa 
 Nha khoa của tôi cung cấp những dịch vụ nào | Yêu cầu liệt kê dịch vụ nha khoa 
 Xin hỏi, nha khoa có những loại dịch vụ nào được cung cấp? | Yêu cầu liệt kê dịch vụ nha khoa 
@@ -234,6 +239,30 @@ Có chuyên gia nha khoa chuyên sâu trong lĩnh vực nào không | Yêu cầu
 Dịch vụ nha khoa cơ bản thường mất bao lâu | Yêu cầu liệt kê dịch vụ nha khoa 
 Nếu có sự cố hoặc cần điều trị khẩn cấp, bạn có cung cấp dịch vụ gì | Yêu cầu liệt kê dịch vụ nha khoa 
 Cách chăm sóc sau các phẫu thuật nha khoa như cấy ghép răng là như thế nào | Yêu cầu liệt kê dịch vụ nha khoa 
+bên mình có những dịch vụ nào | Yêu cầu liệt kê dịch vụ nha khoa 
+cung cấp dịch vụ nào | Yêu cầu liệt kê dịch vụ nha khoa 
+nha khoa làm những gì | Yêu cầu liệt kê dịch vụ nha khoa 
+bên mình có những loại dịch vụ nào nhỉ | Yêu cầu liệt kê dịch vụ nha khoa 
+có những loại dịch vụ nào vậy | Yêu cầu liệt kê dịch vụ nha khoa 
+tôi cần xem các loại dịch vụ bên mình | Yêu cầu liệt kê dịch vụ nha khoa 
+bên mình có các loại dịch vụ nào | Yêu cầu liệt kê dịch vụ nha khoa 
+tôi muốn xem các loại dịch vụ bên mình | Yêu cầu liệt kê dịch vụ nha khoa 
+bạn có thể cho tôi biết bên mình có những loại dịch vụ nào không | Yêu cầu liệt kê dịch vụ nha khoa 
+liệt kê cho tôi biết các loại dịch vụ bên mình đi | Yêu cầu liệt kê dịch vụ nha khoa 
+cho tôi xem về các dịch vụ bên mình | Yêu cầu liệt kê dịch vụ nha khoa 
+bên mình có những loại dịch vụ nào  | Yêu cầu liệt kê dịch vụ nha khoa 
+có những loại dịch vụ nào nhỉ | Yêu cầu liệt kê dịch vụ nha khoa 
+có những dịch vụ nào  | Yêu cầu liệt kê dịch vụ nha khoa 
+có những dịch vụ nào vậy | Yêu cầu liệt kê dịch vụ nha khoa 
+tôi muốn biết về những dịch vụ mà các bạn cung cấp | Yêu cầu liệt kê dịch vụ nha khoa 
+không biết là bên mình cung cấp những dịch vụ nào | Yêu cầu liệt kê dịch vụ nha khoa 
+bên mình có những dịch vụ nào  | Yêu cầu liệt kê dịch vụ nha khoa 
+các loại dịch vụ bên em  | Yêu cầu liệt kê dịch vụ nha khoa 
+cho anh biết các loại dịch vụ của em | Yêu cầu liệt kê dịch vụ nha khoa 
+có những dịch vụ nào nhỉ | Yêu cầu liệt kê dịch vụ nha khoa 
+bên mình có những dịch vụ nào | Yêu cầu liệt kê dịch vụ nha khoa 
+bên em có những dịch vụ nào nhỉ | Yêu cầu liệt kê dịch vụ nha khoa 
+bên em có những dịch vụ nào vậy | Yêu cầu liệt kê dịch vụ nha khoa 
 Mình đang quan tâm đến dịch vụ bọc răng sứ | Chọn dịch vụ bọc răng sứ 
 Cho mình hỏi về việc làm răng sứ ở đây được không | Chọn dịch vụ bọc răng sứ 
 Mình muốn tìm hiểu về giá cả của dịch vụ bọc răng sứ | Chọn dịch vụ bọc răng sứ 
@@ -542,6 +571,9 @@ Niềng răng có ảnh hưởng đến nói chuyện không | Chọn dịch v�
 Cách làm trắng răng sau khi niềng răng | Chọn dịch vụ niềng răng 
 Mất bao lâu để hoàn thành quá trình niềng răng | Chọn dịch vụ niềng răng 
 Có niềng răng trong suốt không | Chọn dịch vụ niềng răng 
+tôi hay hoạt động thể thao niềng răng có phù hợp | Chọn dịch vụ niềng răng 
+tôi đá banh nhiều niềng răng được không
+ | Chọn dịch vụ niềng răng 
 Tôi muốn tư vấn về răng sứ kim loại | Yêu cầu tư vấn răng sứ kim loại 
 Cho mình hỏi về việc đặt răng sứ kim loại | Yêu cầu tư vấn răng sứ kim loại 
 Cần thông tin về chi phí của răng sứ kim loại | Yêu cầu tư vấn răng sứ kim loại 
@@ -698,6 +730,30 @@ Cho em biết giá để làm răng toàn sứ tại đây được không ạ? 
 Bác sĩ, răng toàn sứ có giá là bao nhiêu ạ? | Yêu cầu tư vấn làm răng toàn sứ 
 Anh/chị ơi, giá làm răng toàn sứ tại nơi này là bao nhiêu vậy ạ? | Yêu cầu tư vấn làm răng toàn sứ 
 Tư vấn về dịch vụ làm đẹp răng tại phòng khám của bạn | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+Tư vấn giúp tôi về quy trình tẩy trắng răng tại phòng khám | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+Cho biết giá dịch vụ tẩy trắng răng ở phòng khám của bạn | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+Có những phương pháp tẩy trắng răng nào được áp dụng tại phòng khám của bạn? | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+Bạn có thể giới thiệu về đội ngũ chuyên gia tẩy trắng răng tại phòng khám không? | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+Tôi cần biết thêm về chi phí và thời gian cần thiết cho liệu pháp tẩy trắng răng tại phòng khám | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+Bạn có thể cung cấp thông tin về kỹ thuật tẩy trắng răng mà phòng khám sử dụng không? | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+Cho tôi xem hình ảnh trước và sau khi tẩy trắng răng của các khách hàng khác tại phòng khám | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+Có cần phải đặt cọc trước khi đặt lịch hẹn tẩy trắng răng không? | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+Bạn có các lựa chọn tẩy trắng răng không chứa hóa chất gây kích ứng không? | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+Có đặc điểm nổi bật nào về dịch vụ tẩy trắng răng tại phòng khám của bạn không? | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+Cho tôi biết về các phản hồi từ khách hàng đã sử dụng dịch vụ tẩy trắng răng tại phòng khám của bạn | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+Bạn có chương trình duy trì sau liệu pháp tẩy trắng răng không? | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+Làm thế nào để duy trì hiệu quả sau khi tẩy trắng răng tại phòng khám? | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+Bạn có chính sách hoàn trả hoặc điều chỉnh liệu pháp tẩy trắng răng không? | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+Tôi muốn biết liệu pháp tẩy trắng răng có thể ảnh hưởng đến răng nhạy cảm không? | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+Có cần phải kiểm tra tình trạng răng trước khi thực hiện tẩy trắng răng không? | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+Bạn có các gói tẩy trắng răng đặc biệt cho khách hàng thường xuyên không? | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+Tôi muốn biết liệu pháp tẩy trắng răng có an toàn không? | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+cho tôi xem thông tin về tẩy trắng răng tại phòng khám | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+tẩy trắng răng tại phòng khám nha | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+tẩy trắng răng tại phòng khám nhé  | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+cho tôi xem về tẩy trắng răng tại phòng khám đi | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+tẩy trắng răng tại phòng khám thì như thế nào  | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
+cho tôi xem tẩy trắng răng tại phòng khám  | Yêu cầu tư vấn tẩy trắng răng tại phòng khám 
 Bác sĩ có tẩy trắng răng tại nhà không | Yêu cầu tư vấn tẩy trắng răng tại nhà 
 Làm thế nào để tẩy trắng răng ở nhà | Yêu cầu tư vấn tẩy trắng răng tại nhà 
 Có phương pháp tẩy trắng răng tự nhiên không | Yêu cầu tư vấn tẩy trắng răng tại nhà 
@@ -777,6 +833,8 @@ Răng của tôi đang bị ố vàng, có dịch vụ nào hiệu quả để l
 Làm thế nào để khắc phục tình trạng răng bị vàng do hút thuốc lá? | Yêu cầu tư vấn tẩy trắng răng tại nhà 
 Có phương pháp nào tự nhiên để làm trắng răng bị vàng không? | Yêu cầu tư vấn tẩy trắng răng tại nhà 
 Mình đang gặp vấn đề với răng vàng, bạn có thể tư vấn về các sản phẩm làm trắng răng không? | Yêu cầu tư vấn tẩy trắng răng tại nhà 
+tôi hút thuốc lào nhiều bị vàng răng giúp tôi với | Yêu cầu tư vấn tẩy trắng răng tại nhà 
+tôi muốn hút thuốc lào nhiều nhưng không vàng răng | Yêu cầu tư vấn tẩy trắng răng tại nhà 
 Dịch vụ khác ngoài những cái này có không? | Hỏi về dịch vụ khác không sẵn có tại nha khoa 
 Anh có thêm các loại dịch vụ nào không? | Hỏi về dịch vụ khác không sẵn có tại nha khoa 
 Cho em hỏi còn những dịch vụ nào khác không ạ? | Hỏi về dịch vụ khác không sẵn có tại nha khoa 
@@ -1144,6 +1202,7 @@ Cho tôi đặt lịch chăm sóc răng sau điều trị | Đặt lịch khám
 Đặt lịch kiểm tra răng để biết thông tin chi tiết | Đặt lịch khám 
 Nếu tôi cần hủy hẹn, có chính sách hủy hẹn nào không | Đặt lịch khám 
 Có phí hủy hẹn không | Đặt lịch khám 
+có lịch ngoài giờ hành chính không | Đặt lịch khám 
 Tôi tên là Anh Hùng, tôi đã đặt lịch vào 10 | Nói họ tên và ngày giờ đặt lịch 
 Tên tôi là Nguyễn Thị Mai, tôi đã đặt lịch kiểm tra vào 9 giờ tối ngày 20/7/2023 | Nói họ tên và ngày giờ đặt lịch 
 Gọi tôi là Lâm Văn Hòa, tôi đặt hẹn vào buổi chiều ngày 15 tháng 8 năm 2023 | Nói họ tên và ngày giờ đặt lịch 
@@ -1419,26 +1478,27 @@ Thông tin cung cấp không đầy đủ | Đánh giá nha khoa tiêu cực
 Đặt lịch online gặp rắc rối | Đánh giá nha khoa tiêu cực 
 Chăm sóc sau điều trị không chu đáo | Đánh giá nha khoa tiêu cực 
 Đau răng sau khi điều trị | Đánh giá nha khoa tiêu cực 
-Gọi cho tôi qua số này 0987654321 | Cung cấp số điện thoại 
-Gọi cho tôi qua số điện thoại này 0987654321 | Cung cấp số điện thoại 
-Gọi cho tôi theo số 0987654321 | Cung cấp số điện thoại 
-liên lạc với tôi qua số 0977214077 | Cung cấp số điện thoại 
-0976214076 | Cung cấp số điện thoại 
-gọi cho tôi 0332452769 | Cung cấp số điện thoại 
-liên lạc 0338483212 | Cung cấp số điện thoại 
-056261077 | Cung cấp số điện thoại 
-gọi anh ngay 0332141214 | Cung cấp số điện thoại 
-gọi chị 0987654123 | Cung cấp số điện thoại 
-nhờ em tư vấn chị số này 0222433879 | Cung cấp số điện thoại 
-Gọi anh trai 0961234567 | Cung cấp số điện thoại 
-liên lạc với bé qua số 0977214077 | Cung cấp số điện thoại 
-bé cần được bác sĩ tư vấn 0777564077 | Cung cấp số điện thoại 
-tư vấn cho gia đình anh 0123555786 | Cung cấp số điện thoại 
-call me 0977214077 | Cung cấp số điện thoại 
-call cho tôi 0229785321 | Cung cấp số điện thoại 
-em cần liên lạc gấp 0922123213 | Cung cấp số điện thoại 
-số của em là 0976666222 | Cung cấp số điện thoại 
-call cho em những lúc em một mình 0888345432 | Cung cấp số điện thoại 
+Gọi cho tôi qua số này 0987654321 | Yêu cầu gọi điện 
+Gọi cho tôi qua số điện thoại này 0987654321 | Yêu cầu gọi điện 
+Gọi cho tôi theo số 0987654321 | Yêu cầu gọi điện 
+liên lạc với tôi qua số 0977214077 | Yêu cầu gọi điện 
+0976214076 | Yêu cầu gọi điện 
+gọi cho tôi 0332452769 | Yêu cầu gọi điện 
+liên lạc 0338483212 | Yêu cầu gọi điện 
+056261077 | Yêu cầu gọi điện 
+gọi anh ngay 0332141214 | Yêu cầu gọi điện 
+gọi chị 0987654123 | Yêu cầu gọi điện 
+nhờ em tư vấn chị số này 0222433879 | Yêu cầu gọi điện 
+Gọi anh trai 0961234567 | Yêu cầu gọi điện 
+liên lạc với bé qua số 0977214077 | Yêu cầu gọi điện 
+bé cần được bác sĩ tư vấn 0777564077 | Yêu cầu gọi điện 
+tư vấn cho gia đình anh 0123555786 | Yêu cầu gọi điện 
+call me 0977214077 | Yêu cầu gọi điện 
+call cho tôi 0229785321 | Yêu cầu gọi điện 
+em cần liên lạc gấp 0922123213 | Yêu cầu gọi điện 
+số của em là 0976666222 | Yêu cầu gọi điện 
+call cho em những lúc em một mình 0888345432 | Yêu cầu gọi điện 
+Số của anh là 0383865402 | Yêu cầu gọi điện 
 Tôi muốn biết về dịch vụ niềng răng trong suốt | Dịch vụ niềng răng trong suốt có giá như thế nào 
 Tư vấn niềng răng trong suốt cho em nhé | Dịch vụ niềng răng trong suốt có giá như thế nào 
 Tôi muốn hỏi về dịch vụ niềng răng trong suốt | Dịch vụ niềng răng trong suốt có giá như thế nào 
@@ -1512,3 +1572,45 @@ Giá niềng răng trong suốt có phải là cao không? | Dịch vụ niềng
 Bạn có thể giải thích về giá cả của việc niềng răng trong suốt không? | Dịch vụ niềng răng trong suốt có giá như thế nào 
 Tính niềng răng trong suốt có giá cao không vậy? | Dịch vụ niềng răng trong suốt có giá như thế nào 
 30: Cho tôi biết về chi phí niềng răng trong suốt có đắt không? | Dịch vụ niềng răng trong suốt có giá như thế nào 
+Oke rồi | Nói oke hoặc cảm ơn 
+Cảm ơn bạn | Nói oke hoặc cảm ơn 
+Được rồi | Nói oke hoặc cảm ơn 
+Oke luôn | Nói oke hoặc cảm ơn 
+Cảm ơn nhiều | Nói oke hoặc cảm ơn 
+Okie doki | Nói oke hoặc cảm ơn 
+Đúng vậy | Nói oke hoặc cảm ơn 
+Cảm ơn bạn nhiều | Nói oke hoặc cảm ơn 
+Oke nha | Nói oke hoặc cảm ơn 
+Rất cảm ơn | Nói oke hoặc cảm ơn 
+Được, cảm ơn | Nói oke hoặc cảm ơn 
+Ok nhé | Nói oke hoặc cảm ơn 
+Cảm ơn rất nhiều | Nói oke hoặc cảm ơn 
+Okie luôn á | Nói oke hoặc cảm ơn 
+Rất ổn | Nói oke hoặc cảm ơn 
+Cảm ơn bạn rất nhiều | Nói oke hoặc cảm ơn 
+Oke nhé | Nói oke hoặc cảm ơn 
+Cảm ơn bạn rất nhiều lắm | Nói oke hoặc cảm ơn 
+Um oke nha | Nói oke hoặc cảm ơn 
+Oke cảm ơn nha | Nói oke hoặc cảm ơn 
+oke nhé | Nói oke hoặc cảm ơn 
+ok cảm ơn bạn nhé | Nói oke hoặc cảm ơn 
+ok cảm ơn bạn nhiều nha | Nói oke hoặc cảm ơn 
+ok ok cảm ơn nha | Nói oke hoặc cảm ơn 
+oke nha bạn ơi | Nói oke hoặc cảm ơn 
+Cho tôi biết về dịch vụ tẩy trắng răng | Yêu cầu tư vấn dịch vụ tẩy trắng răng 
+Tôi muốn biết giá dịch vụ tẩy trắng răng | Yêu cầu tư vấn dịch vụ tẩy trắng răng 
+Bạn có những ưu đãi nào cho dịch vụ tẩy trắng răng không? | Yêu cầu tư vấn dịch vụ tẩy trắng răng 
+Cho tôi xin thông tin về quy trình tẩy trắng răng của bạn | Yêu cầu tư vấn dịch vụ tẩy trắng răng 
+Tư vấn giúp tôi lựa chọn gói dịch vụ tẩy trắng răng phù hợp | Yêu cầu tư vấn dịch vụ tẩy trắng răng 
+Bạn có địa chỉ chi nhánh cung cấp dịch vụ tẩy trắng răng gần đây không? | Yêu cầu tư vấn dịch vụ tẩy trắng răng 
+Tôi quan tâm đến dịch vụ tẩy trắng răng cho cả gia đình | Yêu cầu tư vấn dịch vụ tẩy trắng răng 
+Cho tôi biết thêm về phương pháp tẩy trắng răng mà bạn đang sử dụng | Yêu cầu tư vấn dịch vụ tẩy trắng răng 
+Tôi muốn biết liệu trình tẩy trắng răng của bạn có an toàn không? | Yêu cầu tư vấn dịch vụ tẩy trắng răng 
+tẩy trắng răng nha | Yêu cầu tư vấn dịch vụ tẩy trắng răng 
+cho tôi biết về dịch vụ tẩy trắng răng | Yêu cầu tư vấn dịch vụ tẩy trắng răng 
+dịch vụ tẩy trắng răng nha | Yêu cầu tư vấn dịch vụ tẩy trắng răng 
+cho anh xem dịch vụ tẩy trắng răng | Yêu cầu tư vấn dịch vụ tẩy trắng răng 
+cho tôi xem dịch vụ tẩy trắng răng nha | Yêu cầu tư vấn dịch vụ tẩy trắng răng 
+dịch vụ tẩy trắng răng thì như thế nào | Yêu cầu tư vấn dịch vụ tẩy trắng răng 
+dịch vụ tẩy trắng răng nha em | Yêu cầu tư vấn dịch vụ tẩy trắng răng 
+cho tôi xem thông tin về dịch vụ tẩy trắng răng đi | Yêu cầu tư vấn dịch vụ tẩy trắng răng 
